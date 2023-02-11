@@ -1,0 +1,13 @@
+the main file of our algorithm is:
+POWER8TM/backends/p8tm-si/tm.h
+
+Go to POWER8TM/stms/tinystm and run:
+make
+
+Come back to si-htm folder. In each folder, hashmap and tpcc, you will find scripts to run and plot our results.
+- Create a results folder inside each of the hashmap and tpcc folders
+- Edit each default-run.sh script with the path to POWER8TM folder and the path to the results directory
+- Edit each default-plots.sh script with the path to your Gnuplot PostScript directory and the results directory
+
+run: bash default-run.sh
+plot: bash default-plots.sh

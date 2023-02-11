@@ -1,0 +1,1 @@
+GNUPLOT_PS_DIR=/home/miguel.figueiredo/code/gnuplot/gnuplot/term/PostScript/ bash analyze_plot.sh . /home/miguel.figueiredo/code/data/21-10
