@@ -24,19 +24,19 @@ for f in files:
 	if threads not in runs:
 		runs[threads] = {"time":[],"total_time":[],"commit_time":[],"wait_time":[],"sus_time":[],"flush_time":[],"wait2_time":[],"abort_time":[],"commits":[],"aborts":[],"htm_commits":[],"rot_commits":[],"gl_commits":[],"htm_conflicts":[],"htm_self":[],"htm_trans":[],"htm_nontrans":[],"htm_user":[],"htm_capacity":[],"htm_persistent":[],"rot_conflicts":[],"rot_self":[],"rot_trans":[],"rot_nontrans":[],"rot_user":[],"rot_capacity":[],"rot_persistent":[],"read_commits":[],"htm_other":[],"rot_other":[],"stm_commits":[],"stm_aborts":[],"readers_aborts":[],"latency_r":[],"latency_w":[]}
 	fn = f
-        #print ("============================================")
-        #print(threads,f)
+	#print ("============================================")
+	#print(threads,f)
 	f = open(f)
 	time = -1
 	commits = 0
 	aborts = 0
-        commit_time = 0
-        abort_time = 0
-        sus_time = 0
-        flush_time = 0
-        wait2_time = 0
-        total_time = 0
-        wait_time = 0
+	commit_time = 0
+	abort_time = 0
+	sus_time = 0
+	flush_time = 0
+	wait2_time = 0
+	total_time = 0
+	wait_time = 0
 	htm_commits = 0
 	rot_commits = 0
 	gl_commits = 0
@@ -50,12 +50,12 @@ for f in files:
 	rot_persistent = 0
 	rot_other = 0
 	htm_conflicts = 0
-        htm_self = 0
-        htm_user = 0
-        htm_capacity = 0
-        htm_trans = 0
-        htm_nontrans = 0
-        htm_persistent = 0
+	htm_self = 0
+	htm_user = 0
+	htm_capacity = 0
+	htm_trans = 0
+	htm_nontrans = 0
+	htm_persistent = 0
 	htm_other = 0
 	readers_aborts = 0
 	stm_commits = 0
@@ -71,21 +71,21 @@ for f in files:
 		elif "read commits" in line:
 			read_commits = float(line.split(" ")[-1])
 
-                elif "total sus time" in line:
+		elif "total sus time" in line:
 			sus_time = float(line.split(" ")[-1])
-                elif "total flush time" in line:
+		elif "total flush time" in line:
 			flush_time = float(line.split(" ")[-1])
-                elif "total wait2 time" in line:
+		elif "total wait2 time" in line:
 			wait2_time = float(line.split(" ")[-1])
 
-                elif "total sum time" in line:
+		elif "total sum time" in line:
 			total_time = float(line.split(" ")[-1])
-                elif "total commit time" in line:
+		elif "total commit time" in line:
 			commit_time = float(line.split(" ")[-1])
-                elif "total abort time" in line:
-		        abort_time = float(line.split(" ")[-1])
-                elif "total wait time" in line:
-		        wait_time = float(line.split(" ")[-1])
+		elif "total abort time" in line:
+			abort_time = float(line.split(" ")[-1])
+		elif "total wait time" in line:
+			wait_time = float(line.split(" ")[-1])
 
 		elif "total commits" in line:
 			commits = float(line.split(" ")[-1])
@@ -117,27 +117,27 @@ for f in files:
 		elif "rot commits" in line:
 			rot_commits = float(line.split(" ")[-1])
 		elif "rot conflict aborts" in line:
-                        rot_conflicts = float(line.split(" ")[-1])
-                elif "rot user aborts" in line:
-                        rot_user = float(line.split(" ")[-1])
-                elif "rot self aborts" in line:
-                        rot_self = float(line.split(" ")[-1])
-                elif "rot capacity aborts" in line:
-                        rot_capacity = float(line.split(" ")[-1])
-                elif "rot persistent aborts" in line:
-                        rot_persistent = float(line.split(" ")[-1])
-                elif "rot trans" in line:
-                        rot_trans = float(line.split(" ")[-1])
-                elif "rot non-trans" in line:
-                        rot_nontrans = float(line.split(" ")[-1])
-                elif "rot other aborts" in line:
-                        rot_other = float(line.split(" ")[-1])
+			rot_conflicts = float(line.split(" ")[-1])
+		elif "rot user aborts" in line:
+			rot_user = float(line.split(" ")[-1])
+		elif "rot self aborts" in line:
+			rot_self = float(line.split(" ")[-1])
+		elif "rot capacity aborts" in line:
+			rot_capacity = float(line.split(" ")[-1])
+		elif "rot persistent aborts" in line:
+			rot_persistent = float(line.split(" ")[-1])
+		elif "rot trans" in line:
+			rot_trans = float(line.split(" ")[-1])
+		elif "rot non-trans" in line:
+			rot_nontrans = float(line.split(" ")[-1])
+		elif "rot other aborts" in line:
+			rot_other = float(line.split(" ")[-1])
 		elif "gl commits" in line:
 			gl_commits = float(line.split(" ")[-1])
 		elif "stm commits" in line:
-                        stm_commits = float(line.split(" ")[-1])
+			stm_commits = float(line.split(" ")[-1])
 		elif "stm aborts" in line:
-                        stm_aborts = float(line.split(" ")[-1])
+			stm_aborts = float(line.split(" ")[-1])
 		elif "latency reader" in line:
 			latency_r = float(line.split(" ")[-1])
 		elif "latency writer" in line:
@@ -147,13 +147,13 @@ for f in files:
 		continue
 	else:
 		runs[threads]["time"].append(time)
-                runs[threads]["total_time"].append(total_time)
-                runs[threads]["commit_time"].append(commit_time)
-                runs[threads]["abort_time"].append(abort_time)
-                runs[threads]["wait_time"].append(wait_time)
-                runs[threads]["sus_time"].append(sus_time)
-                runs[threads]["flush_time"].append(flush_time)
-                runs[threads]["wait2_time"].append(wait2_time)
+		runs[threads]["total_time"].append(total_time)
+		runs[threads]["commit_time"].append(commit_time)
+		runs[threads]["abort_time"].append(abort_time)
+		runs[threads]["wait_time"].append(wait_time)
+		runs[threads]["sus_time"].append(sus_time)
+		runs[threads]["flush_time"].append(flush_time)
+		runs[threads]["wait2_time"].append(wait2_time)
 		runs[threads]["commits"].append(commits)
 		runs[threads]["htm_commits"].append(htm_commits)
 		runs[threads]["rot_commits"].append(rot_commits)
@@ -170,13 +170,13 @@ for f in files:
 		runs[threads]["htm_other"].append(htm_other)
 		runs[threads]["readers_aborts"].append(readers_aborts)
 		runs[threads]["rot_conflicts"].append(rot_conflicts)
-                runs[threads]["rot_self"].append(rot_self)
-                runs[threads]["rot_user"].append(rot_user)
-                runs[threads]["rot_capacity"].append(rot_capacity)
-                runs[threads]["rot_trans"].append(rot_trans)
-                runs[threads]["rot_nontrans"].append(rot_nontrans)
-                runs[threads]["rot_persistent"].append(rot_persistent)
-                runs[threads]["rot_other"].append(rot_other)
+		runs[threads]["rot_self"].append(rot_self)
+		runs[threads]["rot_user"].append(rot_user)
+		runs[threads]["rot_capacity"].append(rot_capacity)
+		runs[threads]["rot_trans"].append(rot_trans)
+		runs[threads]["rot_nontrans"].append(rot_nontrans)
+		runs[threads]["rot_persistent"].append(rot_persistent)
+		runs[threads]["rot_other"].append(rot_other)
 		runs[threads]["stm_commits"].append(stm_commits)
 		runs[threads]["stm_aborts"].append(stm_aborts)
 		runs[threads]["latency_r"].append(latency_r)
@@ -188,13 +188,13 @@ for k in avail_threads:
 	if k not in runs:
 		print str(k)+"\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0"
 		continue
-        v = runs[k]
-        time_avg = numpy.average(v["time"])
-        time_std =  numpy.std(v["time"])
-        if time_std/time_avg * 100 > 10:
-                sys.stderr.write(str(k) + ", time, " + str(time_std/time_avg) + "\n")
-        out += "\t"+str(time_avg)
-        out += "\t"+str(time_std)
+	v = runs[k]
+	time_avg = numpy.average(v["time"])
+	time_std =  numpy.std(v["time"])
+	if time_std/time_avg * 100 > 10:
+		sys.stderr.write(str(k) + ", time, " + str(time_std/time_avg) + "\n")
+	out += "\t"+str(time_avg)
+	out += "\t"+str(time_std)
 	commits_avg = numpy.average(v["commits"])
 	std = numpy.std(v["commits"])
 	if std/commits_avg * 100 > 10:
@@ -202,153 +202,153 @@ for k in avail_threads:
 	out += "\t"+str(commits_avg)
 	out += "\t"+str(std)
 
-        c=numpy.array(v["commits"])
-        t=numpy.array(v["time"])   
-        avg=numpy.average(c/t)
-        std=numpy.std(c/t)
-        out += "\t"+str(avg)
-        out += "\t"+str(std)
+	c=numpy.array(v["commits"])
+	t=numpy.array(v["time"])   
+	avg=numpy.average(c/t)
+	std=numpy.std(c/t)
+	out += "\t"+str(avg)
+	out += "\t"+str(std)
 
-        avg = numpy.average(v["total_time"])
+	avg = numpy.average(v["total_time"])
 	std = numpy.std(v["total_time"])
 	out += "\t"+str(avg)
 	out += "\t"+str(std)
 
-        avg = numpy.average(v["commit_time"])
+	avg = numpy.average(v["commit_time"])
 	std = numpy.std(v["commit_time"])
 	out += "\t"+str(avg)
 	out += "\t"+str(std)
 
-        avg = numpy.average(v["abort_time"])
+	avg = numpy.average(v["abort_time"])
 	std = numpy.std(v["abort_time"])
 	out += "\t"+str(avg)
 	out += "\t"+str(std)
-        avg = numpy.average(v["wait_time"])
+	avg = numpy.average(v["wait_time"])
 	std = numpy.std(v["wait_time"])
 	out += "\t"+str(avg)
 	out += "\t"+str(std)
 
-        avg = numpy.average(v["sus_time"])
+	avg = numpy.average(v["sus_time"])
 	std = numpy.std(v["sus_time"])
 	out += "\t"+str(avg)
 	out += "\t"+str(std)
-        avg = numpy.average(v["flush_time"])
+	avg = numpy.average(v["flush_time"])
 	std = numpy.std(v["flush_time"])
 	out += "\t"+str(avg)
 	out += "\t"+str(std)
-        avg = numpy.average(v["wait2_time"])
+	avg = numpy.average(v["wait2_time"])
 	std = numpy.std(v["wait2_time"])
 	out += "\t"+str(avg)
 	out += "\t"+str(std)
 
 
-        avg = numpy.average(v["htm_commits"])
-        std =  numpy.std(v["htm_commits"])
-        out += "\t"+str(avg/(commits_avg)*100)
-        out += "\t"+str(std)
-        avg = numpy.average(v["rot_commits"])
-        std =  numpy.std(v["rot_commits"])
-        out += "\t"+str(avg/(commits_avg)*100)
-        out += "\t"+str(std)
-        gl_commits_avg = numpy.average(v["gl_commits"])
+	avg = numpy.average(v["htm_commits"])
+	std =  numpy.std(v["htm_commits"])
+	out += "\t"+str(avg/(commits_avg)*100)
+	out += "\t"+str(std)
+	avg = numpy.average(v["rot_commits"])
+	std =  numpy.std(v["rot_commits"])
+	out += "\t"+str(avg/(commits_avg)*100)
+	out += "\t"+str(std)
+	gl_commits_avg = numpy.average(v["gl_commits"])
 	stm_commits_avg = numpy.average(v["stm_commits"])
 	if(gl_commits_avg != 0):
-	        std =  numpy.std(v["gl_commits"])
-        	out += "\t"+str(gl_commits_avg/(commits_avg)*100)
+		std =  numpy.std(v["gl_commits"])
+		out += "\t"+str(gl_commits_avg/(commits_avg)*100)
 	else:
 		std =  numpy.std(v["stm_commits"])
-                out += "\t"+str(stm_commits_avg/(commits_avg)*100)
-        out += "\t"+str(std)
-        avg = numpy.average(v["read_commits"])
-        std =  numpy.std(v["read_commits"])
-        out += "\t"+str(avg/(commits_avg)*100)
-        out += "\t"+str(std)
-        aborts_avg = numpy.average(v["aborts"])
-        std =  numpy.std(v["aborts"])
-        out += "\t"+str(aborts_avg)
-        out += "\t"+str(std)
-        avg = numpy.average(v["htm_conflicts"])
-        std =  numpy.std(v["htm_conflicts"])
-        out += "\t"+str(avg/(aborts_avg+commits_avg)*100)
-        out += "\t"+str(std)
-        avg = numpy.average(v["htm_self"])
+		out += "\t"+str(stm_commits_avg/(commits_avg)*100)
+	out += "\t"+str(std)
+	avg = numpy.average(v["read_commits"])
+	std =  numpy.std(v["read_commits"])
+	out += "\t"+str(avg/(commits_avg)*100)
+	out += "\t"+str(std)
+	aborts_avg = numpy.average(v["aborts"])
+	std =  numpy.std(v["aborts"])
+	out += "\t"+str(aborts_avg)
+	out += "\t"+str(std)
+	avg = numpy.average(v["htm_conflicts"])
+	std =  numpy.std(v["htm_conflicts"])
+	out += "\t"+str(avg/(aborts_avg+commits_avg)*100)
+	out += "\t"+str(std)
+	avg = numpy.average(v["htm_self"])
 	std =  numpy.std(v["htm_self"])
-        out += "\t"+str(avg/(aborts_avg+commits_avg)*100)
-        out += "\t"+str(std)
-        avg = numpy.average(v["htm_trans"])
-        std =  numpy.std(v["htm_trans"])
-        out += "\t"+str(avg/(aborts_avg+commits_avg)*100)
-        out += "\t"+str(std)
-        avg = numpy.average(v["htm_nontrans"])
-        std =  numpy.std(v["htm_nontrans"])
-        out += "\t"+str(avg/(aborts_avg+commits_avg)*100)
-        out += "\t"+str(std)
-        avg = numpy.average(v["htm_user"])
-        std =  numpy.std(v["htm_user"])
-        out += "\t"+str(avg/(aborts_avg+commits_avg)*100)
-        out += "\t"+str(std)
-        avg = numpy.average(v["htm_capacity"])
-        std =  numpy.std(v["htm_capacity"])
-        out += "\t"+str(avg/(aborts_avg+commits_avg)*100)
-        out += "\t"+str(std)
-        avg = numpy.average(v["htm_persistent"])
-        std =  numpy.std(v["htm_persistent"])
-        out += "\t"+str(avg/(aborts_avg+commits_avg)*100)
-        out += "\t"+str(std)
-        avg = numpy.average(v["htm_other"])
-        std =  numpy.std(v["htm_other"])
-        out += "\t"+str(avg/(aborts_avg+commits_avg)*100)
-        out += "\t"+str(std)
-        avg = numpy.average(v["rot_conflicts"])
-        std =  numpy.std(v["rot_conflicts"])
-        out += "\t"+str(avg/(aborts_avg+commits_avg)*100)
-        out += "\t"+str(std)
-        avg = numpy.average(v["rot_self"])
-        std =  numpy.std(v["rot_self"])
-        out += "\t"+str(avg/(aborts_avg+commits_avg)*100)
-        out += "\t"+str(std)
-        avg = numpy.average(v["rot_trans"])
-        std =  numpy.std(v["rot_trans"])
-        out += "\t"+str(avg/(aborts_avg+commits_avg)*100)
-        out += "\t"+str(std)
-        avg = numpy.average(v["rot_nontrans"])
-        std =  numpy.std(v["rot_nontrans"])
-        out += "\t"+str(avg/(aborts_avg+commits_avg)*100)
-        out += "\t"+str(std)
-        avg = numpy.average(v["rot_user"])
-        std =  numpy.std(v["rot_user"])
-        out += "\t"+str(avg/(aborts_avg+commits_avg)*100)
-        out += "\t"+str(std)
-        avg = numpy.average(v["rot_capacity"])
-        std =  numpy.std(v["rot_capacity"])
-        out += "\t"+str(avg/(aborts_avg+commits_avg)*100)
-        out += "\t"+str(std)
-        avg = numpy.average(v["rot_persistent"])
-        std =  numpy.std(v["rot_persistent"])
-        out += "\t"+str(avg/(aborts_avg+commits_avg)*100)
-        out += "\t"+str(std)
-        avg = numpy.average(v["rot_other"])
-        std =  numpy.std(v["rot_other"])
-        out += "\t"+str(avg/(aborts_avg+commits_avg)*100)
-        out += "\t"+str(std)
+	out += "\t"+str(avg/(aborts_avg+commits_avg)*100)
+	out += "\t"+str(std)
+	avg = numpy.average(v["htm_trans"])
+	std =  numpy.std(v["htm_trans"])
+	out += "\t"+str(avg/(aborts_avg+commits_avg)*100)
+	out += "\t"+str(std)
+	avg = numpy.average(v["htm_nontrans"])
+	std =  numpy.std(v["htm_nontrans"])
+	out += "\t"+str(avg/(aborts_avg+commits_avg)*100)
+	out += "\t"+str(std)
+	avg = numpy.average(v["htm_user"])
+	std =  numpy.std(v["htm_user"])
+	out += "\t"+str(avg/(aborts_avg+commits_avg)*100)
+	out += "\t"+str(std)
+	avg = numpy.average(v["htm_capacity"])
+	std =  numpy.std(v["htm_capacity"])
+	out += "\t"+str(avg/(aborts_avg+commits_avg)*100)
+	out += "\t"+str(std)
+	avg = numpy.average(v["htm_persistent"])
+	std =  numpy.std(v["htm_persistent"])
+	out += "\t"+str(avg/(aborts_avg+commits_avg)*100)
+	out += "\t"+str(std)
+	avg = numpy.average(v["htm_other"])
+	std =  numpy.std(v["htm_other"])
+	out += "\t"+str(avg/(aborts_avg+commits_avg)*100)
+	out += "\t"+str(std)
+	avg = numpy.average(v["rot_conflicts"])
+	std =  numpy.std(v["rot_conflicts"])
+	out += "\t"+str(avg/(aborts_avg+commits_avg)*100)
+	out += "\t"+str(std)
+	avg = numpy.average(v["rot_self"])
+	std =  numpy.std(v["rot_self"])
+	out += "\t"+str(avg/(aborts_avg+commits_avg)*100)
+	out += "\t"+str(std)
+	avg = numpy.average(v["rot_trans"])
+	std =  numpy.std(v["rot_trans"])
+	out += "\t"+str(avg/(aborts_avg+commits_avg)*100)
+	out += "\t"+str(std)
+	avg = numpy.average(v["rot_nontrans"])
+	std =  numpy.std(v["rot_nontrans"])
+	out += "\t"+str(avg/(aborts_avg+commits_avg)*100)
+	out += "\t"+str(std)
+	avg = numpy.average(v["rot_user"])
+	std =  numpy.std(v["rot_user"])
+	out += "\t"+str(avg/(aborts_avg+commits_avg)*100)
+	out += "\t"+str(std)
+	avg = numpy.average(v["rot_capacity"])
+	std =  numpy.std(v["rot_capacity"])
+	out += "\t"+str(avg/(aborts_avg+commits_avg)*100)
+	out += "\t"+str(std)
+	avg = numpy.average(v["rot_persistent"])
+	std =  numpy.std(v["rot_persistent"])
+	out += "\t"+str(avg/(aborts_avg+commits_avg)*100)
+	out += "\t"+str(std)
+	avg = numpy.average(v["rot_other"])
+	std =  numpy.std(v["rot_other"])
+	out += "\t"+str(avg/(aborts_avg+commits_avg)*100)
+	out += "\t"+str(std)
 	avg = numpy.average(v["stm_commits"])
-        std =  numpy.std(v["stm_commits"])
-        out += "\t"+str(avg/(aborts_avg+commits_avg)*100)
-        out += "\t"+str(std)
-        avg = numpy.average(v["stm_aborts"])
-        std =  numpy.std(v["stm_aborts"])
-        out += "\t"+str(avg/(aborts_avg+commits_avg)*100)
-        out += "\t"+str(std)
+	std =  numpy.std(v["stm_commits"])
+	out += "\t"+str(avg/(aborts_avg+commits_avg)*100)
+	out += "\t"+str(std)
+	avg = numpy.average(v["stm_aborts"])
+	std =  numpy.std(v["stm_aborts"])
+	out += "\t"+str(avg/(aborts_avg+commits_avg)*100)
+	out += "\t"+str(std)
 	avg = numpy.average(v["readers_aborts"])
-        std =  numpy.std(v["readers_aborts"])
-        out += "\t"+str(avg/(aborts_avg+commits_avg)*100)
-        out += "\t"+str(std)
+	std =  numpy.std(v["readers_aborts"])
+	out += "\t"+str(avg/(aborts_avg+commits_avg)*100)
+	out += "\t"+str(std)
 	avg = numpy.average(v["latency_r"])
-        std =  numpy.std(v["latency_r"])
-        out += "\t"+str(avg)
-        out += "\t"+str(std)
+	std =  numpy.std(v["latency_r"])
+	out += "\t"+str(avg)
+	out += "\t"+str(std)
 	avg = numpy.average(v["latency_w"])
-        std =  numpy.std(v["latency_w"])
-        out += "\t"+str(avg)
-        out += "\t"+str(std)
-        print out.replace("nan","0")
+	std =  numpy.std(v["latency_w"])
+	out += "\t"+str(avg)
+	out += "\t"+str(std)
+	print out.replace("nan","0")

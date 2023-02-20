@@ -79,10 +79,10 @@ do
 	do
 		for b in 20 21 22 10 11 12 #1 4 7 8 10 11
 		do
-	    		echo "collecting results for ${benchmarks[$b]}-${backends[$c]}-$cm in $summaryfolder/${benchmarks[$b]}-${backends[$c]}-$cm"
-	    		python $scriptsfolder/$analyzer ${benchmarks[$b]}-${backends[$c]}-$cm $resultsfolder > $summaryfolder/${benchmarks[$b]}-${backends[$c]}-$cm
-				echo "python $scriptsfolder/$analyzer ${benchmarks[$b]}-${backends[$c]}-$cm $resultsfolder > $summaryfolder/${benchmarks[$b]}-${backends[$c]}-$cm"
-	    	done
+			echo "collecting results for ${benchmarks[$b]}-${backends[$c]}-$cm in $summaryfolder/${benchmarks[$b]}-${backends[$c]}-$cm"
+			python $scriptsfolder/$analyzer ${benchmarks[$b]}-${backends[$c]}-$cm $resultsfolder > $summaryfolder/${benchmarks[$b]}-${backends[$c]}-$cm
+			echo "python $scriptsfolder/$analyzer ${benchmarks[$b]}-${backends[$c]}-$cm $resultsfolder > $summaryfolder/${benchmarks[$b]}-${backends[$c]}-$cm"
+			done
 	done
 done
 

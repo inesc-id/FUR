@@ -40,7 +40,7 @@ cp ../../backends/$backend/Defines.common.mk .
 cp ../../backends/$backend/Makefile .
 cp ../../backends/$backend/Makefile.flags .
 cp ../../backends/$backend/thread.h lib/
-cp ../../backends/$backend/rdtsc.h lib/
+cp ../../backends/p8tm-psi/rdtsc.h lib/
 cp ../../backends/$backend/thread.c lib/
 cp ../../backends/$backend/tm.h lib/
 

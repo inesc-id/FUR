@@ -307,12 +307,15 @@ __TM_is_tfiar_exact(void* const TM_buff)
 };\
 
 
-#define abortMarker(){\
-  if(order_ts[local_thread_id].value!=-1){\
+#define abortMarker() \
+{ \
+  if ( order_ts[local_thread_id].value != -1 ) \
+  { \
     commit_abort_marker(mylogpointer,order_ts[local_thread_id].value,mylogstart,mylogend);\
-  }\
-    UPDATE_STATE(INACTIVE);\
-};\
+  } \
+    UPDATE_STATE(INACTIVE); \
+}; \
+// end abortMarker
 
 //Begin ROT
 # define USE_ROT(){ \

@@ -1,9 +1,15 @@
 #!/bin/bash
 
-workspace=/home/miguel.figueiredo/code/si-htm-artifacts/POWER8TM/
-dir=/home/miguel.figueiredo/code/si-htm-artifacts/POWER8TM/
-resultsdir=/home/miguel.figueiredo/code/data/22-11
-scriptsfolder=~/code/si-htm-artifacts/si-htm/hashmap
+
+DATA_FOLDER=/home/miguel.figueiredo/projs/PersistentSiHTM/data/Feb17
+
+workspace=/home/miguel.figueiredo/projs/PersistentSiHTM/POWER8TM/
+dir=/home/miguel.figueiredo/projs/PersistentSiHTM/POWER8TM/
+resultsdir=/home/miguel.figueiredo/projs/PersistentSiHTM/data/Feb17
+scriptsfolder=/home/miguel.figueiredo/projs/PersistentSiHTM/si-htm/hashmap
+# workspace=/home/miguel.figueiredo/code/si-htm-artifacts/POWER8TM/
+# dir=/home/miguel.figueiredo/code/si-htm-artifacts/POWER8TM/
+# resultsdir=/home/miguel.figueiredo/code/data/22-11
 analyzer="results_analyzer.py"
 
 
@@ -102,31 +108,28 @@ do
 	do
 		for cm in 1
 		do
-			cd $workspace;
-			cd benchmarks/datastructures/
+			cd $workspace/benchmarks/datastructures/
 			bash build-datastructures.sh ${backends[$c]} ${cms[$cm]}
-			cd ${bStr[$b]};
+			cd ${bStr[$b]}
 			for t in 1 2 4 8 16 32 #number of threads
 			do
-        	    		for a in 1 2 3 4 5 #number of attempts for each run
-            			do
-                			echo "${benchmarks[$b]} | ${backends[$c]}-${cms[$cm]} | threads $t | attempt $a"
+				for a in 1 2 3 4 5 #number of attempts for each run
+				do
+					echo "${benchmarks[$b]} | ${backends[$c]}-${cms[$cm]} | threads $t | attempt $a"
 					echo "${benchmarks[$b]} | ${backends[$c]}-${cms[$cm]} | threads $t | attempt $a" >> $resultsdir/desc.txt
-                			./${bStr[$b]} ${params[$b]} -n $t > $runsdir/${benchmarks[$b]}-${backends[$c]}-$cm-$t-$a.data 2> $runsdir/${benchmarks[$b]}-${backends[$c]}-$cm-$t-$a.err &
+					./${bStr[$b]} ${params[$b]} -n $t > $runsdir/${benchmarks[$b]}-${backends[$c]}-$cm-$t-$a.data 2> $runsdir/${benchmarks[$b]}-${backends[$c]}-$cm-$t-$a.err &
 					pid3=$!
 					wait_until_finish $pid3
 					wait $pid3
-        	        		rc=$?
-                			if [[ $rc != 0 ]] ; then
-                    				echo "Error within: | ${benchmarks[$b]} | ${backends[$c]}-${cms[$cm]} | threads $t | attempt $a" >> $runsdir/error.out
-               				fi
+					rc=$?
+					if [[ $rc != 0 ]] ; then
+						echo "Error within: | ${benchmarks[$b]} | ${backends[$c]}-${cms[$cm]} | threads $t | attempt $a" >> $runsdir/error.out
+					fi
 				done
 			done
-
-				echo "collecting results for ${benchmarks[$b]}-${backends[$c]}-$cm in $summaryfolder/${benchmarks[$b]}-${backends[$c]}-$cm"
-	    		python $scriptsfolder/$analyzer ${benchmarks[$b]}-${backends[$c]}-$cm $resultsfolder > $summaryfolder/${benchmarks[$b]}-${backends[$c]}-$cm
-				echo "python $scriptsfolder/$analyzer ${benchmarks[$b]}-${backends[$c]}-$cm $resultsfolder > $summaryfolder/${benchmarks[$b]}-${backends[$c]}-$cm"
-                        #cd ..
+			echo "collecting results for ${benchmarks[$b]}-${backends[$c]}-$cm in $summaryfolder/${benchmarks[$b]}-${backends[$c]}-$cm"
+			python $scriptsfolder/$analyzer ${benchmarks[$b]}-${backends[$c]}-$cm $resultsfolder > $summaryfolder/${benchmarks[$b]}-${backends[$c]}-$cm
+			echo "python $scriptsfolder/$analyzer ${benchmarks[$b]}-${backends[$c]}-$cm $resultsfolder > $summaryfolder/${benchmarks[$b]}-${backends[$c]}-$cm"
 		done
 	done
 done

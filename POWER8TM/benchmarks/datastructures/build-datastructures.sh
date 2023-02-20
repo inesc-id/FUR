@@ -36,9 +36,10 @@ cp ../../backends/$backend/Makefile.flags .
 cp ../../backends/$backend/thread.h lib/
 cp ../../backends/$backend/thread.c lib/
 cp ../../backends/$backend/tm.h lib/
+cp ../../backends/extra_MACROS.h lib/
 if [[ $backend == p8tm-psi || $backend == p8tm-psi-v2 ]] ; then
     rm lib/rdtsc.h
-    cp ../../backends/$backend/rdtsc.h lib/
+    cp ../../backends/p8tm-psi/rdtsc.h lib/
 fi
 
 if [[ $backend == spht ]] ; then
