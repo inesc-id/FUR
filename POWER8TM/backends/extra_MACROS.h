@@ -1,10 +1,154 @@
 #ifndef EXTRA_MACROS_H_GUARD_
 #define EXTRA_MACROS_H_GUARD_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 # define INACTIVE    0
 # define ACTIVE      1
 # define NON_DURABLE 2
 # define first_2bits_zero 0x3ffffffffffffffff
+# define CACHE_LINE_SIZE 128
+
+#define LOGSIZE_mask ((1l<<LOGSIZE_bits)-1l)
+#define LOGSIZE_bits 19l
+#define LOGSIZE (1<<LOGSIZE_bits)
+#define MIN_SPACE_LOG 200000
+
+#define bit63one 0x8000000000000000lu
+#define bit62one (1l<<62)
+#define isbit63one(ts) ((ts & bit63one)==bit63one)
+#define isbit62one(ts) ((ts & bit62one)==bit62one)
+#define zeroBit63(ts)  (ts & ~bit63one)
+#define store_fence() __atomic_thread_fence(__ATOMIC_RELEASE)
+#define load_fence() __atomic_thread_fence(__ATOMIC_ACQUIRE)
+#define atomic_STORE(ptr,val) __atomic_store_n(&(ptr), val, __ATOMIC_RELEASE)
+#define atomic_LOAD(ptr) __atomic_load_n(&(ptr), __ATOMIC_ACQUIRE)
+#define __dcbst(base, index)    \
+  __asm__ ("dcbst %0, %1" : /*no result*/ : "b%" (index), "r" (base) : "memory")
+
+extern int place_abort_marker;
+
+typedef struct spinlock {
+    pthread_spinlock_t lock;
+    char suffixPadding[CACHE_LINE_SIZE];
+} __attribute__((aligned(CACHE_LINE_SIZE))) spinlock_t;
+
+typedef struct padded_scalar {
+    char prefixPadding[CACHE_LINE_SIZE];
+    volatile long value;
+//    char suffixPadding[CACHE_LINE_SIZE];
+} __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t;
+
+
+typedef struct quiscence_call_args {
+    char prefixPadding[CACHE_LINE_SIZE];
+    volatile long num_threads;
+    volatile long index;
+    volatile long state;
+    volatile long temp; 
+    volatile long start_wait_time; 
+    volatile long end_wait_time; 
+    char suffixPadding[CACHE_LINE_SIZE];
+} __attribute__((aligned(CACHE_LINE_SIZE))) QUIESCENCE_CALL_ARGS_t;
+
+
+typedef struct padded_pointer {
+    long* addr;
+    char suffixPadding[CACHE_LINE_SIZE];
+} __attribute__((aligned(CACHE_LINE_SIZE))) padded_pointer_t;
+
+typedef struct padded_statistics {
+    unsigned long total_time;
+    unsigned long wait_time;
+    unsigned long read_commits;
+    unsigned long htm_commits;
+    unsigned long htm_conflict_aborts;
+    unsigned long htm_self_conflicts;
+    unsigned long htm_trans_conflicts;
+    unsigned long htm_nontrans_conflicts;
+    unsigned long htm_user_aborts;
+    unsigned long htm_capacity_aborts;
+    unsigned long htm_persistent_aborts;
+    unsigned long htm_other_aborts;
+    unsigned long rot_commits;
+    unsigned long rot_conflict_aborts;
+    unsigned long rot_self_conflicts;
+    unsigned long rot_trans_conflicts;
+    unsigned long rot_nontrans_conflicts;
+    unsigned long rot_other_conflicts;
+    unsigned long rot_user_aborts;
+    unsigned long rot_persistent_aborts;
+    unsigned long rot_capacity_aborts;
+    unsigned long rot_other_aborts;
+    unsigned long gl_commits;
+    unsigned long commit_time;
+    unsigned long abort_time;
+    unsigned long sus_time;
+    unsigned long flush_time;
+    unsigned long wait2_time;
+    char suffixPadding[CACHE_LINE_SIZE];
+} __attribute__((aligned(CACHE_LINE_SIZE))) padded_statistics_t;
+
+typedef struct readset_item {
+        long* addr;
+	long addr_p;
+	int type;
+        struct readset_item *next;
+} readset_item_t;
+
+typedef struct readset {
+        readset_item_t *head;
+} readset_t;
+
+
+extern __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t counters[];
+extern __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t rot_counters[];
+extern __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t triggers[];
+extern __attribute__((aligned(CACHE_LINE_SIZE))) padded_statistics_t stats_array[];
+extern __attribute__((aligned(CACHE_LINE_SIZE))) pthread_spinlock_t single_global_lock;
+
+extern __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t ts_state[];
+extern __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t order_ts[];
+
+extern __thread long ts_snapshot[80];
+extern __thread long state_snapshot[80];
+
+extern int global_order_ts;
+extern uint64_t  **log_per_thread;
+extern uint64_t  **log_pointer;
+extern int global_order_ts;
+extern __thread volatile uint64_t* mylogpointer;
+extern __thread volatile uint64_t* mylogpointer_snapshot;
+extern __thread volatile uint64_t* mylogend;
+extern __thread volatile uint64_t* mylogstart;
+extern uint64_t  **log_replayer_start_ptr;
+extern uint64_t  **log_replayer_end_ptr;
+extern __thread volatile long start_tx;
+extern __thread volatile long end_tx;
+extern __thread volatile long start_ts;
+extern __thread volatile long end_ts;
+extern __thread volatile long start_sus;
+extern __thread volatile long end_sus;
+extern __thread volatile long start_flush;
+extern __thread volatile long end_flush;
+extern __thread volatile long start_wait2;
+extern __thread volatile long end_wait2;
+
+void
+my_tm_startup(int numThread);
+
+void
+my_tm_thread_enter();
+
+# ifndef MIN_BACKOFF
+#  define MIN_BACKOFF                   (1UL << 2)
+# endif /* MIN_BACKOFF */
+# ifndef MAX_BACKOFF
+#  define MAX_BACKOFF                   (1UL << 31)
+# endif /* MAX_BACKOFF */
+
 
 # define UPDATE_TS_STATE(state){\
   long temp;\
@@ -26,6 +170,20 @@
   (temp & (3l<<62))>>62;\
 })\
 
+#define commit_log_marker(ptr,ts,start,end)\
+  *ptr=bit63one | ts; \
+  __dcbst(ptr,0); \
+  ptr = start + (((ptr - start) + 1) & LOGSIZE_mask); \
+  atomic_STORE(log_replayer_end_ptr[local_thread_id],ptr); \
+// end commit_log_marker
+
+#define commit_abort_marker(ptr, ts, start, end) \
+  *ptr=bit62one | ts; \
+  __dcbst(ptr,0); \
+  ptr = start + (((ptr - start) + 1) & LOGSIZE_mask); \
+  atomic_STORE(log_replayer_end_ptr[local_thread_id], ptr); \
+// end commit_abort_marker
+
 #define abortMarker() \
 { \
   if ( order_ts[local_thread_id].value != -1 ) \
@@ -37,6 +195,61 @@
 // end abortMarker
 
 # define atomicInc()   __atomic_add_fetch(&global_order_ts, 1, __ATOMIC_RELEASE) 
+
+#define write_in_log(ptr,addr,val,start,end)\
+*ptr=(uint64_t)addr;\
+ptr = start + (((ptr-start)+1)&LOGSIZE_mask);\
+/*ptr=(ptr+1)&LOGSIZE_mask;*/\
+/*if(end-ptr<=0){\
+    ptr=start;\
+}*/\
+*ptr=val;\
+ptr = start + (((ptr-start)+1)&LOGSIZE_mask);\
+/*if(end-ptr<=0){\
+    ptr=start;\
+}*/\
+//assert(ptr!=0 && "ptr is null");\
+//assert(ptr-end<=0 && "ptr is larger than end of the log");\
+
+
+# define delay_for_pm 25 //number that gives a latency between 0.18 usec and 0.5 usec
+
+# define emulate_pm_slowdown(){\
+volatile int i;\
+    for(i=0;i<delay_for_pm;i++);\
+}\
+
+#define commit_log(ptr, ts, start, end)\
+if ( mylogpointer_snapshot < ptr ) \
+{\
+  while ( mylogpointer_snapshot <= ptr ) \
+  { \
+    __dcbst(mylogpointer_snapshot, 0); \
+    emulate_pm_slowdown(); \
+    /*advance one cacheline */ \
+    mylogpointer_snapshot += 16; \
+  } \
+} \
+else \
+{ \
+  while ( mylogpointer_snapshot != ptr ) \
+  { \
+    __dcbst(mylogpointer_snapshot,0); \
+    emulate_pm_slowdown(); \
+    /*advance one cacheline */ \
+    int _i;\
+    for( _i = 0; _i < 16; _i++ ) \
+    { \
+      if ( mylogpointer_snapshot == ptr ) \
+        break;\
+      mylogpointer_snapshot++; \
+      if ( end-mylogpointer_snapshot <= 0 ) \
+      { \
+        mylogpointer_snapshot = start; \
+      } \
+    } \
+  } \
+} \
 
 # define WAIT(_cond) \
   while ( _cond ) \
@@ -61,84 +274,297 @@
   } \
 // end BREAK_LOOP_IF
 
+//-------------------------------TM_BEGIN------------------------------
+
+# define QUIESCENCE_CALL_GL() \
+{ \
+	int index;\
+	int num_threads = global_numThread; \
+  for ( index=0; index < num_threads; index++ ) \
+  { \
+   /*wait for active threads*/  \
+    WAIT( (check_state(ts_state[index].value)) != INACTIVE ); \
+  } \
+};\
+// end QUIESCENCE_CALL_GL
+
+# define ACQUIRE_GLOBAL_LOCK() \
+{ \
+	UPDATE_STATE(INACTIVE); \
+  rmb(); \
+	WAIT( pthread_spin_trylock(&single_global_lock) != 0 ); \
+	QUIESCENCE_CALL_GL(); \
+};\
+// end ACQUIRE_GLOBAL_LOCK
 
 //Begin ROT
-# define USE_ROT(){ \
+# define USE_ROT() \
+{ \
 	int rot_budget = ROT_RETRIES; \
-	while(IS_LOCKED(single_global_lock)){ \
-    cpu_relax(); \
-  } \
+	WAIT( IS_LOCKED(single_global_lock) ); \
 	long start_time; \
-	while(rot_budget > 0){ \
+	while ( rot_budget > 0 ) \
+  { \
 		rot_status = 1; \
 		TM_buff_type TM_buff; \
     UPDATE_TS_STATE(ACTIVE);\
 		rmb(); \
-		if(IS_LOCKED(single_global_lock)){ \
+		CONTINUE_LOOP_IF( IS_LOCKED(single_global_lock), \
+    { \
 			UPDATE_TS_STATE(INACTIVE); /* inactive rot*/ \
 			rmb(); \
-			while(IS_LOCKED(single_global_lock)) cpu_relax(); \
-			continue; \
-		} \
+			WAIT ( IS_LOCKED(single_global_lock) ); \
+		}); \
 		/*BEGIN_ROT ------------------------------------------------*/ \
     \
-    \		
-    /*while(abs(mylogpointer-atomic_LOAD(log_replayer_start_ptr[local_thread_id]))>MIN_SPACE_LOG){\
-			load_fence();\
-		}*/\
+    \
     READ_TIMESTAMP(start_tx); \
 		unsigned char tx_status = __TM_begin_rot(&TM_buff); \
-		if (tx_status == _HTM_TBEGIN_STARTED) { \
-      break; \
+		BREAK_LOOP_IF ( tx_status == _HTM_TBEGIN_STARTED ); \
+    /* ABORT HAPPENS !!!! */ \
+    if ( place_abort_marker ) \
+    { \
+      abortMarker(); \
     } \
-		else if(__TM_conflict(&TM_buff)){ \
-      abortMarker();\
+    rot_status = 0; \
+    rot_budget--; \
+		if ( __TM_conflict(&TM_buff) ) \
+    { \
       READ_TIMESTAMP(end_tx); \
       stats_array[local_thread_id].abort_time += end_tx - start_tx;\
       \
       stats_array[local_thread_id].rot_conflict_aborts ++; \
-			if(__TM_is_self_conflict(&TM_buff)){ stats_array[local_thread_id].rot_self_conflicts++; \
-			}\
-			else if(__TM_is_trans_conflict(&TM_buff)) stats_array[local_thread_id].rot_trans_conflicts++; \
-			else if(__TM_is_nontrans_conflict(&TM_buff)) stats_array[local_thread_id].rot_nontrans_conflicts++; \
-			else stats_array[local_thread_id].rot_other_conflicts++; \
-      rot_status = 0; \
-      rot_budget--; \
+			if ( __TM_is_self_conflict(&TM_buff) ) \
+        stats_array[local_thread_id].rot_self_conflicts++; \
+			else if ( __TM_is_trans_conflict(&TM_buff) ) \
+        stats_array[local_thread_id].rot_trans_conflicts++; \
+			else if ( __TM_is_nontrans_conflict(&TM_buff) ) \
+        stats_array[local_thread_id].rot_nontrans_conflicts++; \
+			else \
+        stats_array[local_thread_id].rot_other_conflicts++; \
 			int state = check_state(ts_state[local_thread_id].value); \
-      if(state == ACTIVE) \
+      if ( state == ACTIVE ) \
         UPDATE_STATE(INACTIVE);\
         rmb(); \
     } \
-    else if (__TM_user_abort(&TM_buff)) { \
-      abortMarker();\
+    else if (__TM_user_abort(&TM_buff)) \
+    { \
       READ_TIMESTAMP(end_tx); \
       stats_array[local_thread_id].abort_time += end_tx - start_tx;\
-      \
       stats_array[local_thread_id].rot_user_aborts ++; \
-      rot_status = 0; \
-      rot_budget--; \
     } \
-    else if(__TM_capacity_abort(&TM_buff)){ \
-      abortMarker();\
+    else if ( __TM_capacity_abort(&TM_buff) ) \
+    { \
       READ_TIMESTAMP(end_tx); \
       stats_array[local_thread_id].abort_time += end_tx - start_tx;\
-      \
-			rot_status = 0; \
 			stats_array[local_thread_id].rot_capacity_aborts ++; \
-			if(__TM_is_persistent_abort(&TM_buff)) stats_array[local_thread_id].rot_persistent_aborts ++; \
-        break; \
+			if ( __TM_is_persistent_abort(&TM_buff) ) \
+        stats_array[local_thread_id].rot_persistent_aborts ++; \
+      break; \
 		} \
-    else{ \
-      abortMarker();\
+    else \
+    { \
       READ_TIMESTAMP(end_tx); \
       stats_array[local_thread_id].abort_time += end_tx - start_tx;\
-			rot_status = 0; \
-      rot_budget--; \
 			stats_array[local_thread_id].rot_other_aborts ++; \
 		} \
 	} \
 };\
 
+//Begin WRITE
+# define ACQUIRE_WRITE_LOCK() \
+{ \
+	local_exec_mode = 1; \
+	int rot_status = 0; \
+	USE_ROT(); \
+	if ( !rot_status ) \
+  { \
+		local_exec_mode = 2; \
+		ACQUIRE_GLOBAL_LOCK(); \
+	} \
+};\
+// end ACQUIRE_WRITE_LOCK
+
+//Begin READ
+# define ACQUIRE_READ_LOCK() \
+{ \
+	while ( 1 ) \
+  { \
+		UPDATE_TS_STATE(ACTIVE); \
+		rmb(); \
+		CONTINUE_LOOP_IF ( IS_LOCKED(single_global_lock), \
+    { \
+			UPDATE_STATE(INACTIVE); \
+			rmb(); \
+			WAIT( IS_LOCKED(single_global_lock) ); \
+		}); \
+		break; \
+	} \
+}; \
+// end ACQUIRE_READ_LOCK
+
+# define TM_BEGIN_EXT(b,ro) \
+{  \
+	local_exec_mode = 0; \
+	rs_counter = 0; \
+	local_thread_id = SPECIAL_THREAD_ID();\
+  order_ts[local_thread_id].value = -1;\
+  mylogpointer_snapshot = mylogpointer;\
+	if ( ro ) \
+  { \
+		ACQUIRE_READ_LOCK(); \
+	} \
+	else \
+  { \
+		ACQUIRE_WRITE_LOCK(); \
+	} \
+} \
+// end TM_BEGIN_EXT
+
+# define TM_END() { \
+	if ( ro ) \
+  { \
+		RELEASE_READ_LOCK(); \
+	} \
+	else \
+  { \
+		RELEASE_WRITE_LOCK(); \
+	} \
+}; \
+// end TM_END
+
+//-------------------------------TM_END------------------------------
+
+
+
+#define FINAL_PRINT(_start_ts, _end_ts) \
+  READ_TIMESTAMP(_end_ts); \
+  stats_array[0].total_time = end_ts - _start_ts;\
+  unsigned long wait_time = 0; \
+  unsigned long total_time = 0; \
+  unsigned long read_commits = 0; \
+  unsigned long htm_commits = 0; \
+  unsigned long htm_conflict_aborts = 0; \
+  unsigned long htm_user_aborts = 0; \
+  unsigned long htm_self_conflicts = 0; \
+  unsigned long htm_trans_conflicts = 0; \
+  unsigned long htm_nontrans_conflicts = 0; \
+  unsigned long htm_persistent_aborts = 0; \
+  unsigned long htm_capacity_aborts = 0; \
+  unsigned long htm_other_aborts = 0; \
+  unsigned long rot_commits = 0; \
+  unsigned long rot_conflict_aborts = 0; \
+  unsigned long rot_user_aborts = 0; \
+  unsigned long rot_self_conflicts = 0; \
+  unsigned long rot_trans_conflicts = 0; \
+  unsigned long rot_nontrans_conflicts = 0; \
+  unsigned long rot_other_conflicts = 0; \
+  unsigned long rot_persistent_aborts = 0; \
+  unsigned long rot_capacity_aborts = 0; \
+  unsigned long rot_other_aborts = 0; \
+  unsigned long gl_commits = 0; \
+  unsigned long commit_time = 0; \
+  unsigned long abort_time = 0; \
+  unsigned long sus_time = 0; \
+  unsigned long flush_time = 0; \
+  unsigned long wait2_time = 0; \
+  int i = 0; \
+  for (; i < 80; i++) \
+  { \
+    wait_time += stats_array[i].wait_time; \
+    total_time += stats_array[i].total_time; \
+    read_commits += stats_array[i].read_commits; \
+    htm_commits += stats_array[i].htm_commits; \
+    htm_conflict_aborts += stats_array[i].htm_conflict_aborts; \
+    htm_user_aborts += stats_array[i].htm_user_aborts; \
+    htm_self_conflicts += stats_array[i].htm_self_conflicts; \
+    htm_trans_conflicts += stats_array[i].htm_trans_conflicts; \
+    htm_nontrans_conflicts += stats_array[i].htm_nontrans_conflicts; \
+    htm_persistent_aborts += stats_array[i].htm_persistent_aborts; \
+    htm_capacity_aborts += stats_array[i].htm_capacity_aborts; \
+    htm_other_aborts += stats_array[i].htm_other_aborts; \
+    rot_commits += stats_array[i].rot_commits; \
+    rot_conflict_aborts += stats_array[i].rot_conflict_aborts; \
+    rot_user_aborts += stats_array[i].rot_user_aborts; \
+    rot_self_conflicts += stats_array[i].rot_self_conflicts; \
+    rot_trans_conflicts += stats_array[i].rot_trans_conflicts; \
+    rot_nontrans_conflicts += stats_array[i].rot_nontrans_conflicts; \
+    rot_other_conflicts += stats_array[i].rot_other_conflicts; \
+    rot_persistent_aborts += stats_array[i].rot_persistent_aborts; \
+    rot_capacity_aborts += stats_array[i].rot_capacity_aborts; \
+    rot_other_aborts += stats_array[i].rot_other_aborts; \
+    gl_commits += stats_array[i].gl_commits; \
+    commit_time += stats_array[i].commit_time; \
+    sus_time += stats_array[i].sus_time; \
+    flush_time += stats_array[i].flush_time; \
+    wait2_time += stats_array[i].wait2_time; \
+    abort_time += stats_array[i].abort_time; \
+  } \
+  printf(\
+"Total sum time: %lu\n" \
+"Total commit time: %lu\n" \
+"Total abort time: %lu\n" \
+"Total wait time: %lu\n" \
+"Total sus time: %lu\n" \
+"Total flush time: %lu\n" \
+"Total wait2 time: %lu\n" \
+"Total commits: %lu\n" \
+  "\tRead commits: %lu\n" \
+  "\tHTM commits:  %lu\n" \
+  "\tROT commits:  %lu\n" \
+  "\tGL commits: %lu\n" \
+"Total aborts: %lu\n" \
+  "\tHTM conflict aborts:  %lu\n" \
+    "\t\tHTM self aborts:  %lu\n" \
+    "\t\tHTM trans aborts:  %lu\n" \
+    "\t\tHTM non-trans aborts:  %lu\n" \
+  "\tHTM user aborts :  %lu\n" \
+  "\tHTM capacity aborts:  %lu\n" \
+    "\t\tHTM persistent aborts:  %lu\n" \
+  "\tHTM other aborts:  %lu\n" \
+  "\tROT conflict aborts:  %lu\n" \
+    "\t\tROT self aborts:  %lu\n" \
+    "\t\tROT trans aborts:  %lu\n" \
+    "\t\tROT non-trans aborts:  %lu\n" \
+    "\t\tROT other conflict aborts:  %lu\n" \
+  "\tROT user aborts:  %lu\n" \
+  "\tROT capacity aborts:  %lu\n" \
+    "\t\tROT persistent aborts:  %lu\n" \
+  "\tROT other aborts:  %lu\n", \
+  total_time, \
+  commit_time, \
+  abort_time, \
+  wait_time, \
+  sus_time, \
+  flush_time, \
+  wait2_time, \
+  read_commits+htm_commits+rot_commits+gl_commits, \
+  read_commits, \
+  htm_commits, \
+  rot_commits, \
+  gl_commits,htm_conflict_aborts+htm_user_aborts+htm_capacity_aborts+htm_other_aborts+rot_conflict_aborts+rot_user_aborts+rot_capacity_aborts+rot_other_aborts, \
+  htm_conflict_aborts, \
+  htm_self_conflicts, \
+  htm_trans_conflicts, \
+  htm_nontrans_conflicts, \
+  htm_user_aborts, \
+  htm_capacity_aborts, \
+  htm_persistent_aborts, \
+  htm_other_aborts, \
+  rot_conflict_aborts, \
+  rot_self_conflicts, \
+  rot_trans_conflicts, \
+  rot_nontrans_conflicts, \
+  rot_other_conflicts, \
+  rot_user_aborts, \
+  rot_capacity_aborts, \
+  rot_persistent_aborts, \
+  rot_other_aborts); \
+// end FINAL_PRINT
+
+#ifdef __cplusplus
+}
+#endif
 
 
 #endif // EXTRA_MACROS_H_GUARD_

@@ -37,6 +37,7 @@ cp ../../backends/$backend/thread.h lib/
 cp ../../backends/$backend/thread.c lib/
 cp ../../backends/$backend/tm.h lib/
 cp ../../backends/extra_MACROS.h lib/
+cp ../../backends/extra_threadc.h lib/
 if [[ $backend == p8tm-psi || $backend == p8tm-psi-v2 ]] ; then
     rm lib/rdtsc.h
     cp ../../backends/p8tm-psi/rdtsc.h lib/

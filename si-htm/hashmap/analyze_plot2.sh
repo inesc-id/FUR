@@ -9,9 +9,9 @@ plotsfolder=$2/plots
 #name of the backend folder
 #backends[1]="spht"
 backends[1]="p8tm-psi-v2-co"
-backends[2]="p8tm-psi-v2"
-backends[3]="p8tm-si-v2"
-backends[4]="p8tm-psi-v2-flush"
+backends[2]="p8tm-psi-v2-ci"
+backends[3]="p8tm-psi-v2-co-lc-hidden"
+backends[4]="p8tm-psi-v2-ci-lc-hidden"
 #backends[1]="p8tm-psi-v2"
 #backends[2]="p8tm-si-v2"
 #backends[3]="htm-sgl"

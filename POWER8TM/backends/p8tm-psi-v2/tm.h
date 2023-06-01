@@ -152,183 +152,33 @@ __TM_is_tfiar_exact(void* const TM_buff)
 
 #  define TM_STARTUP(numThread, bId) my_tm_startup(numThread);READ_TIMESTAMP(start_ts);
 #  define TM_SHUTDOWN(){ \
-	  READ_TIMESTAMP(end_ts);\
-	  stats_array[0].total_time = end_ts - start_ts;\
-    unsigned long wait_time = 0; \
-    unsigned long total_time = 0; \
-    unsigned long read_commits = 0; \
-    unsigned long htm_commits = 0; \
-    unsigned long htm_conflict_aborts = 0; \
-    unsigned long htm_user_aborts = 0; \
-    unsigned long htm_self_conflicts = 0; \
-    unsigned long htm_trans_conflicts = 0; \
-    unsigned long htm_nontrans_conflicts = 0; \
-    unsigned long htm_persistent_aborts = 0; \
-    unsigned long htm_capacity_aborts = 0; \
-    unsigned long htm_other_aborts = 0; \
-    unsigned long rot_commits = 0; \
-    unsigned long rot_conflict_aborts = 0; \
-    unsigned long rot_user_aborts = 0; \
-    unsigned long rot_self_conflicts = 0; \
-    unsigned long rot_trans_conflicts = 0; \
-    unsigned long rot_nontrans_conflicts = 0; \
-    unsigned long rot_other_conflicts = 0; \
-    unsigned long rot_persistent_aborts = 0; \
-    unsigned long rot_capacity_aborts = 0; \
-    unsigned long rot_other_aborts = 0; \
-    unsigned long gl_commits = 0; \
-    unsigned long commit_time = 0; \
-    unsigned long abort_time = 0; \
-    unsigned long sus_time = 0; \
-    unsigned long flush_time = 0; \
-    unsigned long wait2_time = 0; \
-    int i = 0; \
-    for (; i < 80; i++) { \
-       wait_time += stats_array[i].wait_time; \
-       total_time += stats_array[i].total_time; \
-       read_commits += stats_array[i].read_commits; \
-       htm_commits += stats_array[i].htm_commits; \
-       htm_conflict_aborts += stats_array[i].htm_conflict_aborts; \
-       htm_user_aborts += stats_array[i].htm_user_aborts; \
-       htm_self_conflicts += stats_array[i].htm_self_conflicts; \
-       htm_trans_conflicts += stats_array[i].htm_trans_conflicts; \
-       htm_nontrans_conflicts += stats_array[i].htm_nontrans_conflicts; \
-       htm_persistent_aborts += stats_array[i].htm_persistent_aborts; \
-       htm_capacity_aborts += stats_array[i].htm_capacity_aborts; \
-       htm_other_aborts += stats_array[i].htm_other_aborts; \
-       rot_commits += stats_array[i].rot_commits; \
-       rot_conflict_aborts += stats_array[i].rot_conflict_aborts; \
-       rot_user_aborts += stats_array[i].rot_user_aborts; \
-       rot_self_conflicts += stats_array[i].rot_self_conflicts; \
-       rot_trans_conflicts += stats_array[i].rot_trans_conflicts; \
-       rot_nontrans_conflicts += stats_array[i].rot_nontrans_conflicts; \
-       rot_other_conflicts += stats_array[i].rot_other_conflicts; \
-       rot_persistent_aborts += stats_array[i].rot_persistent_aborts; \
-       rot_capacity_aborts += stats_array[i].rot_capacity_aborts; \
-       rot_other_aborts += stats_array[i].rot_other_aborts; \
-       gl_commits += stats_array[i].gl_commits; \
-       commit_time += stats_array[i].commit_time; \
-       sus_time += stats_array[i].sus_time; \
-       flush_time += stats_array[i].flush_time; \
-       wait2_time += stats_array[i].wait2_time; \
-       abort_time += stats_array[i].abort_time; \
-    } \
-    printf("Total sum time: %lu\n \
-    Total commit time: %lu\n \
-    Total abort time: %lu\n \
-    Total wait time: %lu\n \
-    Total sus time: %lu\n \
-    Total flush time: %lu\n \
-    Total wait2 time: %lu\n \
-    Total commits: %lu\n \
-       \tRead commits: %lu\n \
-       \tHTM commits:  %lu\n \
-       \tROT commits:  %lu\n \
-       \tGL commits: %lu\n \
-    Total aborts: %lu\n \
-       \tHTM conflict aborts:  %lu\n \
-          \t\tHTM self aborts:  %lu\n \
-          \t\tHTM trans aborts:  %lu\n \
-          \t\tHTM non-trans aborts:  %lu\n \
-       \tHTM user aborts :  %lu\n \
-       \tHTM capacity aborts:  %lu\n \
-          \t\tHTM persistent aborts:  %lu\n \
-       \tHTM other aborts:  %lu\n \
-       \tROT conflict aborts:  %lu\n \
-          \t\tROT self aborts:  %lu\n \
-          \t\tROT trans aborts:  %lu\n \
-          \t\tROT non-trans aborts:  %lu\n \
-          \t\tROT other conflict aborts:  %lu\n \
-       \tROT user aborts:  %lu\n \
-       \tROT capacity aborts:  %lu\n \
-          \t\tROT persistent aborts:  %lu\n \
-       \tROT other aborts:  %lu\n", total_time, commit_time, abort_time, wait_time,sus_time,flush_time,wait2_time, read_commits+htm_commits+rot_commits+gl_commits, read_commits, htm_commits, rot_commits, gl_commits,htm_conflict_aborts+htm_user_aborts+htm_capacity_aborts+htm_other_aborts+rot_conflict_aborts+rot_user_aborts+rot_capacity_aborts+rot_other_aborts,htm_conflict_aborts,htm_self_conflicts,htm_trans_conflicts,htm_nontrans_conflicts,htm_user_aborts,htm_capacity_aborts,htm_persistent_aborts,htm_other_aborts,rot_conflict_aborts,rot_self_conflicts,rot_trans_conflicts,rot_nontrans_conflicts,rot_other_conflicts,rot_user_aborts,rot_capacity_aborts,rot_persistent_aborts,rot_other_aborts); \
-/*printf("first time: %d, second time: %d\n",total_first_time,total_second_time);*/ \
+	  FINAL_PRINT(start_ts, end_ts); \
+    /*printf("first time: %d, second time: %d\n",total_first_time,total_second_time);*/ \
 } \
 
-#  define TM_THREAD_ENTER() my_tm_thread_enter()
-#  define TM_THREAD_EXIT()
+#  define TM_THREAD_ENTER() \
+  my_tm_thread_enter() \
+// end TM_THREAD_ENTER
+#  define TM_THREAD_EXIT() \
+// end TM_THREAD_EXIT
 
-# define IS_LOCKED(lock)        *((volatile int*)(&lock)) != 0
 
-# define IS_GLOBAL_LOCKED(lock)        *((volatile int*)(&lock)) == 2
+# define IS_LOCKED(lock) \
+  *((volatile int*)(&lock)) != 0 \
+// end IS_LOCKED
 
-# define TM_BEGIN(ro) TM_BEGIN_EXT(0,ro)
+# define IS_GLOBAL_LOCKED(lock) \
+  *((volatile int*)(&lock)) == 2 \
+// end IS_GLOBAL_LOCKED
+
+# define TM_BEGIN(ro) \
+  TM_BEGIN_EXT(0,ro) \
+// end TM_BEGIN
 
 # define READ_TIMESTAMP(dest) __asm__ volatile("0:                  \n\tmfspr   %0,268           \n": "=r"(dest));
 //-------------------------------------------------------------------------------
 
 #include "extra_MACROS.h"
-
-//-------------------------------TM_BEGIN------------------------------
-
-# define QUIESCENCE_CALL_GL(){ \
-	int index;\
-	int num_threads = global_numThread; \
-  for(index=0; index < num_threads; index++){ \
-    while( (check_state(ts_state[index].value)) != INACTIVE){ /*wait for active threads*/\
-      cpu_relax(); \
-    } \
-  } \
-};\
-
-# define ACQUIRE_GLOBAL_LOCK(){ \
-	UPDATE_STATE(INACTIVE); \
-  rmb(); \
-	while (pthread_spin_trylock(&single_global_lock) != 0) { \
-        	cpu_relax(); \
-        } \
-	QUIESCENCE_CALL_GL(); \
-};\
-
-
-
-
-
-//Begin WRITE
-# define ACQUIRE_WRITE_LOCK() { \
-	local_exec_mode = 1; \
-	int rot_status = 0; \
-	USE_ROT(); \
-	if(!rot_status){ \
-		local_exec_mode = 2; \
-		ACQUIRE_GLOBAL_LOCK(); \
-	} \
-};\
-
-//Begin READ
-# define ACQUIRE_READ_LOCK() { \
-	while(1){ \
-		UPDATE_TS_STATE(ACTIVE); \
-		rmb(); \
-		if(IS_LOCKED(single_global_lock)){ \
-			UPDATE_STATE(INACTIVE); \
-			rmb(); \
-			while(IS_LOCKED(single_global_lock)){ \
-        cpu_relax(); \
-	    } \
-			continue; \
-		} \
-		break; \
-	} \
-}; \
-
-
-# define TM_BEGIN_EXT(b,ro) {  \
-	local_exec_mode = 0; \
-	rs_counter = 0; \
-	local_thread_id = SPECIAL_THREAD_ID();\
-  order_ts[local_thread_id].value=-1;\
-  mylogpointer_snapshot=mylogpointer;\
-	if(ro){ \
-		ACQUIRE_READ_LOCK(); \
-	} \
-	else{ \
-		ACQUIRE_WRITE_LOCK(); \
-	} \
-}
-
-//-------------------------------TM_END------------------------------
 
 //todo use qf of si
 # define QUIESCENCE_CALL_ROT(){ \
@@ -436,18 +286,6 @@ __TM_is_tfiar_exact(void* const TM_buff)
   READ_TIMESTAMP(end_wait2);\
   stats_array[local_thread_id].wait2_time+=end_wait2-start_wait2;\
 }\ 
-  
-
-# define TM_END(){ \
-	if(ro){ \
-		RELEASE_READ_LOCK(); \
-	} \
-	else{ \
-		RELEASE_WRITE_LOCK(); \
-	} \
-};
-
-
 
 //-------------------------------------------------------------------------------
 #    define TM_BEGIN_RO()                 TM_BEGIN(1)

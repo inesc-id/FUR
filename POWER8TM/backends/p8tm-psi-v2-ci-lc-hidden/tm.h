@@ -151,14 +151,13 @@ __TM_is_tfiar_exact(void* const TM_buff)
 }
 
 #  define TM_STARTUP(numThread, bId) \
-  place_abort_marker = 0; \
+  place_abort_marker = 1; \
   my_tm_startup(numThread); \
   READ_TIMESTAMP(start_ts); \
 // end TM_STARTUP
-
 #  define TM_SHUTDOWN() \
 { \
-	FINAL_PRINT(start_ts, end_ts); \
+  FINAL_PRINT(start_ts, end_ts); \
 /*printf("first time: %d, second time: %d\n",total_first_time,total_second_time);*/ \
 } \
 // end TM_SHUTDOWN
@@ -166,121 +165,100 @@ __TM_is_tfiar_exact(void* const TM_buff)
 #  define TM_THREAD_ENTER() my_tm_thread_enter()
 #  define TM_THREAD_EXIT()
 
-# define IS_LOCKED(lock) \
-  *((volatile int*)(&lock)) != 0
+# define IS_LOCKED(lock)        *((volatile int*)(&lock)) != 0
 
-# define IS_GLOBAL_LOCKED(lock) \
-  *((volatile int*)(&lock)) == 2
+# define IS_GLOBAL_LOCKED(lock)        *((volatile int*)(&lock)) == 2
 
 # define TM_BEGIN(ro) \
   TM_BEGIN_EXT(0,ro)
 
-# define READ_TIMESTAMP(dest) \
-  __asm__ volatile("0:                  \n\tmfspr   %0,268           \n": "=r"(dest));
-//-------------------------------------------------------------------------------
+# define READ_TIMESTAMP(dest) __asm__ volatile("0:                  \n\tmfspr   %0,268           \n": "=r"(dest));
 
 #include "extra_MACROS.h"
 
 //todo use qf of si
-# define QUIESCENCE_CALL_ROT() \
+# define QUIESCENCE_CALL_ROT() \ 
 { \
   __attribute__((aligned(CACHE_LINE_SIZE))) static __thread volatile QUIESCENCE_CALL_ARGS_t q_args;\
-	q_args.num_threads = (long)global_numThread; \
-	for ( q_args.index=0; q_args.index < 80; q_args.index++ ) \
-  { \
-    BREAK_LOOP_IF ( q_args.index == q_args.num_threads ); \
-		CONTINUE_LOOP_IF ( q_args.index == local_thread_id ); \
-		q_args.temp = ts_state[q_args.index].value; \
-		q_args.state = ( q_args.temp & (3l<<62) ) >> 62; \
-		switch ( q_args.state ) \
-    { \
-			case INACTIVE:\
-        state_snapshot[q_args.index] = 0; \
-        break;\
-			case ACTIVE:\
-				state_snapshot[q_args.index] = q_args.temp; \
-				break;\
-			case NON_DURABLE:\
-				state_snapshot[q_args.index] = 0; \
-				break;\
-			default:\
-				state_snapshot[q_args.index] = 0; \
-				break;\
-		} \
-  } \
+	q_args.num_threads = (long)global_numThread;           \
+	for(q_args.index=0; q_args.index < 80; q_args.index++) \
+  {                                                      \
+    if (q_args.index == q_args.num_threads) break;       \
+		if(q_args.index == local_thread_id) continue;        \
+		q_args.temp = ts_state[q_args.index].value;          \
+		q_args.state = (q_args.temp & (3l<<62))>>62;         \
+		switch(q_args.state)                                 \
+    {                                                    \
+			case INACTIVE:                                     \
+        state_snapshot[q_args.index] = 0;                \
+        break;                                           \
+			case ACTIVE:                                       \
+				state_snapshot[q_args.index] = q_args.temp;      \
+				break;                                           \
+			case NON_DURABLE:                                  \
+				state_snapshot[q_args.index] = 0;                \
+				break;                                           \
+			default:                                           \
+				state_snapshot[q_args.index] = 0;                \
+				break;                                           \
+		}                                                    \
+  }                                                      \
 	READ_TIMESTAMP(q_args.start_wait_time); \
-	for ( q_args.index=0; q_args.index < q_args.num_threads; q_args.index++ ) \
-  { \
-		CONTINUE_LOOP_IF( q_args.index == local_thread_id ); \
-		if ( state_snapshot[q_args.index] != 0) \
-    { \
-      /*commit_log(mylogpointer,order_ts[local_thread_id].value,mylogstart,mylogend);*/\
-			WAIT( /* WAIT FOR ACTIVE TRANSACTIONS */ \
-        ts_state[q_args.index].value == state_snapshot[q_args.index] \
-        || ts_state[q_args.index].value > state_snapshot[q_args.index] ); \
+	for(q_args.index=0; q_args.index < q_args.num_threads; q_args.index++){ \
+		if(q_args.index == local_thread_id) continue; \
+		if(state_snapshot[q_args.index] != 0){ \
+    commit_log(mylogpointer,order_ts[local_thread_id].value,mylogstart,mylogend);\
+			while(ts_state[q_args.index].value == state_snapshot[q_args.index]){ \
+				cpu_relax(); \
+			} \
 		} \
 	} \
   READ_TIMESTAMP(q_args.end_wait_time); \
   stats_array[local_thread_id].wait_time += q_args.end_wait_time - q_args.start_wait_time; \
-}; \
-// end QUIESCENCE_CALL_ROT
+};
 
 
 //todo if spinunlock already has an rmb remove line 491
-# define RELEASE_WRITE_LOCK() \
-{ \
+# define RELEASE_WRITE_LOCK(){ \
 	if ( local_exec_mode == 1 ) \
   { \
-    READ_TIMESTAMP(start_sus);\
+    order_ts[local_thread_id].value++; /* INSIDE TRANSACTION */ \
 	  __TM_suspend(); \
-      /* INSIDE SUSPEND SECTION */ \
 	    UPDATE_TS_STATE(NON_DURABLE); /* committing rot*/ \
+      /* order_ts[local_thread_id].value=atomicInc();  */\
+		  QUIESCENCE_CALL_ROT(); \
       rmb(); \
 	  __TM_resume(); \
-      /* INSIDE TRANSACTION AGAIN */ \
-      READ_TIMESTAMP(end_sus);\
-      stats_array[local_thread_id].sus_time += end_sus - start_sus;\
-      QUIESCENCE_CALL_ROT(); \
-      order_ts[local_thread_id].value++; \
 		__TM_end(); \
-    /* TRANSACTION COMMITTED - tested with clock inside TX */ \
-    /* order_ts[local_thread_id].value = atomicInc(); */\
-    READ_TIMESTAMP(end_tx); \
-    stats_array[local_thread_id].commit_time += end_tx - start_tx;\
-    \
-    \
-    READ_TIMESTAMP(start_flush);\
-    commit_log(mylogpointer,order_ts[local_thread_id].value,mylogstart,mylogend);\
-    commit_log_marker(mylogpointer,order_ts[local_thread_id].value,mylogstart,mylogend); \
-    READ_TIMESTAMP(end_flush);\
-    stats_array[local_thread_id].flush_time+=end_flush-start_flush;\
-    long num_threads = global_numThread; \
-    long index;\
-    long state;\
-    READ_TIMESTAMP(start_wait2);\
-    for ( index=0; index < num_threads; index++ ) \
-    { \
-      CONTINUE_LOOP_IF( index == local_thread_id ); \
-      state = ( ts_state[index].value & (3l << 62) ) >> 62; \
-      WAIT( state == NON_DURABLE && order_ts[index].value <= order_ts[local_thread_id].value ); \
-    } \
-    READ_TIMESTAMP(end_wait2); \
-    stats_array[local_thread_id].wait2_time+=end_wait2-start_wait2; \
+  \
+  READ_TIMESTAMP(end_tx); \
+  stats_array[local_thread_id].commit_time += end_tx - start_tx;\
+  \
+  \
+  /*commit_log(mylogpointer,order_ts[local_thread_id].value,mylogstart,mylogend);*/\
+	commit_log_marker(mylogpointer,order_ts[local_thread_id].value,mylogstart,mylogend); \
+  long num_threads = global_numThread; \
+  long index;\
+  long state;\
+  for(index=0; index < num_threads; index++){ \
+	if(index == local_thread_id) continue; \
+  state= (ts_state[index].value & (3l<<62))>>62;\
+	while(state == NON_DURABLE && order_ts[index].value <= order_ts[local_thread_id].value){ \
+		cpu_relax(); \
+	} \
+	} \
 		UPDATE_STATE(INACTIVE); /* inactive rot*/ \
 		stats_array[local_thread_id].rot_commits++; \
 	} \
-	else \
-  { \
-    order_ts[local_thread_id].value=global_order_ts++; \
-    rmb(); \
+	else{ \
+    order_ts[local_thread_id].value=global_order_ts++;\
+    rmb();\
 		pthread_spin_unlock(&single_global_lock); \
 		stats_array[local_thread_id].gl_commits++; \
 	} \
-}; \
-// end RELEASE_WRITE_LOCK
+};
 
-# define RELEASE_READ_LOCK() \
-{ \
+# define RELEASE_READ_LOCK(){\
   rwmb();\
   UPDATE_STATE(INACTIVE);\
   stats_array[local_thread_id].read_commits++;\
@@ -289,19 +267,26 @@ __TM_is_tfiar_exact(void* const TM_buff)
   long index;\
   volatile long ts_snapshot = ts_state[local_thread_id].value; \
   long state;\
-  READ_TIMESTAMP(start_wait2);\
-  for(index=0; index < num_threads; index++) \
-  { \
-    CONTINUE_LOOP_IF( index == local_thread_id ); \
-    state = ( ts_state[index].value & (3l<<62) ) >> 62; \
-    WAIT( /* WAIT CONCURRENT TRANSACTIONS */ \
-      /* THE OTHER TRANSACTION IS IN NON-DURABLE STATE */ state == NON_DURABLE \
-      /* AND IT'S FRESH */ && __atomic_load_n(&(ts_state[index].value), __ATOMIC_ACQUIRE) < ts_snapshot ); \
+  for(index=0; index < num_threads; index++){ \
+	if(index == local_thread_id) continue; \
+  state= (ts_state[index].value & (3l<<62))>>62;\
+	while(state == NON_DURABLE && ts_state[index].value < ts_state[local_thread_id].value){ \
+		cpu_relax(); \
 	} \
-  READ_TIMESTAMP(end_wait2);\
-  stats_array[local_thread_id].wait2_time += end_wait2-start_wait2; \
-} \
-// end RELEASE_READ_LOCK
+	} \
+}\ 
+  
+
+# define TM_END(){ \
+	if(ro){ \
+		RELEASE_READ_LOCK(); \
+	} \
+	else{ \
+		RELEASE_WRITE_LOCK(); \
+	} \
+};
+
+
 
 //-------------------------------------------------------------------------------
 #    define TM_BEGIN_RO()                 TM_BEGIN(1)

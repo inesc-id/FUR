@@ -44,19 +44,18 @@ wait_until_finish() {
 
 # echo "cd $workspace"
 # echo "cd benchmarks/datastructures/"
-for c in  1 2 #2 3 4 #5
+for c in $backend_config #2 3 4 #5
 do
-	for b in 10 11 12 #1 4 7 8 10 11
+	for cm in $retries_config
 	do
-		for cm in 1
+		cd $workspace/benchmarks/datastructures/
+		bash build-datastructures.sh ${backends[$c]} ${cms[$cm]}
+		for b in $benchmark_config #1 4 7 8 10 11
 		do
-			# echo "bash build-datastructures.sh ${backends[$c]} ${cms[$cm]}"
-			cd $workspace/benchmarks/datastructures/
-			bash build-datastructures.sh ${backends[$c]} ${cms[$cm]}
 			cd ${bStr[$b]};
-			for t in 1 2 4 8 16 32 #number of threads
+			for t in $threads_config #number of threads
 			do
-				for a in 1 2 3 4 5 #number of attempts for each run
+				for a in $attempts_config #number of attempts for each run
 				do
 					echo "${benchmarks[$b]} | ${backends[$c]}-${cms[$cm]} | threads $t | attempt $a"
 					echo "${benchmarks[$b]} | ${backends[$c]}-${cms[$cm]} | threads $t | attempt $a" >> $resultsdir/desc.txt
@@ -71,6 +70,7 @@ do
 					fi
 				done
 			done
+			cd ..
 		done
 	done
 done

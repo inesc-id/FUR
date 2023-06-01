@@ -22,9 +22,10 @@
 #backends[4]="tinystm"
 
 #name of the backend folder
-backends[1]="p8tm-psi-v2-fi"
-backends[2]="p8tm-psi-v2-fi-improved"
-backends[2]="p8tm-psi-v2-fi-improved-lc-hidden"
+backends[1]="p8tm-psi-v2-co"
+backends[2]="p8tm-psi-v2-ci"
+backends[3]="p8tm-psi-v2-co-lc-hidden"
+backends[4]="p8tm-psi-v2-ci-lc-hidden"
 
 #name of the benchmark configuration
 benchmarks[1]="hashmap-lowcap-hicon-u10"
@@ -137,3 +138,10 @@ cms[1]="0 10 1"
 cms[2]="10 0 1"
 #cms[1]="0 2 1"
 cms[3]="10 5 1"
+
+backend_config="1 2 3 4" #2 3 4 #5
+benchmark_config="10 11 12" #2 3 4 #5
+retries_config="1"
+# threads_config="1 2 4 8 16 32"
+threads_config="1 2 4 8"
+attempts_config="1 2 3 4 5"

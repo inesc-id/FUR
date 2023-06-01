@@ -1,7 +1,8 @@
 import sys,os
 import numpy 
 
-avail_threads = [1,2,4,8,16,32]
+# avail_threads = [1,2,4,8,16,32]
+avail_threads = [1,2,4,8]
 
 run_name = sys.argv[1]
 outputs_folder = sys.argv[2]
@@ -22,7 +23,43 @@ for f in files:
 		sys.stderr.write(f+"\n")
 		continue
 	if threads not in runs:
-		runs[threads] = {"time":[],"total_time":[],"commit_time":[],"wait_time":[],"sus_time":[],"flush_time":[],"wait2_time":[],"abort_time":[],"commits":[],"aborts":[],"htm_commits":[],"rot_commits":[],"gl_commits":[],"htm_conflicts":[],"htm_self":[],"htm_trans":[],"htm_nontrans":[],"htm_user":[],"htm_capacity":[],"htm_persistent":[],"rot_conflicts":[],"rot_self":[],"rot_trans":[],"rot_nontrans":[],"rot_user":[],"rot_capacity":[],"rot_persistent":[],"read_commits":[],"htm_other":[],"rot_other":[],"stm_commits":[],"stm_aborts":[],"readers_aborts":[],"latency_r":[],"latency_w":[]}
+		runs[threads] = {
+			"time":[],
+			"total_time":[],
+			"commit_time":[],
+			"wait_time":[],
+			"sus_time":[],
+			"flush_time":[],
+			"wait2_time":[],
+			"abort_time":[],
+			"commits":[],
+			"aborts":[],
+			"htm_commits":[],
+			"rot_commits":[],
+			"gl_commits":[],
+			"htm_conflicts":[],
+			"htm_self":[],
+			"htm_trans":[],
+			"htm_nontrans":[],
+			"htm_user":[],
+			"htm_capacity":[],
+			"htm_persistent":[],
+			"rot_conflicts":[],
+			"rot_self":[],
+			"rot_trans":[],
+			"rot_nontrans":[],
+			"rot_user":[],
+			"rot_capacity":[],
+			"rot_persistent":[],
+			"read_commits":[],
+			"htm_other":[],
+			"rot_other":[],
+			"stm_commits":[],
+			"stm_aborts":[],
+			"readers_aborts":[],
+			"latency_r":[],
+			"latency_w":[]
+		}
 	fn = f
 	#print ("============================================")
 	#print(threads,f)
@@ -182,11 +219,11 @@ for f in files:
 		runs[threads]["latency_r"].append(latency_r)
 		runs[threads]["latency_w"].append(latency_w)
 
-print "threads\ttime\ttime_std\tcommits_avg\tcommits_std\tThroughput_avg\tThroughput_std\tTotal_time_avg\tTotal_time_std\tCommit_time_avg\tCommit_time_std\tAbort_time_avg\tAbort_time_std\twait_time_avg\twait_time_std\tsus_time_avg\tsus_time_std\tflush_time_avg\tflush_time_std\twait2_time_avg\twait2_time_std\thtm_commits_avg\thtm_commits_std\trot_commits_avg\trot_commits_std\tgl_commits_avg\tgl_commits_std\tread_commits_avg\tread_commits_std\taborts_avg\taborts_std\thtm_conflicts_avg\thtm_conflicts_std\thtm_self_avg\thtm_self_std\thtm_trans_avg\thtm_trans_std\thtm_nontrans_avg\thtm_nontrans_std\thtm_user_avg\thtm_user_std\thtm_capacity_avg\thtm_capacity_std\thtm_persistent_avg\thtm_persistent_std\thtm_other_avg\thtm_other_std\trot_conflicts_avg\trot_conflicts_std\trot_self_avg\trot_self_std\trot_trans_avg\trot_trans_std\trot_nontrans_avg\trot_nontrans_std\trot_user_avg\trot_user_std\trot_capacity_avg\trot_capacity_std\trot_persistent_avg\trot_persistent_std\trot_other_avg\trot_other_std\tstm_commits_avg\tstm_commits_std\tstm_aborts_avg\tstm_aborts_std\treaders_aborts_avg\treaders_aborts_std\tlatency_r_avg\tlatency_r_std\tlatency_w_avg\tlatency_r_std"
+print("threads\ttime\ttime_std\tcommits_avg\tcommits_std\tThroughput_avg\tThroughput_std\tTotal_time_avg\tTotal_time_std\tCommit_time_avg\tCommit_time_std\tAbort_time_avg\tAbort_time_std\twait_time_avg\twait_time_std\tsus_time_avg\tsus_time_std\tflush_time_avg\tflush_time_std\twait2_time_avg\twait2_time_std\thtm_commits_avg\thtm_commits_std\trot_commits_avg\trot_commits_std\tgl_commits_avg\tgl_commits_std\tread_commits_avg\tread_commits_std\taborts_avg\taborts_std\thtm_conflicts_avg\thtm_conflicts_std\thtm_self_avg\thtm_self_std\thtm_trans_avg\thtm_trans_std\thtm_nontrans_avg\thtm_nontrans_std\thtm_user_avg\thtm_user_std\thtm_capacity_avg\thtm_capacity_std\thtm_persistent_avg\thtm_persistent_std\thtm_other_avg\thtm_other_std\trot_conflicts_avg\trot_conflicts_std\trot_self_avg\trot_self_std\trot_trans_avg\trot_trans_std\trot_nontrans_avg\trot_nontrans_std\trot_user_avg\trot_user_std\trot_capacity_avg\trot_capacity_std\trot_persistent_avg\trot_persistent_std\trot_other_avg\trot_other_std\tstm_commits_avg\tstm_commits_std\tstm_aborts_avg\tstm_aborts_std\treaders_aborts_avg\treaders_aborts_std\tlatency_r_avg\tlatency_r_std\tlatency_w_avg\tlatency_r_std")
 for k in avail_threads:
 	out = str(k)
 	if k not in runs:
-		print str(k)+"\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0"
+		print(str(k)+"\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0")
 		continue
 	v = runs[k]
 	time_avg = numpy.average(v["time"])
@@ -351,4 +388,4 @@ for k in avail_threads:
 	std =  numpy.std(v["latency_w"])
 	out += "\t"+str(avg)
 	out += "\t"+str(std)
-	print out.replace("nan","0")
+	print(out.replace("nan","0"))
