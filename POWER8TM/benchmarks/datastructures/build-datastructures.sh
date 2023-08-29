@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 FOLDERS="hashmap"
 
@@ -62,7 +62,8 @@ do
     if [[ $backend == htm-sgl-sr || $backend == hybrid-norec ]] ; then
 		make_command="make -f Makefile HTM_RETRIES=-DHTM_RETRIES=$htm_retries RETRY_POLICY=-DRETRY_POLICY=0 BATCH_RATIO=-DBATCH_RATIO=$batch_ratio"
 	fi
-        $make_command
+    echo "$make_command"
+    $make_command
     rc=$?
     if [[ $rc != 0 ]] ; then
         echo ""

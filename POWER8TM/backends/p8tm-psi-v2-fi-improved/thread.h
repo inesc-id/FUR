@@ -77,87 +77,7 @@
 #include <stdint.h>
 #include <pthread.h>
 //#include "timer.h"
-
-typedef struct spinlock {
-    pthread_spinlock_t lock;
-    char suffixPadding[CACHE_LINE_SIZE];
-} __attribute__((aligned(CACHE_LINE_SIZE))) spinlock_t;
-
-typedef struct padded_scalar {
-    char prefixPadding[CACHE_LINE_SIZE];
-    volatile long value;
-//    char suffixPadding[CACHE_LINE_SIZE];
-} __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t;
-
-
-typedef struct quiscence_call_args {
-    char prefixPadding[CACHE_LINE_SIZE];
-    volatile long num_threads;
-    volatile long index;
-    volatile long state;
-    volatile long temp; 
-    volatile long start_wait_time; 
-    volatile long end_wait_time; 
-    char suffixPadding[CACHE_LINE_SIZE];
-} __attribute__((aligned(CACHE_LINE_SIZE))) QUIESCENCE_CALL_ARGS_t;
-
-
-typedef struct padded_pointer {
-    long* addr;
-    char suffixPadding[CACHE_LINE_SIZE];
-} __attribute__((aligned(CACHE_LINE_SIZE))) padded_pointer_t;
-
-typedef struct padded_statistics {
-    unsigned long total_time;
-    unsigned long wait_time;
-    unsigned long read_commits;
-    unsigned long htm_commits;
-    unsigned long htm_conflict_aborts;
-    unsigned long htm_self_conflicts;
-    unsigned long htm_trans_conflicts;
-    unsigned long htm_nontrans_conflicts;
-    unsigned long htm_user_aborts;
-    unsigned long htm_capacity_aborts;
-    unsigned long htm_persistent_aborts;
-    unsigned long htm_other_aborts;
-    unsigned long rot_commits;
-    unsigned long rot_conflict_aborts;
-    unsigned long rot_self_conflicts;
-    unsigned long rot_trans_conflicts;
-    unsigned long rot_nontrans_conflicts;
-    unsigned long rot_other_conflicts;
-    unsigned long rot_user_aborts;
-    unsigned long rot_persistent_aborts;
-    unsigned long rot_capacity_aborts;
-    unsigned long rot_other_aborts;
-    unsigned long gl_commits;
-    unsigned long commit_time;
-    unsigned long abort_time;
-    unsigned long sus_time;
-    unsigned long flush_time;
-    unsigned long wait2_time;
-    char suffixPadding[CACHE_LINE_SIZE];
-} __attribute__((aligned(CACHE_LINE_SIZE))) padded_statistics_t;
-
-typedef struct readset_item {
-        long* addr;
-	long addr_p;
-	int type;
-        struct readset_item *next;
-} readset_item_t;
-
-typedef struct readset {
-        readset_item_t *head;
-} readset_t;
-
-
-extern __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t counters[];
-
-extern __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t triggers[];
-
-extern __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t rot_counters[];
-
-//extern __thread readset_t* rot_readset;
+#include "extra_MACROS.h"
 
 extern __thread long rot_readset_values[];
 extern __thread void* rot_readset[];
@@ -269,7 +189,7 @@ ptr = start + (((ptr-start)+1)&LOGSIZE_mask);\
 
 # define delay_for_pm 25 //number that gives a latency between 0.18 usec and 0.5 usec
 # define delay_per_cache_line 140
-__attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t max_cache_line[80];
+extern __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t max_cache_line[80];
 
 # define emulate_pm_slowdown(n_cache){\
 int j;\

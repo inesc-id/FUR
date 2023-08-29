@@ -79,6 +79,7 @@
 #define MAXTHREADS 80
 #define SIZE_HEAP 1048576
 
+__attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t max_cache_line[80];
 __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t debug[MAXTHREADS];
 __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t ts_state[MAXTHREADS];
 __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t order_ts[MAXTHREADS];

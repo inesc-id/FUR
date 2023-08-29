@@ -1,6 +1,7 @@
 #include "containers.h"
 
 #include <unordered_set>
+#include <cstdint>
 
 #define MEMORY_ALLOCATION 1048576
 #define CACHE_LINE_BITS   6 // log2(64)

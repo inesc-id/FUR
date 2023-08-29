@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 FOLDERS="hashmap"
 
 rm lib/*.o || true

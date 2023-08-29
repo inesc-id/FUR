@@ -3,7 +3,6 @@
 
 #  include <stdio.h>
 
-
 #ifndef REDUCED_TM_API
 
 #  define MAIN(argc, argv)              int main (int argc, char** argv)

@@ -5,6 +5,9 @@
 extern "C" {
 #endif
 
+#include <pthread.h>
+#include "stdint.h"
+
 # define INACTIVE    0
 # define ACTIVE      1
 # define NON_DURABLE 2
@@ -41,7 +44,6 @@ typedef struct padded_scalar {
 //    char suffixPadding[CACHE_LINE_SIZE];
 } __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t;
 
-
 typedef struct quiscence_call_args {
     char prefixPadding[CACHE_LINE_SIZE];
     volatile long num_threads;
@@ -52,7 +54,6 @@ typedef struct quiscence_call_args {
     volatile long end_wait_time; 
     char suffixPadding[CACHE_LINE_SIZE];
 } __attribute__((aligned(CACHE_LINE_SIZE))) QUIESCENCE_CALL_ARGS_t;
-
 
 typedef struct padded_pointer {
     long* addr;
@@ -116,8 +117,8 @@ extern __thread long ts_snapshot[80];
 extern __thread long state_snapshot[80];
 
 extern int global_order_ts;
-extern uint64_t  **log_per_thread;
-extern uint64_t  **log_pointer;
+extern uint64_t **log_per_thread;
+extern uint64_t **log_pointer;
 extern int global_order_ts;
 extern __thread volatile uint64_t* mylogpointer;
 extern __thread volatile uint64_t* mylogpointer_snapshot;
@@ -434,8 +435,6 @@ else \
 // end TM_END
 
 //-------------------------------TM_END------------------------------
-
-
 
 #define FINAL_PRINT(_start_ts, _end_ts) \
   READ_TIMESTAMP(_end_ts); \

@@ -82,6 +82,8 @@ __attribute__((aligned(CACHE_LINE_SIZE))) pthread_spinlock_t single_global_lock;
 
 __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t counters[80];
 
+extern void *bank_heap_ptr;
+
 __thread long counters_snapshot[80];
 
 __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t tx_length[10];
@@ -479,6 +481,8 @@ int main(int argc, char **argv)
     bank->accounts[i].number = i;
     bank->accounts[i].balance = 0;
   }
+
+  bank_heap_ptr = bank->accounts;
 
   stop = 0;
 

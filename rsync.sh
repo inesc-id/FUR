@@ -1,6 +1,6 @@
 #!/bin/bash
 
-DIR=projs
+DIR="~"
 NAME="PersistentSiHTM"
 NODE="Power8"
 

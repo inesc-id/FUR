@@ -59,7 +59,7 @@ __thread unsigned int local_exec_mode = 0;
 
 __thread unsigned int local_thread_id;
 
-long global_numThread;
+//long global_numThread;
 long alpha;
 int running;
 __thread __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t b_type;

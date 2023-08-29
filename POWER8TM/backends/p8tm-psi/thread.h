@@ -81,22 +81,6 @@
 #define __dcbst(base, index)    \
   __asm__ ("dcbst %0, %1" : /*no result*/ : "b%" (index), "r" (base) : "memory")
 
-typedef struct spinlock {
-    pthread_spinlock_t lock;
-    char suffixPadding[CACHE_LINE_SIZE];
-} __attribute__((aligned(CACHE_LINE_SIZE))) spinlock_t;
-
-typedef struct padded_scalar {
-    char prefixPadding[CACHE_LINE_SIZE];
-    volatile long value;
-//    char suffixPadding[CACHE_LINE_SIZE];
-} __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t;
-
-typedef struct padded_pointer {
-    long* addr;
-    char suffixPadding[CACHE_LINE_SIZE];
-} __attribute__((aligned(CACHE_LINE_SIZE))) padded_pointer_t;
-
 typedef struct padded_statistics {
     unsigned long total_time;
     unsigned long wait_time;

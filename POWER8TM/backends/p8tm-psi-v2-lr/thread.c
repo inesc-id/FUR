@@ -89,6 +89,8 @@ __attribute__((aligned(CACHE_LINE_SIZE))) __thread long state_snapshot[80];
 __attribute__((aligned(CACHE_LINE_SIZE))) uint64_t heap[SIZE_HEAP];
 uint64_t *heappointer=heap;
 
+void *bank_heap_ptr;
+
 __thread volatile uint64_t* mylogpointer;
 __thread volatile uint64_t* mylogpointer_snapshot;
 __thread volatile uint64_t* mylogend;
@@ -387,7 +389,8 @@ my_tm_thread_enter()
 
 // find the transaction with a smaller timestamp and replay it
 void
-replaylog(){
+replaylog()
+{
     uint64_t *log_start;
     uint64_t *log_end;
     uint64_t curTs;
@@ -395,66 +398,72 @@ replaylog(){
     //initiates the curts with the biggest number(unsigned)
     curTs = (uint64_t)-1;
     int i;
-  for (i = 0; i < global_numThread; ++i) {
-    log_start=log_pointer[i];
-    log_end=log_pointer[i]+LOGSIZE-1;
-    // with concurrent multi replayers we need to check if curPtrs is ahead 
-    uint64_t *start = log_replayer_start_ptr[i]; // logPtrs[i].log_ptrs.write_log_start;
-    //printf("Log_start %lx\n", start);
-    uint64_t *end = atomic_LOAD(log_replayer_end_ptr[i]);
-    if (curThread == -1) curThread = i;
-    if (start == end) {
-     continue;
-    } else {
-      //while (!isbit63one(*start) && start != end) {
-      while ((!isbit63one(*start)&&!isbit62one(*start)) && start != end) {
-        start++;//todo use the same thing from the write log 
-        if(log_end-start<=0){
-            start=log_start;
+    for (i = 0; i < global_numThread; ++i)
+    {
+        log_start=log_pointer[i];
+        log_end=log_pointer[i]+LOGSIZE-1;
+        // with concurrent multi replayers we need to check if curPtrs is ahead 
+        uint64_t *start = log_replayer_start_ptr[i]; // logPtrs[i].log_ptrs.write_log_start;
+        //printf("Log_start %lx\n", start);
+        uint64_t *end = atomic_LOAD(log_replayer_end_ptr[i]);
+        if (curThread == -1)
+            curThread = i;
+        if (start == end)
+        {
+            continue;
         }
-        start++;
-        if(log_end-start<=0){
-            start=log_start;
+        else
+        {
+            //while (!isbit63one(*start) && start != end) {
+            while ((!isbit63one(*start)&&!isbit62one(*start)) && start != end) {
+                start++;//todo use the same thing from the write log 
+                if(log_end-start<=0){
+                    start=log_start;
+                }
+                start++;
+                if(log_end-start<=0){
+                    start=log_start;
+                }
+            }
+            uint64_t ts = zeroBit63(*start);
+            if (ts<curTs && !isbit62one(*start)) {
+                curTs = ts;
+                curThread = i;
+            }
+            if(isbit62one(*start)){
+                start++;
+                if(log_end-start<=0){
+                    start=log_start;
+                }
+                log_replayer_start_ptr[i]=start;
+                i--;
+            }
         }
-      }
-      uint64_t ts = zeroBit63(*start);
-      if (ts<curTs && !isbit62one(*start)) {
-        curTs = ts;
-        curThread = i;
-      }
-      if(isbit62one(*start)){
-        start++;
-        if(log_end-start<=0){
-            start=log_start;
-        }
-        log_replayer_start_ptr[i]=start;
-        i--;
-      }
     }
-  } 
-    if(curThread!=-1){
-    log_start=log_pointer[curThread];
-    log_end=log_pointer[curThread]+LOGSIZE-1;
-    uint64_t *start = log_replayer_start_ptr[curThread]; 
-    uint64_t *end = atomic_LOAD(log_replayer_end_ptr[curThread]);
-    while ((!isbit63one(*start) &&!isbit62one(*start)) && start != end) {
-        assert(!isbit62one(*start));
-        uint64_t location=((*start)-(uint64_t)bank)/sizeof(uint64_t);
-        //uint64_t location=((*log_replayer_start_ptr[curThread])/sizeof(uint64_t))%SIZE_HEAP;
-        //uint64_t location=((*start)/sizeof(uint64_t))%SIZE_HEAP;
-        start++;
-        if(log_end-start<=0){
-            start=log_start;
-        }
-        //assert(location<SIZE_HEAP && "wrong location");
-        uint64_t value=*start;
-        heap[location]=value;
-        __dcbst(&heap[location],0); 
-       // printf("log_replayer addr=%lx,value=%lx\n",location,value);
-        start++;
-        if(log_end-start<=0){
-            start=log_start;
-        }
+    if ( curThread != -1 )
+    {
+        log_start=log_pointer[curThread];
+        log_end=log_pointer[curThread]+LOGSIZE-1;
+        uint64_t *start = log_replayer_start_ptr[curThread]; 
+        uint64_t *end = atomic_LOAD(log_replayer_end_ptr[curThread]);
+        while ((!isbit63one(*start) &&!isbit62one(*start)) && start != end) {
+            assert(!isbit62one(*start));
+            uint64_t location=((*start)-(uint64_t)bank_heap_ptr)/sizeof(uint64_t);
+            //uint64_t location=((*log_replayer_start_ptr[curThread])/sizeof(uint64_t))%SIZE_HEAP;
+            //uint64_t location=((*start)/sizeof(uint64_t))%SIZE_HEAP;
+            start++;
+            if(log_end-start<=0){
+                start=log_start;
+            }
+            //assert(location<SIZE_HEAP && "wrong location");
+            uint64_t value=*start;
+            heap[location]=value;
+            __dcbst(&heap[location],0); 
+        // printf("log_replayer addr=%lx,value=%lx\n",location,value);
+            start++;
+            if(log_end-start<=0){
+                start=log_start;
+            }
     }
    // printf("Pointer=%lx\n",log_replayer_start_ptr[curThread]);
   }

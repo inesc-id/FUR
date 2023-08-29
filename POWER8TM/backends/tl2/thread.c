@@ -6,7 +6,8 @@
 
 __thread vwLock next_commit;
 
-__attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t fallback_in_use;
+// TODO: defined in the benchmark
+// __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t fallback_in_use;
 
 __attribute__((aligned(CACHE_LINE_SIZE))) padded_statistics_t statistics_array[128];
 
