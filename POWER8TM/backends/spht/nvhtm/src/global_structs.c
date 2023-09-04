@@ -410,6 +410,13 @@ void *nvmalloc_init(
   void *sharNUMA0 =  malloc(nvmalloc_thr_shar_size * poolAreas);
   void *sharNUMA1 =  malloc(nvmalloc_thr_shar_size * poolAreas);
 
+  if (!sharNUMA0 || !sharNUMA1)
+  {
+    fprintf(stderr, "Not enough memory! Requires %zu (nvmalloc_thr_shar_size=%zu, logBytesPerThread=%zu)\n",
+      2 * nvmalloc_thr_shar_size * poolAreas, nvmalloc_thr_shar_size, logBytesPerThread);
+    exit(-1);
+  }
+
   int countNUMAThr0 = 0;
   int countNUMAThr1 = 0;
   int i;

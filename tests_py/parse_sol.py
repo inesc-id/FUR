@@ -1,0 +1,76 @@
+import re
+import os
+import csv
+
+class Parser:
+  def __init__(self, location):
+    self.location = location
+
+  def parse_file(self, file): # must be implemented
+    catch_param = {}
+    catch_param["time"] = re.compile(r"\s*Time = (\d+\.\d+)")
+    catch_param["total-commits"] = re.compile(r"\s*Total commits: (\d+)")
+    catch_param["htm-commits"] = re.compile(r"\s*HTM commits: (\d+)")
+    catch_param["read-commits"] = re.compile(r"\s*Read commits: (\d+)")
+    catch_param["rot-commits"] = re.compile(r"\s*ROT commits: (\d+)")
+    catch_param["gl-commits"] = re.compile(r"\s*GL commits: (\d+)")
+    catch_param["total-aborts"] = re.compile(r"\s*Total aborts: (\d+)")
+    catch_param["confl-aborts"] = re.compile(r"\s*HTM conflict aborts: (\d+)")
+    catch_param["confl-trans"] = re.compile(r"\s*HTM trans conflicts: (\d+)")
+    catch_param["confl-non-trans"] = re.compile(r"\s*HTM non-trans conflicts: (\d+)")
+    catch_param["confl-self"] = re.compile(r"\s*HTM self conflicts: (\d+)")
+    catch_param["capac-aborts"] = re.compile(r"\s*HTM capacity conflicts: (\d+)")
+    catch_param["persis-aborts"] = re.compile(r"\s*HTM persistent aborts: (\d+)")
+    catch_param["user-aborts"] = re.compile(r"\s*HTM user aborts: (\d+)")
+    catch_param["other-aborts"] = re.compile(r"\s*HTM other aborts: (\d+)")
+    catch_param["rot-confl-aborts"] = re.compile(r"\s*ROT conflict aborts: (\d+)")
+    catch_param["rot-self-aborts"] = re.compile(r"\s*ROT self aborts: (\d+)")
+    catch_param["rot-trans-aborts"] = re.compile(r"\s*ROT trans aborts: (\d+)")
+    catch_param["rot-non-trans-aborts"] = re.compile(r"\s*ROT non-trans aborts: (\d+)")
+    catch_param["rot-other-confl-aborts"] = re.compile(r"\s*ROT other conflict aborts: (\d+)")
+    catch_param["rot-user-aborts"] = re.compile(r"\s*ROT user aborts: (\d+)")
+    catch_param["rot-capac-aborts"] = re.compile(r"\s*ROT capacity aborts: (\d+)")
+    catch_param["rot-persis-aborts"] = re.compile(r"\s*ROT persistent aborts: (\d+)")
+    catch_param["rot-other-aborts"] = re.compile(r"\s*ROT other aborts: (\d+)")
+    catch_param["total-sum-time"] = re.compile(r"\s*Total sum time: (\d+)")
+    catch_param["total-commit-time"] = re.compile(r"\s*Total commit time: (\d+)")
+    catch_param["total-abort-time"] = re.compile(r"\s*Total abort time: (\d+)")
+    catch_param["total-wait-time"] = re.compile(r"\s*Total wait time: (\d+)")
+    o = {}
+    with open(file, "r") as f:
+      for l in f.readlines():
+        for k,v in catch_param.items():
+          m = v.match(l)
+          if m:
+            t = m.group(1)
+            o[k] = float(t)
+            break
+    return o
+
+  def parse_all(self, write_csv):
+    r = re.compile(r"(\w)(.*)")
+    lines = []
+    for root, dirs, files in os.walk(self.location):
+      for f in files:
+        o = {}
+        # assumes benchmark-p1234-k1234-...
+        for s in f.split("-")[1:]:
+          m = r.match(s)
+          if m:
+            o[f"-{m.group(1)}"] = m.group(2)
+        lines += [{
+          "params": o,
+          "eval": self.parse_file(f"{root}/{f}")
+        }]
+    ### TODO: convert to CSV
+    breakpoint()
+    print(lines[0])
+    header = list(lines[0]["params"].keys()) + list(lines[0]["eval"].keys())
+    print(header)
+    # header = set(header_l[0])
+    with open(write_csv, "w+", newline='') as csvfile:
+      csvwriter = csv.writer(csvfile, delimiter='\t', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+      csvwriter.writerow(header)
+      for l in lines:
+        row = [l["params"][p] if p in l["params"] else l["eval"][p] for p in header]
+        csvwriter.writerow(row)

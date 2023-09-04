@@ -98,9 +98,9 @@
     numThread, \
     numReplayers, \
     2 /* NB_EPOCHS: use max of 1073741824 */, \
-    1L<<25 /* LOG_SIZE: in nb of entries */, \
-    1L<<20 /* LOCAL_MEM_REGION (500M) */, \
-    1L<<30 /* SHARED_MEM_REGION (1G) */, \
+    1L<<24 /* LOG_SIZE: in nb of entries */, \
+    1L<<20 /* LOCAL_MEM_REGION (1M) */, \
+    1L<<26 /* SHARED_MEM_REGION (256M) */, \
     /* SPINS_FLUSH */FLUSH_LAT, \
     PINNING_MAT, \
     G_NUMA_PINNING, \
@@ -190,7 +190,7 @@
        \tROT user aborts:  %lu\n \
        \tROT capacity aborts:  %lu\n \
           \t\tROT persistent aborts:  %lu\n \
-       \tROT other aborts:  %lu\n", total_time, commit_time, abort_time, wait_time, stats_nbSuccess+stats_nbFallback/*read_commits+htm_commits+rot_commits+gl_commits*/, read_commits, htm_commits, rot_commits, gl_commits,stats_nbAbort/*htm_conflict_aborts+htm_user_aborts+htm_capacity_aborts+htm_other_aborts+rot_conflict_aborts+rot_user_aborts+rot_capacity_aborts+rot_other_aborts*/,htm_conflict_aborts,htm_self_conflicts,htm_trans_conflicts,htm_nontrans_conflicts,htm_user_aborts,htm_capacity_aborts,htm_persistent_aborts,htm_other_aborts,rot_conflict_aborts,rot_self_conflicts,rot_trans_conflicts,rot_nontrans_conflicts,rot_other_conflicts,rot_user_aborts,rot_capacity_aborts,rot_persistent_aborts,rot_other_aborts); \
+       \tROT other aborts:  %lu\n", total_time, commit_time, abort_time, wait_time, stats_nbSuccess+stats_nbFallback/*read_commits+htm_commits+rot_commits+gl_commits*/, read_commits, /* htm_commits */stats_nbSuccess, rot_commits, /* gl_commits */stats_nbFallback,stats_nbAbort/*htm_conflict_aborts+htm_user_aborts+htm_capacity_aborts+htm_other_aborts+rot_conflict_aborts+rot_user_aborts+rot_capacity_aborts+rot_other_aborts*/,htm_conflict_aborts,htm_self_conflicts,htm_trans_conflicts,htm_nontrans_conflicts,htm_user_aborts,htm_capacity_aborts,htm_persistent_aborts,htm_other_aborts,rot_conflict_aborts,rot_self_conflicts,rot_trans_conflicts,rot_nontrans_conflicts,rot_other_conflicts,rot_user_aborts,rot_capacity_aborts,rot_persistent_aborts,rot_other_aborts); \
 /*printf("first time: %d, second time: %d\n",total_first_time,total_second_time);*/ \
   \
   printf("stats_nbSuccess: %li (%f\%)\nstats_nbAbort: %li (%f\%)\n\tconfl: %li (%f\%)\n\tcapac: %li (%f\%)\n\texpli: %li (%f\%)\n\tother: %li (%f\%)\nstats_nbFallback: %li (%f\%)\n", \

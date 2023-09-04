@@ -1,5 +1,8 @@
 .vscode/
 plots_scripts/data
+tests_py/data
+tests_py/__pycache__
+tests_py/*.pdf
 
 # use generate or fetch from somewhere else
 power8tm-pisces/benchmarks/stamp/kmeans/inputs/random-n65536-d32-c16.txt
