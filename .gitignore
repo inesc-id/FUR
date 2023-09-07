@@ -1,6 +1,7 @@
 .vscode/
 plots_scripts/data
 tests_py/data
+tests_py/dataHTM-SR
 tests_py/__pycache__
 tests_py/*.pdf
 

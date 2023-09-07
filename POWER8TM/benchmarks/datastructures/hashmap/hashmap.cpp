@@ -109,7 +109,8 @@ typedef struct List_t
 
 static volatile int stop;
 
-static int N_BUCKETS = 512;
+// static int N_BUCKETS = 512;
+static int N_BUCKETS = 8192;
 
 List** bucket;
 long range;

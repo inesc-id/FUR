@@ -19,7 +19,7 @@ class Parser:
     catch_param["confl-trans"] = re.compile(r"\s*HTM trans conflicts: (\d+)")
     catch_param["confl-non-trans"] = re.compile(r"\s*HTM non-trans conflicts: (\d+)")
     catch_param["confl-self"] = re.compile(r"\s*HTM self conflicts: (\d+)")
-    catch_param["capac-aborts"] = re.compile(r"\s*HTM capacity conflicts: (\d+)")
+    catch_param["capac-aborts"] = re.compile(r"\s*HTM capacity aborts: (\d+)")
     catch_param["persis-aborts"] = re.compile(r"\s*HTM persistent aborts: (\d+)")
     catch_param["user-aborts"] = re.compile(r"\s*HTM user aborts: (\d+)")
     catch_param["other-aborts"] = re.compile(r"\s*HTM other aborts: (\d+)")
@@ -63,10 +63,10 @@ class Parser:
           "eval": self.parse_file(f"{root}/{f}")
         }]
     ### TODO: convert to CSV
-    breakpoint()
-    print(lines[0])
+    # breakpoint()
+    # print(lines[0])
     header = list(lines[0]["params"].keys()) + list(lines[0]["eval"].keys())
-    print(header)
+    # print(header)
     # header = set(header_l[0])
     with open(write_csv, "w+", newline='') as csvfile:
       csvwriter = csv.writer(csvfile, delimiter='\t', quotechar='"', quoting=csv.QUOTE_MINIMAL)
