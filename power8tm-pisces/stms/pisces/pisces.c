@@ -294,9 +294,9 @@ TxFreeThread (Thread* t)
     AtomicAdd((volatile intptr_t*)((void*)(&AbortTally)),         t->Aborts);
 
     // FreeList(&(t->rdSet),     pisces_INIT_RDSET_NUM_ENTRY);
-    FreeList(&(t->wrSet),     pisces_INIT_WRSET_NUM_ENTRY);
+    // FreeList(&(t->wrSet),     pisces_INIT_WRSET_NUM_ENTRY);
 
-    free(t);
+    // free(t);
 }
 
 void

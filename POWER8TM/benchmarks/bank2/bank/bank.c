@@ -488,7 +488,7 @@ int main(int argc, char **argv)
 
   /* Init STM */
   printf("Initializing STM\n");
-  TM_STARTUP(nb_threads, 123,nb_accounts,bank);
+  TM_STARTUP(nb_threads, 123, nb_accounts, bank);
 
   /* Access set from all threads */
   barrier_init(&barrier, nb_threads);

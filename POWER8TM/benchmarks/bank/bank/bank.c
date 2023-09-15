@@ -80,7 +80,7 @@ __attribute__((aligned(CACHE_LINE_SIZE))) pthread_spinlock_t single_global_lock;
 
 __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t counters[80];
 
-extern void *bank_heap_ptr;
+// extern void *bank_heap_ptr;
 
 __thread long counters_snapshot[80];
 
@@ -90,7 +90,7 @@ __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t triggers[80];
 
 __attribute__((aligned(CACHE_LINE_SIZE))) padded_statistics_t stats_array[80];
 
-extern __thread unsigned int thread_id;
+// extern __thread unsigned int thread_id;
 
 __thread unsigned int local_exec_mode = 0;
 
@@ -229,7 +229,7 @@ static void *test(void *arg)
 {
   int src, dst, nb;
   int rand_max, rand_min;
-  thread_data_t *d = (thread_data_t *)&data[thread_id];
+  thread_data_t *d = (thread_data_t *)&data[local_thread_id];
   unsigned short seed[3];
 
   /* Initialize seed (use rand48 as rand is poor) */
@@ -466,7 +466,7 @@ int main(int argc, char **argv)
     bank->accounts[i].number = i;
     bank->accounts[i].balance = 0;
   }
-  bank_heap_ptr = bank->accounts;
+  // bank_heap_ptr = bank->accounts;
   stop = 0;
 
   /* Init STM */

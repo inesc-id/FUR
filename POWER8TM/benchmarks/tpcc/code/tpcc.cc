@@ -203,38 +203,38 @@ int main(int argc, char** argv) {
 		      workload_changes.push_back(atoi(optarg));
 		    break;
 		   case 's':
-			 global_stock_level_txs_ratio = atoi(optarg);
-		       workload_changes.push_back(atoi(optarg));
+          global_stock_level_txs_ratio = atoi(optarg);
+          workload_changes.push_back(atoi(optarg));
 		     break;
 		   case 'd':
-			 global_delivery_txs_ratio = atoi(optarg);
-		       workload_changes.push_back(atoi(optarg));
+			    global_delivery_txs_ratio = atoi(optarg);
+          workload_changes.push_back(atoi(optarg));
 		     break;
 		   case 'o':
-			 global_order_status_txs_ratio = atoi(optarg);
-		       workload_changes.push_back(atoi(optarg));
+			    global_order_status_txs_ratio = atoi(optarg);
+          workload_changes.push_back(atoi(optarg));
 		     break;
 		   case 'p':
 			 		global_payment_txs_ratio = atoi(optarg);
-		       workload_changes.push_back(atoi(optarg));
+          workload_changes.push_back(atoi(optarg));
 		     break;
 		   case 'r':
-			 global_new_order_ratio = atoi(optarg);
-		       workload_changes.push_back(atoi(optarg));
+			    global_new_order_ratio = atoi(optarg);
+          workload_changes.push_back(atoi(optarg));
 		     break;
 		   case 'w':
-			 global_num_warehouses = atoi(optarg);
-		       workload_changes.push_back(atoi(optarg));
-		     break;
+			    global_num_warehouses = atoi(optarg);
+          workload_changes.push_back(atoi(optarg));
+          break;
 		   case 'm':
-		       num_warehouses = atoi(optarg);
-		       break;
+          num_warehouses = atoi(optarg);
+          break;
 		   case 't':
-		       duration_secs = atoi(optarg);
-		     break;
+          duration_secs = atoi(optarg);
+          break;
 		   case 'n':
-		  	 num_clients = atoi(optarg);
-		  	 break;
+          num_clients = atoi(optarg);
+          break;
 		   default:
 		     printf("Incorrect argument! :(\n");
 		     exit(1);
@@ -296,7 +296,7 @@ int main(int argc, char** argv) {
   global_new_order_ratio = workload_changes[pos_vec++];*/
 
   printf("Running with the following parameters for %ld secs: (max warehouses %li)\n", next_workload_secs, num_warehouses);
-  printf("\tWarehouses     (-w): %d\n", global_num_warehouses);
+  printf("\tWarehouses         (-w): %d\n", global_num_warehouses);
   printf("\tStockLevel ratio   (-s): %d\n", global_stock_level_txs_ratio);
   printf("\tDelivery ratio     (-d): %d\n", global_delivery_txs_ratio);
   printf("\tOrder Status ratio (-o): %d\n", global_order_status_txs_ratio);

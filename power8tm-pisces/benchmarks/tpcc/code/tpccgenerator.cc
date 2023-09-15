@@ -49,8 +49,8 @@ void TPCCGenerator::generateItem(int32_t id, bool original, Item* item) {
     }
 }
 
-static set<int> selectUniqueIds(tpcc::RandomGenerator* random, int num_unique, int lower_id,
-        int upper_id) {
+static set<int> selectUniqueIds(tpcc::RandomGenerator* random, int num_unique, int lower_id, int upper_id)
+{
     set<int> rows;
     for (int i = 0; i < num_unique; ++i) {
         int index = -1;

@@ -1,5 +1,5 @@
 CFLAGS   += -w $(HTM_RETRIES) $(RETRY_POLICY)
 
 CPPFLAGS := $(CFLAGS)
-LIBS     += $(CFLAGS) -I ../../../stms/tl2/ -lrt -mcpu=power8 -mtune=power8 -lm -L../../../stms/tl2/ -ltl2 -lpthread -lm
+LIBS     += $(CFLAGS) -I ../../../stms/tl2/ -lrt -mcpu=power9 -mtune=power9 -lm -L../../../stms/tl2/ -ltl2 -lpthread -lm
 LDFLAGS  += $(LIBS)

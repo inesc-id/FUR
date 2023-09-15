@@ -35,18 +35,18 @@
 #  include "thread.h"
 #  include "pisces.h"
 
-#    define TM_ARG                        STM_SELF,
-#    define TM_ARG_ALONE                  STM_SELF
-#    define TM_ARGDECL                    STM_THREAD_T* TM_ARG
-#    define TM_ARGDECL_ALONE              STM_THREAD_T* TM_ARG_ALONE
-#    define TM_CALLABLE                   /* nothing */
+#    define TM_ARG                      STM_SELF,
+#    define TM_ARG_ALONE                STM_SELF
+#    define TM_ARGDECL                  STM_THREAD_T* TM_ARG
+#    define TM_ARGDECL_ALONE            STM_THREAD_T* TM_ARG_ALONE
+#    define TM_CALLABLE                 /* nothing */
 
-#      define TM_STARTUP(numThread,nb)     STM_STARTUP()
-#      define TM_SHUTDOWN()             STM_SHUTDOWN()
+#    define TM_STARTUP(numThread,nb)    STM_STARTUP()
+#    define TM_SHUTDOWN()               STM_SHUTDOWN()
 
-#      define TM_THREAD_ENTER()         TM_ARGDECL_ALONE = STM_NEW_THREAD(); \
+#    define TM_THREAD_ENTER()           TM_ARGDECL_ALONE = STM_NEW_THREAD(); \
                                         STM_INIT_THREAD(TM_ARG_ALONE, thread_getId())
-#      define TM_THREAD_EXIT()          STM_FREE_THREAD(TM_ARG_ALONE)
+#    define TM_THREAD_EXIT()            STM_FREE_THREAD(TM_ARG_ALONE)
 
 #      define P_MALLOC(size)            malloc(size)
 #      define P_FREE(ptr)               free(ptr) 
@@ -54,13 +54,13 @@
 #      define FAST_PATH_FREE(ptr)        
 #      define SLOW_PATH_FREE(ptr)       
 
-# define AL_LOCK(idx)					 /* nothing */
-#    define TM_BEGIN_EXT(b,ro)		local_exec_mode = 3;TM_BEGIN(ro)
+# define AL_LOCK(idx)					          /* nothing */
+#    define TM_BEGIN_EXT(b,ro)		      local_exec_mode = 3;TM_BEGIN(ro)
 #    define TM_BEGIN(ro)                local_exec_mode = 3;if(ro)STM_BEGIN_RD(); else STM_BEGIN_WR();
 #    define TM_BEGIN_RO()               local_exec_mode = 3;STM_BEGIN_RD()
 #    define TM_END()                    STM_END()
-#    define FAST_PATH_RESTART()                STM_RESTART()
-#    define SLOW_PATH_RESTART()                STM_RESTART()
+#    define FAST_PATH_RESTART()         STM_RESTART()
+#    define SLOW_PATH_RESTART()         STM_RESTART()
 
 
 #    define TM_EARLY_RELEASE(var)       /* nothing */

@@ -79,7 +79,8 @@ unsigned long total_trials;
 int global_num_threads = 0;
 pthread_rwlock_t rw_lock;
 
-void* client(void *data) {
+void* client(void *data)
+{
 	TM_THREAD_ENTER();
     // FIXME(nmld): you may call some code to init the worker TM thread here
     //
@@ -96,48 +97,53 @@ void* client(void *data) {
         client->doOne(TM_ARG_ALONE);
 	//printf("Tx executed");
     } while (((clock->getMicroseconds() - begin) / 1000000) < duration_secs);
-	TM_THREAD_EXIT(); 
+	TM_THREAD_EXIT();
+  return NULL;
 }
 
-int main(int argc, char** argv) {
+static struct option long_options[] = {
+  // These options don't set a flag
+  {"stockLevel transactions ratio",     required_argument, NULL, 's'},
+  {"delivery transactions ratio",       required_argument, NULL, 'd'},
+  {"order status transactions ratio",   required_argument, NULL, 'o'},
+  {"payment transactions ratio",        required_argument, NULL, 'p'},
+  {"new order txs ratio",               required_argument, NULL, 'r'},
+  {"number warehouses",                 required_argument, NULL, 'w'},
+  {"duration in seconds",               required_argument, NULL, 't'},
+  {"number of clients",		              required_argument, NULL, 'n'},
+  {"workload change",                   required_argument, NULL, 'c'},
+  {"maximum number of warehouses",      required_argument, NULL, 'm'},
+  {NULL, 0, NULL, 0}
+};
 
-	rw_lock = PTHREAD_RWLOCK_INITIALIZER;
-
+int main(int argc, char** argv)
+{
     if (argc < 9) {
         printf("Please provide all the minimum parameters\n");
         exit(1);
     }
 
-    struct option long_options[] = {
-      // These options don't set a flag
-      {"stockLevel transactions ratio",     required_argument, NULL, 's'},
-      {"delivery transactions ratio",       required_argument, NULL, 'd'},
-      {"order status transactions ratio",   required_argument, NULL, 'o'},
-      {"payment transactions ratio",        required_argument, NULL, 'p'},
-      {"new order txs ratio",               required_argument, NULL, 'r'},
-      {"number warehouses",                 required_argument, NULL, 'w'},
-      {"duration in seconds",               required_argument, NULL, 't'},
-      {"number of clients",		            required_argument, NULL, 'n'},
-      {"workload change",                   required_argument, NULL, 'c'},
-      {"maximum number of warehouses",      required_argument, NULL, 'm'},
-      {NULL, 0, NULL, 0}
-    };
+    std::vector<int> workload_changes;
+    int adapt_workload = 0;
+    int num_warehouses;
+    int num_clients;
+    int i, c;
 
+    workload_changes.reserve(128);
+
+	  rw_lock = PTHREAD_RWLOCK_INITIALIZER;
     global_stock_level_txs_ratio = DEFAULT_STOCK_LEVEL_TXS_RATIO;
     global_delivery_txs_ratio = DEFAULT_DELIVERY_TXS_RATIO;
     global_order_status_txs_ratio = DEFAULT_ORDER_STATUS_TXS_RATIO;
     global_payment_txs_ratio = DEFAULT_PAYMENT_TXS_RATIO;
     global_new_order_ratio = DEFAULT_NEW_ORDER_TXS_RATIO;
-    int num_warehouses = DEFAULT_NUMBER_WAREHOUSES;
+    num_warehouses = DEFAULT_NUMBER_WAREHOUSES;
     duration_secs = DEFAULT_TIME_SECONDS;
-    int num_clients = DEFAULT_NUM_CLIENTS;
+    num_clients = DEFAULT_NUM_CLIENTS;
 
     // If "-c" is found, then we start parsing the parameters into the workload_changes.
     // The argument of each "-c" is the number of seconds that it lasts.
-    std::vector<int> workload_changes;
-    int adapt_workload = 0;
 
-    int i, c;
     while(1) {
         i = 0;
         c = getopt_long(argc, argv, "s:d:o:p:r:w:t:n:c:m:", long_options, &i);
@@ -206,17 +212,17 @@ int main(int argc, char** argv) {
     fflush(stdout);
     char now[Clock::DATETIME_SIZE+1];
     clock->getDateTimestamp(now);
-	printf("num items: %d", Item::NUM_ITEMS);
+  	printf("num items: %d", Item::NUM_ITEMS);
     int64_t begin = clock->getMicroseconds();
     int ro = 1;
     TM_BEGIN(ro);
-    local_exec_mode = 2;
-    TPCCGenerator generator(random, now, Item::NUM_ITEMS, District::NUM_PER_WAREHOUSE,
-            Customer::NUM_PER_DISTRICT, NewOrder::INITIAL_NUM_PER_DISTRICT);
-    generator.makeItemsTable(TM_ARG tables);
-    for (int i = 0; i < num_warehouses; ++i) {
-        generator.makeWarehouse(TM_ARG tables, i+1);
-    }
+      local_exec_mode = 2;
+      TPCCGenerator generator(random, now, Item::NUM_ITEMS, District::NUM_PER_WAREHOUSE,
+      Customer::NUM_PER_DISTRICT, NewOrder::INITIAL_NUM_PER_DISTRICT);
+      generator.makeItemsTable(TM_ARG tables);
+      for (int i = 0; i < num_warehouses; ++i) {
+          generator.makeWarehouse(TM_ARG tables, i+1);
+      }
     TM_END();
     int64_t end = clock->getMicroseconds();
     printf("%ld ms\n", (end - begin + 500)/1000);

@@ -47,14 +47,22 @@ class LinesPlot:
     plt.close()
 
   def plot_stack(self, datasets:list[BackendDataset]):
-    nb_stacks = len(datasets[0].y_stack)
+    nb_stacks = 0
+    fix_dataset = []
+    for d in datasets:
+      l = len(d.y_stack)
+      if l > nb_stacks:
+        nb_stacks = l
+      if l > 0:
+        fix_dataset += [d]
+
     f = self.figsize
     fig, axs = plt.subplots(figsize=(f[0]*nb_stacks, f[1]), nrows=1, ncols=nb_stacks)
     datasets_idx = {}
     plots_idx = {}
     stacked_bar_idx = {}
     i = 0
-    for d in datasets:
+    for d in fix_dataset:
       datasets_idx[d.name] = i
       i += 1
       j = 0
@@ -67,8 +75,8 @@ class LinesPlot:
           stacked_bar_idx[sn] = {"idx": k, "color": cmap(k)}
           k += 1
 
-    width = 0.9 / len(datasets)
-    for d in datasets:
+    width = 0.9 / len(fix_dataset)
+    for d in fix_dataset:
       for s_title, ss in d.y_stack.items():
         bottom = np.array([0 for _ in d.x_param.transpose()])
         for sn, sy in ss.items():
@@ -80,7 +88,6 @@ class LinesPlot:
           # breakpoint()
           xs = np.array([k for k in range(len(x_array))]) + i*width
           ys = np.array(y_array)
-          print(f"{s_title[0]} - {d.name}:{xs}")
           if i == 0: # print label
             axs[j].bar(xs, ys, width, yerr = y_error, label=sn, bottom=bottom, color=stacked_bar_idx[sn]["color"])
             axs[j].legend()
@@ -88,11 +95,10 @@ class LinesPlot:
             axs[j].bar(xs, ys, width, yerr = y_error, bottom=bottom, color=stacked_bar_idx[sn]["color"])
           bottom = bottom + ys
         for x,y in zip(xs,bottom):
-          print(f"annotate {d.name} at ({x}, {y})")
           axs[j].annotate(d.name, (x, y), textcoords="offset points", xytext=(0,10), ha='center', rotation=90)
           break
         if i == 0:
-          axs[j].set_title(s_title[0])
+          axs[j].set_title(f"{self.title}\n{s_title[0]}")
           axs[j].set_xticks(xs)
           axs[j].set_xticklabels([int(x) for x in x_array])
           axs[j].set_xlabel(d.x_label)

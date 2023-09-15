@@ -8,23 +8,38 @@ if __name__ == "__main__":
   params = BenchmarkParameters(["-u", "-d", "-i", "-r", "-n"])
   params.set_params("-u", [100])
   params.set_params("-d", [5000000])
-  params.set_params("-i", [200000])
-  params.set_params("-r", [2000000]) # also set number of buckets to 131072
+  params.set_params("-i", [262144])
+  params.set_params("-r", [262144])
   params.set_params("-n", [1, 2, 4, 8, 12, 16])
-  nb_samples = 10
+  nb_samples = 5
   locations = [
+    "/home/ubuntu/PersistentSiHTM/POWER8TM/benchmarks/datastructures",
+    "/home/ubuntu/PersistentSiHTM/POWER8TM/benchmarks/datastructures",
+    "/home/ubuntu/PersistentSiHTM/POWER8TM/benchmarks/datastructures",
     "/home/ubuntu/PersistentSiHTM/POWER8TM/benchmarks/datastructures",
     "/home/ubuntu/PersistentSiHTM/POWER8TM/benchmarks/datastructures"
   ]
   backends = [
     "htm-sgl",
-    "htm-sgl-sr"
+    "p8tm-psi-v2-fi-improved",
+    "p8tm-psi-v2-ci",
+    "p8tm-psi-v2-fi-improved-lc-hidden",
+    "p8tm-psi-v2-ci-lc-hidden"
   ]
-  data_folder = "dataHTM-SR"
+  name_map = {
+    "htm-sgl" : "HTM",
+    "p8tm-psi-v2-fi-improved" : "PSI-OL",
+    "p8tm-psi-v2-ci" : "PSI",
+    "p8tm-psi-v2-fi-improved-lc-hidden" : "PSI-OL (LC)",
+    "p8tm-psi-v2-ci-lc-hidden" : "PSI (LC)"
+  }
+  data_folder = "dataLogicalClock"
 
   datasets_thr = {}
   datasets_aborts = {}
   for loc,backend in zip(locations,backends):
+    if backend == "htm-sgl":
+      continue
     for s in range(nb_samples):
       data = CollectData(
           loc,
@@ -36,15 +51,15 @@ if __name__ == "__main__":
       data.run_sample(params)
       parser = Parser(f"{data_folder}/{backend}-s{s}")
       parser.parse_all(f"{data_folder}/{backend}-s{s}.csv")
-    for u in params.params["-u"]:
-      if u not in datasets_thr:
-        datasets_thr[u] = []
+    for i in params.params["-i"]:
+      if i not in datasets_thr:
+        datasets_thr[i] = []
       ds = BackendDataset(
-        backend,
+        name_map[backend],
         [f"{data_folder}/{backend}-s{s}.csv" for s in range(5)],
         lambda e: e["-n"], "Nb. Threads",
         lambda e: e["-d"]/e["time"], "Throughput (T/s)",
-        {"-u": u}
+        {"-i": i}
       )
       ds.add_stack("Commits vs Aborts", "Count", {
         "HTM-commits": lambda e: e["htm-commits"],
@@ -60,9 +75,9 @@ if __name__ == "__main__":
         "user": lambda e: e["user-aborts"],
         "other": lambda e: e["other-aborts"]
       })
-      datasets_thr[u] += [ds]
+      datasets_thr[i] += [ds]
     
   for k,v in datasets_thr.items():
-    lines_plot = LinesPlot(f"{k}% updates", f"thr_{k}upds.pdf")
+    lines_plot = LinesPlot(f"{i} initial insert", f"thr_{k}ins.pdf")
     lines_plot.plot(v)
     lines_plot.plot_stack(v)

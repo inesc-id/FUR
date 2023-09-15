@@ -178,8 +178,8 @@ __inline__ unsigned long long tick()
 void bindThread(long threadId) {
     cpu_set_t my_set;
     CPU_ZERO(&my_set);
-    int number_of_cores=4;
-    int offset = threadId / number_of_cores;
+    // int number_of_cores=4;
+    // int offset = threadId / number_of_cores;
     //in my machine the threads are from 0-7, 8-15, 16-23, 24-31 
     //CPU_SET((threadId % number_of_cores)*8+offset, &my_set); //core first
     CPU_SET(threadId, &my_set); // SMT first

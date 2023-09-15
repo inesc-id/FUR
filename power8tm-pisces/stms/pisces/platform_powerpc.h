@@ -1,27 +1,27 @@
 /* =============================================================================
  *
- * platform_x86.h
+ * platform_ppc.h
  *
- * x86-specific bindings
+ * ppc-specific bindings
  *
  * =============================================================================
  */
 
 
-#ifndef PLATFORM_X86_H
-#define PLATFORM_X86_H 1
+#ifndef PLATFORM_PPC_H
+#define PLATFORM_PPC_H 1
 
 
 #include <stdint.h>
 #include "common.h"
-#include "norec.h"
+#include "pisces.h"
 
 /* =============================================================================
  * Compare-and-swap
  *
- * CCM: Notes for implementing CAS on x86:
+ * CCM: Notes for implementing CAS on ppc:
  *
- * /usr/include/asm-x86_64/system.h
+ * /usr/include/asm-ppc_64/system.h
  * http://www-128.ibm.com/developerworks/linux/library/l-solar/
  * http://gcc.gnu.org/onlinedocs/gcc-4.1.0/gcc/Atomic-Builtins.html#Atomic-Builtins
  *
@@ -60,9 +60,9 @@ __INLINE__ intptr_t cas(intptr_t newv, intptr_t old, intptr_t* ptr) {
  * http://mail.nl.linux.org/kernelnewbies/2002-11/msg00127.html
  * =============================================================================
  */
-#define MEMBARLDLD()                    __asm__ __volatile__ ("sync" : : :"memory")
-#define MEMBARSTST()                    __asm__ __volatile__ ("sync" : : :"memory")
-#define MEMBARSTLD()                    __asm__ __volatile__ ("sync" : : :"memory")
+#define MEMBARLDLD()                    /* __asm__ __volatile__ ("sync" : : :"memory") */
+#define MEMBARSTST()                    /* __asm__ __volatile__ ("sync" : : :"memory") */
+#define MEMBARSTLD()                    /* __asm__ __volatile__ ("sync" : : :"memory") */
 
 
 /* =============================================================================
@@ -94,7 +94,7 @@ prefetchw (volatile void* x)
  * Ideally we would like to drop the priority of our CMT strand.
  * =============================================================================
  */
-#define PAUSE()                         __asm volatile ("" : : : "memory")
+#define PAUSE()                         /* __asm volatile ("" : : : "memory");  */
 
 
 /* =============================================================================
@@ -133,12 +133,12 @@ Version with gettimeofday:
 */
 
 
-#endif /* PLATFORM_X86_H */
+#endif /* PLATFORM_PPC_H */
 
 
 /* =============================================================================
  *
- * End of platform_x86.h
+ * End of platform_ppc.h
  *
  * =============================================================================
  */

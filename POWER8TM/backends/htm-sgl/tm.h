@@ -155,8 +155,7 @@ __TM_capacity_abort (void* const TM_buff)
 #  define TM_THREAD_EXIT()
 
 # define IS_LOCKED(lock)        *((volatile long*)(&lock)) != 0
-
-# define TM_BEGIN(b) TM_BEGIN_EXT(b,0)
+# define TM_BEGIN(b)            TM_BEGIN_EXT(b,0)
 # define SPEND_BUDGET(b)	if(RETRY_POLICY == 0) (*b)=0; else if (RETRY_POLICY == 2) (*b)=(*b)/2; else (*b)=--(*b);
 
 

@@ -5,7 +5,7 @@
 extern "C" {
 #endif /* __cplusplus */
 
-#define DEF_CPU_FREQ 3000000
+#define DEF_CPU_FREQ 3800000
 //#ifndef DEF_CPU_FREQ
 //#error "Please pass the CPU frequency (kHz) via -DDEF_CPU_FREQ=... "
 //#endif /* DEF_CPU_FREQ */

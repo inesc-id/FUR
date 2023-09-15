@@ -58,10 +58,10 @@ rm bank
 if [[ $backend == htm-sgl || $backend == hybrid-norec ]] ; then
     make_command="make -f Makefile HTM_RETRIES=-DHTM_RETRIES=$htm_retries RETRY_POLICY=-DRETRY_POLICY=0 BATCH_RATIO=-DBATCH_RATIO=$batch_ratio"
 else
-    make_command="make -f Makefile HTM_RETRIES=-DHTM_RETRIES=$htm_retries ROT_RETRIES=-DROT_RETRIES=$rot_retries BATCH_RATIO=-DBATCH_RATIO=$batch_ratio"
+    make_command="make -f Makefile HTM_RETRIES=-DHTM_RETRIES=$htm_retries RETRY_POLICY=-DRETRY_POLICY=1 ROT_RETRIES=-DROT_RETRIES=$rot_retries BATCH_RATIO=-DBATCH_RATIO=$batch_ratio"
 fi
 if [[ $backend == p8tm-psi-v2-lr || $backend == hybrid-norec ]] ; then
-    make_command="make -f Makefile HTM_RETRIES=-DHTM_RETRIES=$htm_retries ROT_RETRIES=-DROT_RETRIES=$rot_retries BATCH_RATIO=-DBATCH_RATIO=$batch_ratio BANK_REPLAYER_VALIDATION=-DBANK_REPLAYER_VALIDATION=$BANK_REPLAYER_VALIDATION"
+    make_command="make -f Makefile HTM_RETRIES=-DHTM_RETRIES=$htm_retries RETRY_POLICY=-DRETRY_POLICY=1 ROT_RETRIES=-DROT_RETRIES=$rot_retries BATCH_RATIO=-DBATCH_RATIO=$batch_ratio BANK_REPLAYER_VALIDATION=-DBANK_REPLAYER_VALIDATION=$BANK_REPLAYER_VALIDATION"
 fi
     $make_command
 rc=$?

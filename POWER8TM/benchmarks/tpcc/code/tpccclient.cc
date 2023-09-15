@@ -20,7 +20,7 @@ volatile int global_delivery_txs_ratio;
 volatile int global_order_status_txs_ratio;
 volatile int global_payment_txs_ratio;
 volatile int global_new_order_ratio;
-volatile int global_num_warehouses;
+volatile int global_num_warehouses = 1;
 
 TPCCClient::TPCCClient(Clock* clock, tpcc::RandomGenerator* generator, TPCCDB* db, int num_items,
         int num_warehouses, int districts_per_warehouse, int customers_per_district) :

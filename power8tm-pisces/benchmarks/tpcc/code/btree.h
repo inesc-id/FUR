@@ -43,9 +43,9 @@ class BPlusTree
 public:
         // N must be greater than two to make the split of
         // two inner nodes sensible.
-        BOOST_STATIC_ASSERT(N>2);
+        // BOOST_STATIC_ASSERT(N>2);
         // Leaf nodes must be able to hold at least one element
-        BOOST_STATIC_ASSERT(M>0);
+        // BOOST_STATIC_ASSERT(M>0);
 
         // Builds a new empty tree.
         BPlusTree()
@@ -155,34 +155,41 @@ __attribute__((transaction_safe))  bool fast_find(TM_ARGDECL const KEY& key, VAL
   }
 }
 
-__attribute__((transaction_safe))  bool slow_find(TM_ARGDECL const KEY& key, VALUE* value= 0) const {
+__attribute__((transaction_safe)) bool slow_find(TM_ARGDECL const KEY& key, VALUE* value= 0) const
+{
   const InnerNode* inner;
-  register const void* node= SLOW_PATH_SHARED_READ_P(root);
-  register unsigned long d= SLOW_PATH_SHARED_READ(depth);
-  register unsigned  index;
-  while( d-- != 0 ) {
+  register const void* node = SLOW_PATH_SHARED_READ_P(root);
+  register unsigned long  d = SLOW_PATH_SHARED_READ(depth);
+  register unsigned   index;
+  const LeafNode*      leaf;
+  unsigned long    num_keys;
+
+  while( d-- != 0 )
+  {
     inner= reinterpret_cast<const InnerNode*>(node);
     unsigned long num_keys_1 = SLOW_PATH_SHARED_READ(inner->num_keys);
     index= slow_inner_position_for(TM_ARG key, inner->keys, num_keys_1);
     node= SLOW_PATH_SHARED_READ_P(inner->children[index]);
   }
-  const LeafNode* leaf= reinterpret_cast<const LeafNode*>(node);
-  unsigned long num_keys = SLOW_PATH_SHARED_READ(leaf->num_keys);
-  index= slow_leaf_position_for(TM_ARG key, leaf->keys, num_keys);
-  if( index < num_keys ) {
+
+  leaf = reinterpret_cast<const LeafNode*>(node);
+  num_keys = SLOW_PATH_SHARED_READ(leaf->num_keys);
+  index = slow_leaf_position_for(TM_ARG key, leaf->keys, num_keys);
+
+  if( index < num_keys )
+  {
     intptr_t temp_key = SLOW_PATH_SHARED_READ(leaf->keys[index]);
-    if(temp_key == key){
-    VALUE temp_value = (VALUE)SLOW_PATH_SHARED_READ_P(leaf->values[index]);
-    if( value != 0 ) {
-      *value = temp_value;
+    if(temp_key == key)
+    {
+      VALUE temp_value = (VALUE)SLOW_PATH_SHARED_READ_P(leaf->values[index]);
+      if ( value != 0 )
+        *value = temp_value;
+      if (temp_value)
+        return true;
     }
-    if (temp_value)
-      return true;
-    else return false;
   }
-  } else {
-    return false;
-  }
+
+  return false;
 }
 
 
@@ -646,29 +653,39 @@ private:
           }
         }
 
-        __attribute__((transaction_safe))static void slow_leaf_insert_nonfull(TM_ARGDECL LeafNode* node, KEY& key, VALUE& value,unsigned index) {
-          intptr_t temp_key = SLOW_PATH_SHARED_READ(node->keys[index]);
-          if( temp_key == key ) {
-            // We are inserting a duplicate value.
-            // Simply overwrite the old one
-			      VALUE temp_value = (VALUE)SLOW_PATH_SHARED_READ_P(value);
-			      SLOW_PATH_SHARED_WRITE_P(node->values[index],temp_value);
-          } else {
-			      unsigned long num_keys = SLOW_PATH_SHARED_READ(node->num_keys);
-            // The key we are inserting is unique
-            for(unsigned i=num_keys; i > index; --i) {
-              intptr_t temp_key_2 = SLOW_PATH_SHARED_READ(node->keys[i-1]);
-				      SLOW_PATH_SHARED_WRITE(node->keys[i],temp_key_2);
-				      VALUE temp_value_2 = (VALUE)SLOW_PATH_SHARED_READ_P(node->values[i-1]);
-				      SLOW_PATH_SHARED_WRITE_P(node->values[i],temp_value_2);
-            }
-            SLOW_PATH_SHARED_WRITE(node->num_keys,++num_keys);
-			      //node->num_keys++;
-			      SLOW_PATH_SHARED_WRITE(node->keys[index],key);
-			      VALUE temp_value_3 = (VALUE)SLOW_PATH_SHARED_READ_P(value);
-			      SLOW_PATH_SHARED_WRITE_P(node->values[index],temp_value_3);
-          }
-        }
+__attribute__((transaction_safe))static void
+slow_leaf_insert_nonfull(
+  TM_ARGDECL LeafNode* node,
+  KEY& key,
+  VALUE& value,
+  unsigned index
+) {
+  intptr_t temp_key = SLOW_PATH_SHARED_READ(node->keys[index]);
+  if ( temp_key == key )
+  {
+    // We are inserting a duplicate value.
+    // Simply overwrite the old one
+    VALUE temp_value = (VALUE)SLOW_PATH_SHARED_READ_P(value);
+    SLOW_PATH_SHARED_WRITE_P(node->values[index], temp_value);
+  }
+  else
+  {
+    unsigned long num_keys = SLOW_PATH_SHARED_READ(node->num_keys);
+    // The key we are inserting is unique
+    for(unsigned i = num_keys; i > index; --i)
+    {
+      intptr_t temp_key_2 = SLOW_PATH_SHARED_READ(node->keys[i-1]);
+      SLOW_PATH_SHARED_WRITE(node->keys[i],temp_key_2);
+      VALUE temp_value_2 = (VALUE)SLOW_PATH_SHARED_READ_P(node->values[i-1]);
+      SLOW_PATH_SHARED_WRITE_P(node->values[i],temp_value_2);
+    }
+    SLOW_PATH_SHARED_WRITE(node->num_keys, ++num_keys);
+    //node->num_keys++;
+    SLOW_PATH_SHARED_WRITE(node->keys[index], key);
+    VALUE temp_value_3 = (VALUE)SLOW_PATH_SHARED_READ_P(value);
+    SLOW_PATH_SHARED_WRITE_P(node->values[index], temp_value_3);
+  }
+}
 
         __attribute__((transaction_safe)) bool fast_inner_insert(TM_ARGDECL InnerNode* node, unsigned long current_depth, KEY& key,VALUE& value, InsertionResult* result) {
           // Early split if node is full.

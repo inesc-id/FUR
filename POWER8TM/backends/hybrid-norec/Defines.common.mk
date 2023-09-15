@@ -1,5 +1,5 @@
 CC       := gcc
-CFLAGS   += -std=c++11 -g -w -pthread -fpermissive -mcpu=power8 -mtune=power8
+CFLAGS   += -std=c++11 -g -w -pthread -fpermissive -mcpu=power9 -mtune=power9
 CFLAGS   += -O2
 CFLAGS   += -I$(LIB)  -I ../../../stms/norec/
 CPP      := g++

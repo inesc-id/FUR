@@ -224,7 +224,7 @@ __TM_capacity_abort (void* const TM_buff)
 
 # define TM_END(){ \
     if (!local_exec_mode) { \
-    int teste;\
+        int teste;\
     	__TM_suspend(); \
         teste=0;\
 	__TM_resume(); \

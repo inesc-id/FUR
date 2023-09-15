@@ -10,8 +10,8 @@ fi
 backend=$1  # e.g.: herwl
 
 
-htm_retries=5
-rot_retries=2
+htm_retries=10
+rot_retries=5
 batch_ratio=1
 
 if [ $# -eq 4 ] ; then
