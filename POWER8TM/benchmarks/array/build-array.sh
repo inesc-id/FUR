@@ -33,6 +33,8 @@ rm lib/thread.h
 rm lib/thread.c
 rm lib/rdtsc.h
 rm lib/tm.h
+cp ../../backends/extra_MACROS.h lib/
+cp ../../backends/extra_threadc.h lib/
 
 mkdir lib
 
@@ -44,9 +46,9 @@ cp ../../backends/p8tm-psi/rdtsc.h lib/
 cp ../../backends/$backend/thread.c lib/
 cp ../../backends/$backend/tm.h lib/
 
-cd bank
+cd array
 rm *.o || true
-rm bank
+rm array
 if [[ $backend == htm-sgl || $backend == hybrid-norec ]] ; then
     make_command="make -f Makefile HTM_RETRIES=-DHTM_RETRIES=$htm_retries RETRY_POLICY=-DRETRY_POLICY=1 BATCH_RATIO=-DBATCH_RATIO=$batch_ratio"
 else

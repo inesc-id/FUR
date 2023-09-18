@@ -223,13 +223,14 @@ typedef struct thread_data {
   char padding[64];
 } thread_data_t;
 
- static thread_data_t *data;
+static thread_data_t *data;
 
 static void *test(void *arg)
 {
   int src, dst, nb;
   int rand_max, rand_min;
-  thread_data_t *d = (thread_data_t *)&data[local_thread_id];
+  local_thread_id = (uint64_t)arg;
+  thread_data_t *d = (thread_data_t *)&(data[local_thread_id]);
   unsigned short seed[3];
 
   /* Initialize seed (use rand48 as rand is poor) */
@@ -254,6 +255,7 @@ static void *test(void *arg)
   // TM_INIT_THREAD;
   TM_THREAD_ENTER();
   /* Wait on barrier */
+  printf("Start thread %i\n", local_thread_id);
   barrier_cross(d->barrier);
 
   while (stop == 0) {
@@ -299,7 +301,7 @@ static void *test(void *arg)
 
 static void catcher(int sig)
 {
-  stop=1;
+  stop = 1;
   static int nb = 0;
   printf("CAUGHT SIGNAL %d\n", sig);
   if (++nb >= 3)
@@ -474,7 +476,7 @@ int main(int argc, char **argv)
   TM_STARTUP(nb_threads, 123);
 
   /* Access set from all threads */
-  barrier_init(&barrier, nb_threads);
+  barrier_init(&barrier, nb_threads+1);
   pthread_attr_init(&attr);
   pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
   for (i = 0; i < nb_threads; i++) {
@@ -492,10 +494,10 @@ int main(int argc, char **argv)
     data[i].seed = rand();
     data[i].bank = bank;
     data[i].barrier = &barrier;
-    // if (pthread_create(&threads[i], &attr, test, (void *)(&data[i])) != 0) {
-    //   fprintf(stderr, "Error creating thread\n");
-    //   exit(1);
-    // }
+    if (i > 0 && pthread_create(&threads[i], &attr, test, (void *)((uintptr_t)i)) != 0) {
+      fprintf(stderr, "Error creating thread\n");
+      exit(1);
+    }
   }
   printf("%d\n",duration/1000);
   // pthread_attr_destroy(&attr);
@@ -510,29 +512,29 @@ int main(int argc, char **argv)
   }
   alarm(duration/1000);
 
-  thread_start(test,NULL);
+  thread_start(test, (void*)((uintptr_t)0L));
   /* Start threads */
-  // barrier_cross(&barrier);
+  barrier_cross(&barrier);
 
-  // printf("STARTING...\n");
-  // gettimeofday(&start, NULL);
-  // if (duration > 0) {
-  //   nanosleep(&timeout, NULL);
-  // } else {
-  //   sigemptyset(&block_set);
-  //   sigsuspend(&block_set);
-  // }
-  // stop = 1;
-  // gettimeofday(&end, NULL);
-  // printf("STOPPING...\n");
+  printf("STARTING...\n");
+  gettimeofday(&start, NULL);
+  if (duration > 0) {
+    nanosleep(&timeout, NULL);
+  } else {
+    sigemptyset(&block_set);
+    sigsuspend(&block_set);
+  }
+  stop = 1;
+  gettimeofday(&end, NULL);
+  printf("STOPPING...\n");
 
   /* Wait for thread completion */
-  // for (i = 1; i < nb_threads; i++) {
-  //   if (pthread_join(threads[i], NULL) != 0) {
-  //     fprintf(stderr, "Error waiting for thread completion\n");
-  //     exit(1);
-  //   }
-  // }
+  for (i = 0; i < nb_threads; i++) {
+    if (pthread_join(threads[i], NULL) != 0) {
+      fprintf(stderr, "Error waiting for thread completion\n");
+      exit(1);
+    }
+  }
 
   duration = (end.tv_sec * 1000 + end.tv_usec / 1000) - (start.tv_sec * 1000 + start.tv_usec / 1000);
   reads = 0;
