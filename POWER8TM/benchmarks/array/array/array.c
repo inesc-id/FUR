@@ -41,8 +41,8 @@ static int tx(uintptr_t *ptr, uintptr_t value)
   int ro = 0; 
 
   TM_BEGIN_EXT(ro, RW);
-  // i = FAST_PATH_SHARED_READ(ptr);
-  // FAST_PATH_SHARED_WRITE(ptr, i+1);
+  i = FAST_PATH_SHARED_READ(ptr);
+  FAST_PATH_SHARED_WRITE(ptr, i+1);
   TM_END();
 
   return i;

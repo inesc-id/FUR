@@ -201,40 +201,41 @@ volatile int i;\
 }\
 
 
-
-
-#define commit_log(ptr,ts,start,end)\
-if(mylogpointer_snapshot<ptr){\
-while(mylogpointer_snapshot<=ptr){ \
-        __dcbst(mylogpointer_snapshot,0); \
-        max_cache_line[local_thread_id].value++;\
-        /*emulate_pm_slowdown();\
-        /*advance one cacheline */\
-        mylogpointer_snapshot+=16;\
+#define commit_log(ptr, ts, start, end) \
+    if (mylogpointer_snapshot < ptr) { \
+        while (mylogpointer_snapshot<=ptr) { \
+            __dcbst(mylogpointer_snapshot,0); \
+            max_cache_line[local_thread_id].value++; \
+            /*emulate_pm_slowdown();\
+            /*advance one cacheline */ \
+            mylogpointer_snapshot+=16; \
+        } \
     } \
-}else{\
-    while(mylogpointer_snapshot!=ptr){ \
-        __dcbst(mylogpointer_snapshot,0); \
-        max_cache_line[local_thread_id].value++;\
-        /*emulate_pm_slowdown();\
-        /*advance one cacheline */\
-        int _i;\
-        for(_i=0;_i<16;_i++){ \
-            if(mylogpointer_snapshot==ptr) break;\
-            mylogpointer_snapshot++;\
-            if(end-mylogpointer_snapshot<=0){\
-                mylogpointer_snapshot=start;\
+    else \
+    { \
+        while(mylogpointer_snapshot!=ptr){ \
+            __dcbst(mylogpointer_snapshot,0); \
+            max_cache_line[local_thread_id].value++;\
+            /*emulate_pm_slowdown();\
+            /*advance one cacheline */\
+            int _i;\
+            for ( _i=0; _i<16; _i++) \
+            { \
+                if ( mylogpointer_snapshot==ptr ) \
+                    break;\
+                mylogpointer_snapshot++;\
+                if ( end-mylogpointer_snapshot<=0 ) \
+                    mylogpointer_snapshot = start;\
             }\
-        }\
-    } \
-}\
+        } \
+    }\
 
 
-#define commit_log_marker(ptr,ts,start,end)\
-*ptr=bit63one | ts;\
-__dcbst(ptr,0); \
-ptr = start + (((ptr-start)+1)&LOGSIZE_mask);\
-atomic_STORE(log_replayer_end_ptr[local_thread_id],ptr);\
+#define commit_log_marker(ptr,ts,start,end) \
+    *ptr = bit63one | ts; \
+    __dcbst(ptr,0); \
+    ptr = start + (((ptr-start)+1)&LOGSIZE_mask); \
+    atomic_STORE(log_replayer_end_ptr[local_thread_id], ptr); \
 
 
 

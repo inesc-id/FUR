@@ -21,7 +21,6 @@ if __name__ == "__main__":
     "/home/ubuntu/PersistentSiHTM/POWER8TM/benchmarks/array"
   ]
   backends = [
-    "htm-sgl",
     "p8tm-psi-v2-fi-improved",
     "p8tm-psi-v2-ci",
     "p8tm-psi-v2-fi-improved-lc-hidden",
@@ -39,8 +38,6 @@ if __name__ == "__main__":
   datasets_thr = {}
   datasets_aborts = {}
   for loc,backend in zip(locations,backends):
-    # if backend == "htm-sgl":
-    #   continue
     for s in range(nb_samples):
       data = CollectData(
           loc,
@@ -49,9 +46,9 @@ if __name__ == "__main__":
           backend,
           f"{data_folder}/{backend}-s{s}"
         )
-      # data.run_sample(params)
-      # parser = Parser(f"{data_folder}/{backend}-s{s}")
-      # parser.parse_all(f"{data_folder}/{backend}-s{s}.csv")
+      data.run_sample(params)
+      parser = Parser(f"{data_folder}/{backend}-s{s}")
+      parser.parse_all(f"{data_folder}/{backend}-s{s}.csv")
     for i in ["SINGLE-WRITE"]: # TODO: this for-loop was originally to plot 10%, 50%, 90% updates
       if i not in datasets_thr:
         datasets_thr[i] = []
@@ -63,6 +60,7 @@ if __name__ == "__main__":
       )
       ds.add_stack("Commits vs Aborts", "Count", {
         "HTM-commits": lambda e: e["htm-commits"],
+        "ROT-commits": lambda e: e["rot-commits"],
         "SGL-commits": lambda e: e["gl-commits"],
         "aborts": lambda e: e["total-aborts"]
       })

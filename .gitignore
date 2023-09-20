@@ -1,9 +1,6 @@
 .vscode/
 plots_scripts/data
-tests_py/data
-tests_py/dataHTM-SR
-tests_py/dataH1H2
-tests_py/dataLogicalClock
+tests_py/data*
 tests_py/__pycache__
 tests_py/*.pdf
 
