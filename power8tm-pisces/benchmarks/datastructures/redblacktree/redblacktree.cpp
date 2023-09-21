@@ -54,6 +54,32 @@
 #define  FALSE          0       // Boolean false
 #define  TRUE           1       // Boolean true
 
+__thread void* rot_readset[1024];
+__thread char crot_readset[8192];
+__thread int irot_readset[2048];
+__thread int16_t i2rot_readset[4096];
+
+unsigned int htm_rot_enabled = 1;
+unsigned int allow_rots_ros = 1;
+unsigned int allow_htms = 1;
+
+__attribute__((aligned(CACHE_LINE_SIZE))) pthread_spinlock_t fallback_in_use;
+__attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t exists_sw;
+
+__thread unsigned long backoff = MIN_BACKOFF;
+__thread unsigned long cm_seed = 123456789UL;
+
+__attribute__((aligned(CACHE_LINE_SIZE))) padded_statistics_t stats_array[80];
+
+__attribute__((aligned(CACHE_LINE_SIZE))) pthread_spinlock_t single_global_lock = 0;
+
+__attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t counters[80];
+
+__thread unsigned int local_exec_mode = 0;
+
+__thread unsigned int local_thread_id;
+
+
 #define CHANGINGWORKLOAD
 #ifdef CHANGINGWORKLOAD
 std::vector<double> combinations;
@@ -123,8 +149,44 @@ int set_contains( intset_t *set, intptr_t val) {
 int currentCombination = 0;
 #endif
 
+void operation(TM_ARGDECL int &val, random_t* &randomPtr, long &pruned_range)
+{
+  int ro = 0;
+  TM_BEGIN_EXT(0,ro);
+  // __transaction_atomic {
+    int access;
+    for (access = 0; access < accessesPerOperations; access++)
+    {
+      val = random_generate(randomPtr) % 100;
+      if (val < update)
+      {
+        if (val < update / 2)
+        {
+          /* Add random value */
+          val = (random_generate(randomPtr) % pruned_range) + 1;
+          set_add(set, val);
+        }
+        else
+        {
+          /* Remove random value */
+          val = (random_generate(randomPtr) % pruned_range) + 1;
+          set_remove(set, val);
+        }
+      }
+      else
+      {
+        /* Look for random value */
+        long tmp = (random_generate(randomPtr) % pruned_range) + 1;
+        set_contains(set, tmp);
+      }
+    }
+    // }
+    TM_END();
+}
+
 void test(void *data)
 {
+  TM_THREAD_ENTER();
   int my_cpu = sched_getcpu();
   int val;
 
@@ -136,65 +198,41 @@ void test(void *data)
 
   int transactionsLeft = -1;
 
-  while (myOps > 0) {
-
+  while (myOps > 0)
+  {
 #ifdef CHANGINGWORKLOAD
-      if (my_cpu == 0 && combinationsValue){
-      if (transactionsLeft < 0) {
-          transactionsLeft = combinations.at(currentCombination) / nb_threads;
-          update = combinations.at(currentCombination + 1);
-          accessesPerOperations = combinations.at(currentCombination + 2);
-          alpha_value = combinations.at(currentCombination + 3);
-          currentCombination += 4;
+    if (my_cpu == 0 && combinationsValue)
+    {
+      if (transactionsLeft < 0)
+      {
+        transactionsLeft = combinations.at(currentCombination) / nb_threads;
+        update = combinations.at(currentCombination + 1);
+        accessesPerOperations = combinations.at(currentCombination + 2);
+        alpha_value = combinations.at(currentCombination + 3);
+        currentCombination += 4;
 
-          if(currentCombination > combinations.size()) {
-              printf("Wrong combinations, exceeded size! %d > %d\n", currentCombination, combinations.size());
-          }
+        if(currentCombination > combinations.size()) {
+          printf("Wrong combinations, exceeded size! %d > %d\n", currentCombination, combinations.size());
+        }
 
-          printf("Going to use the next workload for %d txs:\n", transactionsLeft);
-          printf("\tUpdate rate = %li\n", update);
-          printf("\tAccesses = %li\n", accessesPerOperations);
-          printf("\tContention factor = %f\n", alpha_value);
+        printf("Going to use the next workload for %d txs:\n", transactionsLeft);
+        printf("\tUpdate rate = %li\n", update);
+        printf("\tAccesses = %li\n", accessesPerOperations);
+        printf("\tContention factor = %f\n", alpha_value);
       }
-      }
+    }
 #endif
 
-      long pruned_range = ((long)(range*alpha_value));
-
-      int ro = 0;
-      TM_BEGIN_EXT(0,ro);
-      // __transaction_atomic {
-          int access;
-          for (access = 0; access < accessesPerOperations; access++) {
-              val = random_generate(randomPtr) % 100;
-              if (val < update) {
-                  if (val < update / 2) {
-                      /* Add random value */
-                      val = (random_generate(randomPtr) % pruned_range) + 1;
-                      set_add(set, val);
-                  } else {
-                      /* Remove random value */
-                      val = (random_generate(randomPtr) % pruned_range) + 1;
-                      set_remove(set, val);
-                  }
-              } else {
-                  /* Look for random value */
-                  long tmp = (random_generate(randomPtr) % pruned_range) + 1;
-                  set_contains(set, tmp);
-              }
-
-          }
-      // }
-      TM_END();
-      myOps -= accessesPerOperations;
+    long pruned_range = ((long)(range*alpha_value));
+    operation(TM_ARG val, randomPtr, pruned_range);
+    myOps -= accessesPerOperations;
 
 #ifdef CHANGINGWORKLOAD
-      if (my_cpu == 0) {
-      transactionsLeft -= accessesPerOperations;
-      }
+      if (my_cpu == 0) 
+        transactionsLeft -= accessesPerOperations;
 #endif
   }
-
+  TM_THREAD_EXIT();
 }
 
 
@@ -293,36 +331,36 @@ int main(int argc, char* argv[]) {
        break;
      case 'z':
 #ifdef CHANGINGWORKLOAD
-if (combinationsValue)
-         combinations.push_back(atof(optarg));
+        if (combinationsValue)
+          combinations.push_back(atof(optarg));
 #endif
-       alpha_value = atof(optarg);
-       break;
+        alpha_value = atof(optarg);
+        break;
      case 'u':
 #ifdef CHANGINGWORKLOAD
-if (combinationsValue)
-         combinations.push_back(atoi(optarg));
+        if (combinationsValue)
+          combinations.push_back(atoi(optarg));
 #endif
-       update = atoi(optarg);
-       break;
-     case 'o':
+        update = atoi(optarg);
+        break;
+    case 'o':
 #ifdef CHANGINGWORKLOAD
-if (combinationsValue)
-         combinations.push_back(atoi(optarg));
+        if (combinationsValue)
+          combinations.push_back(atoi(optarg));
 #endif
-       accessesPerOperations = atoi(optarg);
-       break;
+        accessesPerOperations = atoi(optarg);
+        break;
 #ifdef CHANGINGWORKLOAD
-     case 'c':
-         combinationsValue = 1;
-         combinations.push_back(atol(optarg));
-         break;
+    case 'c':
+        combinationsValue = 1;
+        combinations.push_back(atol(optarg));
+        break;
 #endif
-     case '?':
-       printf("Use -h or --help for help\n");
-       exit(0);
-     default:
-       exit(1);
+    case '?':
+      printf("Use -h or --help for help\n");
+      exit(0);
+    default:
+      exit(1);
     }
   }
 
@@ -333,6 +371,9 @@ if (combinationsValue)
 
   printf("range after alpha: %ld\n", (long)(range*alpha_value));
 
+  SIM_GET_NUM_CPU(nb_threads);
+  TM_STARTUP(nb_threads,42);
+  P_MEMORY_STARTUP(nb_threads);
   thread_startup(nb_threads);
 
   double time_total = 0.0;
@@ -365,4 +406,9 @@ if (combinationsValue)
   printf("Time = %0.6lf\n", time_total);
   // printf("Energy = %0.6lf\n", energy_total);
 
+  TM_SHUTDOWN();
+  P_MEMORY_SHUTDOWN();
+  GOTO_SIM();
+  thread_shutdown();
+  MAIN_RETURN(0);
 }
