@@ -222,13 +222,14 @@ __TM_is_tfiar_exact(void* const TM_buff)
 # define RELEASE_WRITE_LOCK(){ \
 	if ( local_exec_mode == 1 ) \
   { \
-    order_ts[local_thread_id].value++; /* INSIDE TRANSACTION */ \
+    /* INSIDE TRANSACTION */ \
 	  __TM_suspend(); \
 	    UPDATE_TS_STATE(NON_DURABLE); /* committing rot*/ \
       /* order_ts[local_thread_id].value=atomicInc();  */\
 		  QUIESCENCE_CALL_ROT(); \
       rmb(); \
 	  __TM_resume(); \
+    order_ts[local_thread_id].value = ++global_order_ts; \
 		__TM_end(); \
   \
   READ_TIMESTAMP(end_tx); \

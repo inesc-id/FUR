@@ -26,26 +26,43 @@
  * GLOBALS
  * ################################################################### */
 
-static volatile int stop;
+static __attribute__((aligned(CACHE_LINE_SIZE))) volatile int stop;
 
 /* ################################################################### *
  * ARRAY
  * ################################################################### */
 
 #define ARRAY_SIZE 0xFFFF
-static __attribute__((aligned(CACHE_LINE_SIZE))) uintptr_t array[ARRAY_SIZE];
+static __attribute__((aligned(CACHE_LINE_SIZE))) uintptr_t *array;
+static int nb_items;
 
-static int tx(uintptr_t *ptr, uintptr_t value)
-{
+typedef struct {
+  int p;
+  int k;
+  int nb_items;
+  uintptr_t *array;
   uintptr_t i;
-  int ro = 0; 
+  uintptr_t value;
+} aux_t;
 
-  TM_BEGIN_EXT(ro, RW);
-  i = FAST_PATH_SHARED_READ(ptr);
-  FAST_PATH_SHARED_WRITE(ptr, i+1);
+static int tx(int p, uintptr_t value)
+{
+  volatile __attribute__((aligned(CACHE_LINE_SIZE))) aux_t aux;
+  volatile __attribute__((aligned(CACHE_LINE_SIZE))) int ro = 0;
+  aux.array = array;
+  aux.p = p;
+  aux.value = value;
+  aux.nb_items = nb_items;
+
+  TM_BEGIN_EXT(RW, ro);
+  for (aux.k = 0; aux.k < aux.nb_items; aux.k++)
+  {
+    aux.i = FAST_PATH_SHARED_READ(aux.array[aux.p + aux.k]);
+    FAST_PATH_SHARED_WRITE(aux.array[aux.p + aux.k], aux.value+aux.i);
+  }
   TM_END();
 
-  return i;
+  return aux.i;
 }
 
 // TODO: remove these from here
@@ -98,10 +115,12 @@ static void *test(void *arg)
   printf("Start thread %i\n", d->id);
   barrier_cross(d->barrier);
 
+  // uintptr_t *a = d->array + d->id * 512;
   while (__atomic_load_n(&stop, __ATOMIC_ACQUIRE) == 0)
-    tx(array + d->id * 64, i++);
+    tx(d->id * 32, i++);
 
   TM_THREAD_EXIT();
+  barrier_cross(d->barrier);
   return NULL;
 }
 
@@ -119,15 +138,10 @@ int main(int argc, char **argv)
   struct option long_options[] = {
     // These options don't set a flag
     {"help",                      no_argument,       NULL, 'h'},
-    {"accounts",                  required_argument, NULL, 'a'},
-    {"contention-manager",        required_argument, NULL, 'c'},
+    {"items-written",             required_argument, NULL, 'm'},
     {"duration",                  required_argument, NULL, 'd'},
     {"num-threads",               required_argument, NULL, 'n'},
-    {"read-all-rate",             required_argument, NULL, 'r'},
-    {"read-threads",              required_argument, NULL, 'R'},
     {"seed",                      required_argument, NULL, 's'},
-    {"write-all-rate",            required_argument, NULL, 'w'},
-    {"write-threads",             required_argument, NULL, 'W'},
     {"disjoint",                  no_argument,       NULL, 'j'},
     {NULL, 0, NULL, 0}
   };
@@ -145,9 +159,12 @@ int main(int argc, char **argv)
   long duration = 10000;
   long seed = 0;
 
+  array = (uintptr_t*) calloc(ARRAY_SIZE/*  + 512 */, sizeof(uintptr_t));
+  // array += 512; // some padding
+
   while(1) {
     i = 0;
-    c = getopt_long(argc, argv, "ha:c:d:n:r:R:s:w:W:j", long_options, &i);
+    c = getopt_long(argc, argv, "hm:d:n:s:j", long_options, &i);
 
     if(c == -1)
       break;
@@ -168,6 +185,8 @@ int main(int argc, char **argv)
               "Options:\n"
               "  -h, --help\n"
               "        Print this message\n"
+              "  -m, --items-written\n"
+              "        Number of items written in the array\n"
               "  -n, --num-threads <int>\n"
               "        Number of threads (default=" XSTR(DEFAULT_NB_THREADS) ")\n"
          );
@@ -176,6 +195,9 @@ int main(int argc, char **argv)
        duration = atoi(optarg);
        break;
      case 'n':
+       nb_threads = atoi(optarg);
+       break;
+     case 'm':
        nb_threads = atoi(optarg);
        break;
      case '?':
@@ -243,6 +265,7 @@ int main(int argc, char **argv)
 
   for (i = 0; i < nb_threads; i++) {
     printf("Creating thread %d\n", i);
+    data[i].array = array;
     data[i].id = i;
     data[i].nb_threads = nb_threads;
     data[i].seed = rand();
@@ -276,6 +299,7 @@ int main(int argc, char **argv)
 
   free(threads);
   free(data);
+  free(array);
 
   return ret;
 }

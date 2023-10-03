@@ -473,13 +473,13 @@ __TM_is_tfiar_exact(void* const TM_buff)
     READ_TIMESTAMP(start_sus);\
 	  __TM_suspend(); \
       UPDATE_TS_STATE(NON_DURABLE); /* committing rot*/ \
-      /*order_ts[local_thread_id].value=atomicInc(); */\
+      /* order_ts[local_thread_id].value=atomicInc(); */ \
       QUIESCENCE_CALL_ROT(); \
       rmb(); \
 	  __TM_resume(); \
     READ_TIMESTAMP(end_sus);\
     stats_array[local_thread_id].sus_time+=end_sus-start_sus;\
-    order_ts[local_thread_id].value++;\
+    order_ts[local_thread_id].value = ++global_order_ts;\
 		__TM_end(); \
   \
   READ_TIMESTAMP(end_tx); \

@@ -8,8 +8,8 @@ fi
 backend=$1  # e.g.: herwl
 
 
-htm_retries=50
-rot_retries=50
+htm_retries=10
+rot_retries=10
 batch_ratio=1
 
 if [ $# -eq 4 ] ; then
@@ -34,6 +34,7 @@ rm lib/thread.c
 rm lib/rdtsc.h
 rm lib/tm.h
 cp ../../backends/extra_MACROS.h lib/
+cp ../../backends/POWER_common.h lib/
 cp ../../backends/extra_threadc.h lib/
 
 mkdir lib

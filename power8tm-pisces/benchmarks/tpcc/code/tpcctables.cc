@@ -694,7 +694,7 @@ __attribute__((transaction_safe))  static T* find(const BPlusTree<int64_t, T*, T
 }*/
 
 template <typename T>
-__attribute__((transaction_safe))  static T* find_tm(TM_ARGDECL const BPlusTree<int64_t, T*, TPCCTables::KEYS_PER_INTERNAL, TPCCTables::KEYS_PER_LEAF>& tree, int64_t key) {
+__attribute__((transaction_safe)) static T* find_tm(TM_ARGDECL const BPlusTree<int64_t, T*, TPCCTables::KEYS_PER_INTERNAL, TPCCTables::KEYS_PER_LEAF>& tree, int64_t key) {
     T* output = NULL;
     bool out;
     if(local_exec_mode == 1 || local_exec_mode == 3)

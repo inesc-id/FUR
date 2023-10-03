@@ -217,15 +217,15 @@ inline intptr_t TxLoad_P(void* var){
 
 
 
-# define FAST_PATH_RESTART() __TM_abort();
-# define FAST_PATH_SHARED_READ(var) (var)
-# define FAST_PATH_SHARED_READ_P(var) (var)
-# define FAST_PATH_SHARED_READ_D(var) (var)
-# define FAST_PATH_SHARED_WRITE(var, val) ({var = val; var;})
+# define FAST_PATH_RESTART()                __TM_abort();
+# define FAST_PATH_SHARED_READ(var)         (var)
+# define FAST_PATH_SHARED_READ_P(var)       (var)
+# define FAST_PATH_SHARED_READ_D(var)       (var)
+# define FAST_PATH_SHARED_WRITE(var, val)   ({var = val; var;})
 # define FAST_PATH_SHARED_WRITE_P(var, val) ({var = val; var;})
 # define FAST_PATH_SHARED_WRITE_D(var, val) ({var = val; var;})
 
-# define SLOW_PATH_RESTART() FAST_PATH_RESTART()
+# define SLOW_PATH_RESTART()                  FAST_PATH_RESTART()
 # define SLOW_PATH_SHARED_READ(var)           FAST_PATH_SHARED_READ(var)
 # define SLOW_PATH_SHARED_READ_P(var)         FAST_PATH_SHARED_READ_P(var)
 # define SLOW_PATH_SHARED_READ_F(var)         FAST_PATH_SHARED_READ_D(var)

@@ -1,7 +1,7 @@
 CC       := gcc
-CFLAGS   += -std=c++11 -gdwarf-2 -g3 -w -pthread -fpermissive -mcpu=power9 -mtune=power9 -I$(LIB) -I . -O2
+CFLAGS   += -std=c++11 -Wall -w -pthread -fpermissive -mcpu=power9 -mtune=power9 -I$(LIB) -I . -O2
 CPP      := g++
-CPPFLAGS += -std=c++11 -gdwarf-2 -g3 -w -pthread -fpermissive -mcpu=power9 -mtune=power9 -I$(LIB) -I . -O2
+CPPFLAGS += -std=c++11 -Wall -w -pthread -fpermissive -mcpu=power9 -mtune=power9 -I$(LIB) -I . -O2
 LD       := g++
 LIBS     += -lpthread
 

@@ -126,8 +126,9 @@ long hm_insert_htm(TM_ARGDECL List* set, long val)
   Node_HM* prev = set->sentinel;
   Node_HM* curr = FAST_PATH_SHARED_READ_P(prev->m_next);
 
-  while (curr != NULL) {
-    if (FAST_PATH_SHARED_READ(curr->m_val) >= val)
+  while (curr != NULL)
+  {
+    if ( FAST_PATH_SHARED_READ(curr->m_val) >= val )
       break;
     prev = curr;
     curr = FAST_PATH_SHARED_READ_P(prev->m_next);
@@ -148,7 +149,8 @@ long hm_insert_htm(TM_ARGDECL List* set, long val)
     return x;
   }
   return 0;*/
-  if (!curr || (FAST_PATH_SHARED_READ(curr->m_val) > val)) {
+  if ( !curr || (FAST_PATH_SHARED_READ(curr->m_val) > val) )
+  {
     Node_HM* insert_point = (Node_HM*)(prev);
     // create the new node
     Node_HM* i = (Node_HM*)TM_MALLOC(sizeof(Node_HM));
@@ -158,6 +160,7 @@ long hm_insert_htm(TM_ARGDECL List* set, long val)
     FAST_PATH_SHARED_WRITE_P(insert_point->m_next, i);
     return 1;
   }
+  return 0;
 }
 
 void hm_insert_seq(List* set, long val)

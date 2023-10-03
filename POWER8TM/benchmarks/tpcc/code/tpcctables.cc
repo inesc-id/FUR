@@ -136,8 +136,10 @@ int64_t TPCCTables::stockLevel(TM_ARGDECL int64_t warehouse_id, int64_t district
   // Iterate over [o_id-20, o_id)
   int64_t stock_quantity;
 	Stock * stock;
-  for (int64_t order_id = o_id - STOCK_LEVEL_ORDERS; order_id < o_id; ++order_id) {
-    for (int line_number = 1; line_number <= Order::MAX_OL_CNT; ++line_number) {
+  for (int64_t order_id = o_id - STOCK_LEVEL_ORDERS; order_id < o_id; ++order_id)
+  {
+    for (int line_number = 1; line_number <= Order::MAX_OL_CNT; ++line_number)
+    {
       OrderLine* line = findOrderLine(TM_ARG warehouse_id, district_id, order_id, line_number);
       if (line == NULL) {
         // We can break since we have reached the end of the lines for this order.

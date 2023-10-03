@@ -5,14 +5,15 @@ from parse_sol import Parser
 from plot import LinesPlot, BackendDataset
 
 if __name__ == "__main__":
-  params = BenchmarkParameters(["-n"])
+  params = BenchmarkParameters(["-n", "-m"])
   # params = BenchmarkParameters(["-u", "-d", "-i", "-r", "-n"])
   # params.set_params("-u", [100])
   # params.set_params("-d", [5000000])
   # params.set_params("-i", [262144])
   # params.set_params("-r", [262144])
-  params.set_params("-n", [1, 2, 4, 8, 12, 16])
-  nb_samples = 5
+  params.set_params("-n", [1, 2, 4, 8, 12, 16, 20, 24, 32])
+  params.set_params("-m", [10])
+  nb_samples = 10
   locations = [
     "/home/ubuntu/PersistentSiHTM/POWER8TM/benchmarks/array",
     "/home/ubuntu/PersistentSiHTM/POWER8TM/benchmarks/array",
@@ -27,7 +28,6 @@ if __name__ == "__main__":
     "p8tm-psi-v2-ci-lc-hidden"
   ]
   name_map = {
-    "htm-sgl" : "HTM",
     "p8tm-psi-v2-fi-improved" : "PSI-OL",
     "p8tm-psi-v2-ci" : "PSI",
     "p8tm-psi-v2-fi-improved-lc-hidden" : "PSI-OL (LC)",
@@ -49,12 +49,12 @@ if __name__ == "__main__":
       data.run_sample(params)
       parser = Parser(f"{data_folder}/{backend}-s{s}")
       parser.parse_all(f"{data_folder}/{backend}-s{s}.csv")
-    for i in ["SINGLE-WRITE"]: # TODO: this for-loop was originally to plot 10%, 50%, 90% updates
+    for i in params.params["-m"]: # TODO: this for-loop was originally to plot 10%, 50%, 90% updates
       if i not in datasets_thr:
         datasets_thr[i] = []
       ds = BackendDataset(
         name_map[backend],
-        [f"{data_folder}/{backend}-s{s}.csv" for s in range(5)],
+        [f"{data_folder}/{backend}-s{s}.csv" for s in range(nb_samples)],
         lambda e: e["-n"], "Nb. Threads",
         lambda e: e["total-commits"]/e["time"], "Throughput (T/s)", {}
       )
@@ -76,6 +76,6 @@ if __name__ == "__main__":
       datasets_thr[i] += [ds]
     
   for k,v in datasets_thr.items():
-    lines_plot = LinesPlot(f"{i}", f"thr_{k}.pdf")
+    lines_plot = LinesPlot(f"{i}", f"thr_{k}writes.pdf")
     lines_plot.plot(v)
     lines_plot.plot_stack(v)

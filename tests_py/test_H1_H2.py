@@ -10,10 +10,11 @@ if __name__ == "__main__":
   params.set_params("-d", [4000000])
   params.set_params("-i", [50000, 200000])
   params.set_params("-r", [2000000])
-  params.set_params("-n", [1, 2, 4, 8, 12, 16])
-  nb_samples = 10
+  params.set_params("-n", [1, 2, 4, 8, 12, 16, 20, 24, 32])
+  nb_samples = 3
   locations = [
     "/home/ubuntu/PersistentSiHTM/power8tm-pisces/benchmarks/datastructures",
+    "/home/ubuntu/PersistentSiHTM/POWER8TM/benchmarks/datastructures",
     "/home/ubuntu/PersistentSiHTM/POWER8TM/benchmarks/datastructures",
     "/home/ubuntu/PersistentSiHTM/POWER8TM/benchmarks/datastructures",
     "/home/ubuntu/PersistentSiHTM/POWER8TM/benchmarks/datastructures",
@@ -26,8 +27,9 @@ if __name__ == "__main__":
     "spht",
     "p8tm-si",
     "p8tm-psi-v2-ci",
-    "p8tm-psi-v2-co",
-    "p8tm-psi-v2-fi",
+    "p8tm-psi-v2-ci-lc-hidden",
+    "p8tm-psi-v2-fi-improved",
+    "p8tm-psi-v2-fi-improved-lc-hidden",
     "htm-sgl"
   ]
   data_folder = "dataH1H2"
@@ -43,9 +45,9 @@ if __name__ == "__main__":
           backend,
           f"{data_folder}/{backend}-s{s}"
         )
-      # data.run_sample(params) # TODO: not running samples
-      # parser = Parser(f"{data_folder}/{backend}-s{s}")
-      # parser.parse_all(f"{data_folder}/{backend}-s{s}.csv")
+      data.run_sample(params) # TODO: not running samples
+      parser = Parser(f"{data_folder}/{backend}-s{s}")
+      parser.parse_all(f"{data_folder}/{backend}-s{s}.csv")
     for u in params.params["-u"]:
       if u not in datasets_thr:
         datasets_thr[u] = {}

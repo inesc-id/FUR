@@ -19,6 +19,10 @@ if [ $# -ge 4 ] ; then
     retry_policy=$4
 fi
 
+cp ../../backends/extra_MACROS.h lib/
+cp ../../backends/POWER_common.h lib/
+cp ../../backends/extra_threadc.h lib/
+
 cp ../../backends/$backend/tm.h code/
 cp ../../backends/$backend/thread.c code/
 cp ../../backends/$backend/thread.h code/

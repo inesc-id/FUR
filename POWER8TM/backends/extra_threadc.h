@@ -11,8 +11,8 @@ __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t debug[MAXTHREADS];
 __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t ts_state[MAXTHREADS];
 __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t order_ts[MAXTHREADS];
 
-__thread long ts_snapshot[80];
-__thread long state_snapshot[80];
+__thread __attribute__((aligned(CACHE_LINE_SIZE))) long ts_snapshot[80];
+__thread __attribute__((aligned(CACHE_LINE_SIZE))) long state_snapshot[80];
 
 __attribute__((aligned(CACHE_LINE_SIZE))) uint64_t heap[SIZE_HEAP];
 uint64_t *heappointer=heap;

@@ -37,6 +37,10 @@ rm lib/tm.h
 
 mkdir lib
 
+cp ../../backends/extra_MACROS.h lib/
+cp ../../backends/POWER_common.h lib/
+cp ../../backends/extra_threadc.h lib/
+
 cp ../../backends/$backend/Defines.common.mk .
 cp ../../backends/$backend/Makefile .
 cp ../../backends/$backend/Makefile.flags .

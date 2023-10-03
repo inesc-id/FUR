@@ -113,13 +113,12 @@ extern __attribute__((aligned(CACHE_LINE_SIZE))) pthread_spinlock_t single_globa
 extern __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t ts_state[];
 extern __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t order_ts[];
 
-extern __thread long ts_snapshot[80];
-extern __thread long state_snapshot[80];
+extern __attribute__((aligned(CACHE_LINE_SIZE))) __thread long ts_snapshot[80];
+extern __attribute__((aligned(CACHE_LINE_SIZE))) __thread long state_snapshot[80];
 
-extern int global_order_ts;
+extern __attribute__((aligned(CACHE_LINE_SIZE))) int global_order_ts;
 extern uint64_t **log_per_thread;
 extern uint64_t **log_pointer;
-extern int global_order_ts;
 extern __thread volatile uint64_t* mylogpointer;
 extern __thread volatile uint64_t* mylogpointer_snapshot;
 extern __thread volatile uint64_t* mylogend;
@@ -216,8 +215,8 @@ ptr = start + (((ptr-start)+1)&LOGSIZE_mask);\
 # define delay_for_pm 25 //number that gives a latency between 0.18 usec and 0.5 usec
 
 # define emulate_pm_slowdown(){\
-volatile int i;\
-    for(i=0;i<delay_for_pm;i++);\
+  volatile int i;\
+  for(i=0;i<delay_for_pm;i++);\
 }\
 
 #define commit_log(ptr, ts, start, end)\

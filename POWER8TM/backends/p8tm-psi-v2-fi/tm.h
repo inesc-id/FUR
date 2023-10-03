@@ -52,10 +52,6 @@
 
 #endif
 
-#include <asm/unistd.h>
-#define rmb()           asm volatile ("sync" ::: "memory")
-#define rwmb()           asm volatile ("lwsync" ::: "memory")
-#define cpu_relax()     asm volatile ("" ::: "memory");
 //#define cpu_relax() asm volatile ("or 31,31,31")
 #ifdef REDUCED_TM_API
 #    define SPECIAL_THREAD_ID()         get_tid()
@@ -63,92 +59,8 @@
 #    define SPECIAL_THREAD_ID()         thread_getId()
 #endif
 
-
-#include <htmxlintrin.h>
-
-extern __inline long
-__attribute__ ((__gnu_inline__, __always_inline__, __artificial__))
-__TM_is_self_conflict(void* const TM_buff)
-{
-  texasr_t texasr = __builtin_get_texasr ();
-  return _TEXASR_SELF_INDUCED_CONFLICT (texasr);
-}
-
-extern __inline long
-__attribute__ ((__gnu_inline__, __always_inline__, __artificial__))
-__TM_is_trans_conflict(void* const TM_buff)
-{
-  texasr_t texasr = __builtin_get_texasr ();
-  return _TEXASR_TRANSACTION_CONFLICT (texasr);
-}
-
-extern __inline long
-__attribute__ ((__gnu_inline__, __always_inline__, __artificial__))
-__TM_is_nontrans_conflict(void* const TM_buff)
-{
-  texasr_t texasr = __builtin_get_texasr ();
-  return _TEXASR_NON_TRANSACTIONAL_CONFLICT (texasr);
-}
-
-extern __inline long
-__attribute__ ((__gnu_inline__, __always_inline__, __artificial__))
-__TM_is_persistent_abort(void* const TM_buff)
-{
-  texasr_t texasr = *_TEXASR_PTR (TM_buff);
-  return _TEXASR_FAILURE_PERSISTENT (texasr);
-}
-
-extern __inline long
-__attribute__ ((__gnu_inline__, __always_inline__, __artificial__))
-__TM_conflict(void* const TM_buff)
-{
-  texasr_t texasr = *_TEXASR_PTR (TM_buff);
-  /* Return TEXASR bits 11 (Self-Induced Conflict) through
-     14 (Translation Invalidation Conflict).  */
-  return (_TEXASR_EXTRACT_BITS (texasr, 14, 4)) ? 1 : 0;
-}
-
-extern __inline long
-__attribute__ ((__gnu_inline__, __always_inline__, __artificial__))
-__TM_user_abort (void* const TM_buff)
-{
-  texasr_t texasr = *_TEXASR_PTR (TM_buff);
-  return _TEXASR_ABORT (texasr);
-}
-
-extern __inline long
-__attribute__ ((__gnu_inline__, __always_inline__, __artificial__))
-__TM_capacity_abort (void* const TM_buff)
-{
-  texasr_t texasr = *_TEXASR_PTR (TM_buff);
-  return _TEXASR_FOOTPRINT_OVERFLOW (texasr);
-}
-
-extern __inline long
-__attribute__ ((__gnu_inline__, __always_inline__, __artificial__))
-__TM_begin_rot (void* const TM_buff)
-{
-  *_TEXASRL_PTR (TM_buff) = 0;
-  if (__builtin_expect (__builtin_tbegin (1), 1)){
-    return _HTM_TBEGIN_STARTED;
-  }
-#ifdef __powerpc64__
-  *_TEXASR_PTR (TM_buff) = __builtin_get_texasr ();
-#else
-  *_TEXASRU_PTR (TM_buff) = __builtin_get_texasru ();
-  *_TEXASRL_PTR (TM_buff) = __builtin_get_texasr ();
-#endif
-  *_TFIAR_PTR (TM_buff) = __builtin_get_tfiar ();
-  return 0;
-}
-
-extern __inline long
-__attribute__ ((__gnu_inline__, __always_inline__, __artificial__))
-__TM_is_tfiar_exact(void* const TM_buff)
-{
-  texasr_t texasr = *_TEXASR_PTR (TM_buff);
- return _TEXASR_TFIAR_EXACT(texasr);
-}
+#include "POWER_common.h"
+#include "extra_MACROS.h"
 
 #  define TM_STARTUP(numThread, bId) my_tm_startup(numThread);READ_TIMESTAMP(start_ts);
 #  define TM_SHUTDOWN(){ \
@@ -300,9 +212,8 @@ __TM_is_tfiar_exact(void* const TM_buff)
 # define ACQUIRE_GLOBAL_LOCK(){ \
 	UPDATE_STATE(INACTIVE); \
   rmb(); \
-	while (pthread_spin_trylock(&single_global_lock) != 0) { \
-        	cpu_relax(); \
-        } \
+	while (pthread_spin_trylock(&single_global_lock) != 0) \
+  { cpu_relax(); } \
 	QUIESCENCE_CALL_GL(); \
 };\
 
@@ -310,11 +221,11 @@ __TM_is_tfiar_exact(void* const TM_buff)
 //Begin ROT
 # define USE_ROT(){ \
 	int rot_budget = ROT_RETRIES; \
-	while(IS_LOCKED(single_global_lock)){ \
-    cpu_relax(); \
-  } \
+	while(IS_LOCKED(single_global_lock)) \
+  { cpu_relax(); } \
 	long start_time; \
-	while(rot_budget > 0){ \
+	while (rot_budget > 0) \
+  { \
 		rot_status = 1; \
 		TM_buff_type TM_buff; \
     UPDATE_TS_STATE(ACTIVE);\
@@ -338,17 +249,22 @@ __TM_is_tfiar_exact(void* const TM_buff)
       stats_array[local_thread_id].abort_time += end_tx - start_tx;\
       \
       stats_array[local_thread_id].rot_conflict_aborts ++; \
-			if(__TM_is_self_conflict(&TM_buff)){ stats_array[local_thread_id].rot_self_conflicts++; \
-			}\
-			else if(__TM_is_trans_conflict(&TM_buff)) stats_array[local_thread_id].rot_trans_conflicts++; \
-			else if(__TM_is_nontrans_conflict(&TM_buff)) stats_array[local_thread_id].rot_nontrans_conflicts++; \
-			else stats_array[local_thread_id].rot_other_conflicts++; \
+			if(__TM_is_self_conflict(&TM_buff)) \
+        stats_array[local_thread_id].rot_self_conflicts++; \
+			else if(__TM_is_trans_conflict(&TM_buff)) \
+        stats_array[local_thread_id].rot_trans_conflicts++; \
+			else if(__TM_is_nontrans_conflict(&TM_buff)) \
+        stats_array[local_thread_id].rot_nontrans_conflicts++; \
+			else \
+        stats_array[local_thread_id].rot_other_conflicts++; \
       rot_status = 0; \
       rot_budget--; \
 			int state = check_state(ts_state[local_thread_id].value); \
       if(state == ACTIVE) \
+      { \
         UPDATE_STATE(INACTIVE);\
         rmb(); \
+      } \
     } \
     else if (__TM_user_abort(&TM_buff)) { \
       READ_TIMESTAMP(end_tx); \
@@ -467,44 +383,47 @@ __TM_is_tfiar_exact(void* const TM_buff)
 //
 //
 # define RELEASE_WRITE_LOCK(){ \
-	if(local_exec_mode == 1){ \
+	if(local_exec_mode == 1) \
+  { \
     READ_TIMESTAMP(start_sus);\
 	  __TM_suspend(); \
-	    UPDATE_TS_STATE(NON_DURABLE); /* committing rot*/ \
+      UPDATE_TS_STATE(NON_DURABLE); /* committing rot*/ \
       order_ts[local_thread_id].value=atomicInc();\
-		QUIESCENCE_CALL_ROT(); \
+      QUIESCENCE_CALL_ROT(); \
       rmb(); \
 	  __TM_resume(); \
     READ_TIMESTAMP(end_sus);\
     stats_array[local_thread_id].sus_time+=end_sus-start_sus;\
 		__TM_end(); \
-  \
-  READ_TIMESTAMP(end_tx); \
-  stats_array[local_thread_id].commit_time += end_tx - start_tx;\
-  \
-  \
-  READ_TIMESTAMP(start_flush);\
-  /*commit_log(mylogpointer,order_ts[local_thread_id].value,mylogstart,mylogend);*/\
-	commit_log_marker(mylogpointer,order_ts[local_thread_id].value,mylogstart,mylogend); \
-  READ_TIMESTAMP(end_flush);\
-  stats_array[local_thread_id].flush_time+=end_flush-start_flush;\
-  long num_threads = global_numThread; \
-  long index;\
-  long state;\
-  READ_TIMESTAMP(start_wait2);\
-  for(index=0; index < num_threads; index++){ \
-	  if(index == local_thread_id) continue; \
-      state= (ts_state[index].value & (3l<<62))>>62;\
-	  while(state == NON_DURABLE && order_ts[index].value <= order_ts[local_thread_id].value){ \
-	  	cpu_relax(); \
-	  } \
-	} \
-  READ_TIMESTAMP(end_wait2);\
-  stats_array[local_thread_id].wait2_time+=end_wait2-start_wait2;\
+    \
+    READ_TIMESTAMP(end_tx); \
+    stats_array[local_thread_id].commit_time += end_tx - start_tx;\
+    \
+    \
+    READ_TIMESTAMP(start_flush);\
+    /*commit_log(mylogpointer,order_ts[local_thread_id].value,mylogstart,mylogend);*/\
+    commit_log_marker(mylogpointer,order_ts[local_thread_id].value,mylogstart,mylogend); \
+    READ_TIMESTAMP(end_flush);\
+    stats_array[local_thread_id].flush_time+=end_flush-start_flush;\
+    long num_threads = global_numThread; \
+    long index;\
+    long state;\
+    READ_TIMESTAMP(start_wait2);\
+    for(index=0; index < num_threads; index++) \
+    { \
+      if(index == local_thread_id) \
+      continue; \
+      state = (ts_state[index].value & (3l<<62))>>62;\
+      while(state == NON_DURABLE && order_ts[index].value <= order_ts[local_thread_id].value) \
+      { cpu_relax(); } \
+    } \
+    READ_TIMESTAMP(end_wait2);\
+    stats_array[local_thread_id].wait2_time+=end_wait2-start_wait2;\
 		UPDATE_STATE(INACTIVE); /* inactive rot*/ \
 		stats_array[local_thread_id].rot_commits++; \
 	} \
-	else{ \
+	else \
+  { \
     order_ts[local_thread_id].value=global_order_ts++;\
     rmb();\
 		pthread_spin_unlock(&single_global_lock); \
