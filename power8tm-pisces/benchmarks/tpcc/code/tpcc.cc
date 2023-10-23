@@ -118,229 +118,233 @@ static struct option long_options[] = {
 
 int main(int argc, char** argv)
 {
-    if (argc < 9) {
-        printf("Please provide all the minimum parameters\n");
+  if (argc < 9) {
+      printf("Please provide all the minimum parameters\n");
+      exit(1);
+  }
+
+  std::vector<int> workload_changes;
+  int adapt_workload = 0;
+  int num_warehouses;
+  int num_clients;
+  int i, c;
+
+  workload_changes.reserve(128);
+
+  rw_lock = PTHREAD_RWLOCK_INITIALIZER;
+  global_stock_level_txs_ratio = DEFAULT_STOCK_LEVEL_TXS_RATIO;
+  global_delivery_txs_ratio = DEFAULT_DELIVERY_TXS_RATIO;
+  global_order_status_txs_ratio = DEFAULT_ORDER_STATUS_TXS_RATIO;
+  global_payment_txs_ratio = DEFAULT_PAYMENT_TXS_RATIO;
+  global_new_order_ratio = DEFAULT_NEW_ORDER_TXS_RATIO;
+  num_warehouses = DEFAULT_NUMBER_WAREHOUSES;
+  duration_secs = DEFAULT_TIME_SECONDS;
+  num_clients = DEFAULT_NUM_CLIENTS;
+
+  // If "-c" is found, then we start parsing the parameters into the workload_changes.
+  // The argument of each "-c" is the number of seconds that it lasts.
+
+  while (1)
+  {
+    i = 0;
+    c = getopt_long(argc, argv, "s:d:o:p:r:w:t:n:c:m:", long_options, &i);
+    if(c == -1)
+      break;
+
+    if(c == 0 && long_options[i].flag == 0)
+      c = long_options[i].val;
+
+    switch(c) {
+      case 'c':
+          adapt_workload = 1;
+          workload_changes.push_back(atoi(optarg));
+        break;
+      case 's':
+          workload_changes.push_back(atoi(optarg));
+        break;
+      case 'd':
+          workload_changes.push_back(atoi(optarg));
+        break;
+      case 'o':
+          workload_changes.push_back(atoi(optarg));
+        break;
+      case 'p':
+          workload_changes.push_back(atoi(optarg));
+        break;
+      case 'r':
+          workload_changes.push_back(atoi(optarg));
+        break;
+      case 'w':
+          workload_changes.push_back(atoi(optarg));
+        break;
+      case 'm':
+          num_warehouses = atoi(optarg);
+        break;
+      case 't':
+          duration_secs = atoi(optarg);
+        break;
+      case 'n':
+          num_clients = atoi(optarg);
+        break;
+      default:
+        printf("Incorrect argument! :(\n");
         exit(1);
     }
+  }
 
-    std::vector<int> workload_changes;
-    int adapt_workload = 0;
-    int num_warehouses;
-    int num_clients;
-    int i, c;
+  TPCCTables* tables = new TPCCTables();
+  SystemClock* clock = new SystemClock();
 
-    workload_changes.reserve(128);
-
-	  rw_lock = PTHREAD_RWLOCK_INITIALIZER;
-    global_stock_level_txs_ratio = DEFAULT_STOCK_LEVEL_TXS_RATIO;
-    global_delivery_txs_ratio = DEFAULT_DELIVERY_TXS_RATIO;
-    global_order_status_txs_ratio = DEFAULT_ORDER_STATUS_TXS_RATIO;
-    global_payment_txs_ratio = DEFAULT_PAYMENT_TXS_RATIO;
-    global_new_order_ratio = DEFAULT_NEW_ORDER_TXS_RATIO;
-    num_warehouses = DEFAULT_NUMBER_WAREHOUSES;
-    duration_secs = DEFAULT_TIME_SECONDS;
-    num_clients = DEFAULT_NUM_CLIENTS;
-
-    // If "-c" is found, then we start parsing the parameters into the workload_changes.
-    // The argument of each "-c" is the number of seconds that it lasts.
-
-    while(1) {
-        i = 0;
-        c = getopt_long(argc, argv, "s:d:o:p:r:w:t:n:c:m:", long_options, &i);
-        if(c == -1)
-          break;
-
-        if(c == 0 && long_options[i].flag == 0)
-          c = long_options[i].val;
-
-        switch(c) {
-         case 'c':
-            adapt_workload = 1;
-            workload_changes.push_back(atoi(optarg));
-          break;
-         case 's':
-             workload_changes.push_back(atoi(optarg));
-           break;
-         case 'd':
-             workload_changes.push_back(atoi(optarg));
-           break;
-         case 'o':
-             workload_changes.push_back(atoi(optarg));
-           break;
-         case 'p':
-             workload_changes.push_back(atoi(optarg));
-           break;
-         case 'r':
-             workload_changes.push_back(atoi(optarg));
-           break;
-         case 'w':
-             workload_changes.push_back(atoi(optarg));
-           break;
-         case 'm':
-             num_warehouses = atoi(optarg);
-             break;
-         case 't':
-             duration_secs = atoi(optarg);
-           break;
-         case 'n':
-        	 num_clients = atoi(optarg);
-        	 break;
-         default:
-           printf("Incorrect argument! :(\n");
-           exit(1);
-        }
-      }
-
-    TPCCTables* tables = new TPCCTables();
-    SystemClock* clock = new SystemClock();
-
-    // Create a generator for filling the database.
-    tpcc::RealRandomGenerator* random = new tpcc::RealRandomGenerator();
-    tpcc::NURandC cLoad = tpcc::NURandC::makeRandom(random);
-    random->setC(cLoad);
+  // Create a generator for filling the database.
+  tpcc::RealRandomGenerator* random = new tpcc::RealRandomGenerator();
+  tpcc::NURandC cLoad = tpcc::NURandC::makeRandom(random);
+  random->setC(cLoad);
 
 
-	SIM_GET_NUM_CPU(num_clients);
-        TM_STARTUP(num_clients,42);
-        P_MEMORY_STARTUP(num_clients);
-        thread_startup(num_clients);
+  SIM_GET_NUM_CPU(num_clients);
+  TM_STARTUP(num_clients,42);
+  P_MEMORY_STARTUP(num_clients);
+  thread_startup(num_clients);
 
-	TM_THREAD_ENTER();
+  TM_THREAD_ENTER();
 
-    // Generate the data
-    printf("Loading %ld warehouses... ", num_warehouses);
-    fflush(stdout);
-    char now[Clock::DATETIME_SIZE+1];
-    clock->getDateTimestamp(now);
-  	printf("num items: %d", Item::NUM_ITEMS);
-    int64_t begin = clock->getMicroseconds();
-    int ro = 1;
-    TM_BEGIN(ro);
-      local_exec_mode = 2;
-      TPCCGenerator generator(random, now, Item::NUM_ITEMS, District::NUM_PER_WAREHOUSE,
-      Customer::NUM_PER_DISTRICT, NewOrder::INITIAL_NUM_PER_DISTRICT);
-      generator.makeItemsTable(TM_ARG tables);
-      for (int i = 0; i < num_warehouses; ++i) {
-          generator.makeWarehouse(TM_ARG tables, i+1);
-      }
-    TM_END();
-    int64_t end = clock->getMicroseconds();
-    printf("%ld ms\n", (end - begin + 500)/1000);
+  // Generate the data
+  printf("Loading %ld warehouses... ", num_warehouses);
+  fflush(stdout);
+  char now[Clock::DATETIME_SIZE+1];
+  clock->getDateTimestamp(now);
+  printf("num items: %d", Item::NUM_ITEMS);
+  int64_t begin = clock->getMicroseconds();
+  int ro = 1;
+  TM_BEGIN(ro);
+  local_exec_mode = 2;
+  TPCCGenerator generator(random, now, Item::NUM_ITEMS, District::NUM_PER_WAREHOUSE,
+  Customer::NUM_PER_DISTRICT, NewOrder::INITIAL_NUM_PER_DISTRICT);
+  generator.makeItemsTable(TM_ARG tables);
+  for (int i = 0; i < num_warehouses; ++i)
+    generator.makeWarehouse(TM_ARG tables, i+1);
+  TM_END();
+  int64_t end = clock->getMicroseconds();
+  printf("%ld ms\n", (end - begin + 500)/1000);
 
 
-    // Client owns all the parameters
-    TPCCClient** clients = (TPCCClient**) malloc(num_clients * sizeof(TPCCClient*));
-    pthread_t* threads = (pthread_t*) malloc(num_clients * sizeof(pthread_t));
-    for (c = 0; c < num_clients; c++) {
-	 // Change the constants for run
-	 random = new tpcc::RealRandomGenerator();
-	 random->setC(tpcc::NURandC::makeRandomForRun(random, cLoad));
-        clients[c] = new TPCCClient(clock, random, tables, Item::NUM_ITEMS, static_cast<int>(num_warehouses),
-                District::NUM_PER_WAREHOUSE, Customer::NUM_PER_DISTRICT);
-    }
+  // Client owns all the parameters
+  TPCCClient** clients = (TPCCClient**) malloc(num_clients * sizeof(TPCCClient*));
+  pthread_t* threads = (pthread_t*) malloc(num_clients * sizeof(pthread_t));
+  for ( c = 0; c < num_clients; c++ )
+  {
+    // Change the constants for run
+    random = new tpcc::RealRandomGenerator();
+    random->setC(tpcc::NURandC::makeRandomForRun(random, cLoad));
+    clients[c] = new TPCCClient(
+      clock,
+      random,
+      tables,
+      Item::NUM_ITEMS,
+      static_cast<int>(num_warehouses),
+      District::NUM_PER_WAREHOUSE,
+      Customer::NUM_PER_DISTRICT
+    );
+  }
 
-    int64_t next_workload_secs;
-    uint64_t pos_vec = 0;
-    if (adapt_workload) {
-        next_workload_secs = workload_changes[pos_vec++];
-    } else {
-        next_workload_secs = duration_secs;
-    }
+  int64_t next_workload_secs;
+  uint64_t pos_vec = 0;
+  if (adapt_workload)
+      next_workload_secs = workload_changes[pos_vec++];
+  else
+      next_workload_secs = duration_secs;
+  
+  global_num_warehouses = workload_changes[pos_vec++];
+  global_stock_level_txs_ratio = workload_changes[pos_vec++];
+  global_delivery_txs_ratio = workload_changes[pos_vec++];
+  global_order_status_txs_ratio = workload_changes[pos_vec++];
+  global_payment_txs_ratio = workload_changes[pos_vec++];
+  global_new_order_ratio = workload_changes[pos_vec++];
 
-    global_num_warehouses = workload_changes[pos_vec++];
-    global_stock_level_txs_ratio = workload_changes[pos_vec++];
-    global_delivery_txs_ratio = workload_changes[pos_vec++];
-    global_order_status_txs_ratio = workload_changes[pos_vec++];
-    global_payment_txs_ratio = workload_changes[pos_vec++];
-    global_new_order_ratio = workload_changes[pos_vec++];
+  printf("Running with the following parameters for %ld secs: (max warehouses %d)\n", next_workload_secs, num_warehouses);
+  printf("\tWarehouses     (-w): %d\n", global_num_warehouses);
+  printf("\tStockLevel ratio   (-s): %d\n", global_stock_level_txs_ratio);
+  printf("\tDelivery ratio     (-d): %d\n", global_delivery_txs_ratio);
+  printf("\tOrder Status ratio (-o): %d\n", global_order_status_txs_ratio);
+  printf("\tPayment ratio      (-p): %d\n", global_payment_txs_ratio);
+  printf("\tNewOrder ratio     (-r): %d\n", global_new_order_ratio);
 
-    printf("Running with the following parameters for %ld secs: (max warehouses %d)\n", next_workload_secs, num_warehouses);
-    printf("\tWarehouses     (-w): %d\n", global_num_warehouses);
-    printf("\tStockLevel ratio   (-s): %d\n", global_stock_level_txs_ratio);
-    printf("\tDelivery ratio     (-d): %d\n", global_delivery_txs_ratio);
-    printf("\tOrder Status ratio (-o): %d\n", global_order_status_txs_ratio);
-    printf("\tPayment ratio      (-p): %d\n", global_payment_txs_ratio);
-    printf("\tNewOrder ratio     (-r): %d\n", global_new_order_ratio);
+  int sum = global_stock_level_txs_ratio + global_delivery_txs_ratio + global_order_status_txs_ratio
+          + global_payment_txs_ratio + global_new_order_ratio;
+  if ( sum != 100 )
+  {
+      printf("==== ERROR: the sum of the ratios of tx types does not match 100: %d\n", sum);
+      exit(1);
+  }
+  if ( global_num_warehouses > num_warehouses )
+  {
+      printf("==== ERROR: the number of warehouses is too large\n");
+      exit(1);
+  }
 
-    int sum = global_stock_level_txs_ratio + global_delivery_txs_ratio + global_order_status_txs_ratio
-            + global_payment_txs_ratio + global_new_order_ratio;
-    if (sum != 100) {
-        printf("==== ERROR: the sum of the ratios of tx types does not match 100: %d\n", sum);
-        exit(1);
-    }
-    if (global_num_warehouses > num_warehouses) {
-        printf("==== ERROR: the number of warehouses is too large\n");
-        exit(1);
-    }
+  //TM_STARTUP(num_clients,42);
 
-    //TM_STARTUP(num_clients,42);
-
-	TM_THREAD_EXIT();
-P_MEMORY_SHUTDOWN();
+  TM_THREAD_EXIT();
+  P_MEMORY_SHUTDOWN();
   GOTO_SIM();
   thread_shutdown();
-//TM_SHUTDOWN();
+  //TM_SHUTDOWN();
 
+  SIM_GET_NUM_CPU(num_clients);
+  TM_STARTUP(num_clients,42);
+  P_MEMORY_STARTUP(num_clients);
+  thread_startup(num_clients);
 
+  printf("Running... ");
+  fflush(stdout);
+  begin = clock->getMicroseconds();
+  //for (c = 0; c < num_clients; c++) {
+  //	pthread_create(&threads[c], NULL, client, clients[c]);
+  //}
+  thread_start(client, clients);
 
-SIM_GET_NUM_CPU(num_clients);
-        TM_STARTUP(num_clients,42);
-        P_MEMORY_STARTUP(num_clients);
-        thread_startup(num_clients);
+  /*    for (c = 0; c < num_clients; c++) {
+    pthread_join(threads[c], NULL);
+  }*/
 
-    printf("Running... ");
-    fflush(stdout);
-    begin = clock->getMicroseconds();
-    //for (c = 0; c < num_clients; c++) {
-    //	pthread_create(&threads[c], NULL, client, clients[c]);
-    //}
-    thread_start(client, clients);
-
-
-
-/*    for (c = 0; c < num_clients; c++) {
-    	pthread_join(threads[c], NULL);
-    }*/
-
-
-    end = clock->getMicroseconds();
-    int64_t microseconds = end - begin;
-
+  end = clock->getMicroseconds();
+  int64_t microseconds = end - begin;
 
   P_MEMORY_SHUTDOWN();
   GOTO_SIM();
   thread_shutdown();
 
-    unsigned long executed_stock_level_txs = 0;
-    unsigned long executed_delivery_txs = 0;
-    unsigned long executed_order_status_txs = 0;
-    unsigned long executed_payment_txs = 0;
-    unsigned long executed_new_order_txs = 0;
+  unsigned long executed_stock_level_txs = 0;
+  unsigned long executed_delivery_txs = 0;
+  unsigned long executed_order_status_txs = 0;
+  unsigned long executed_payment_txs = 0;
+  unsigned long executed_new_order_txs = 0;
 
-    for (c = 0; c < num_clients; c++) {
-        executed_stock_level_txs += clients[c]->executed_stock_level_txs_;
-        executed_delivery_txs += clients[c]->executed_delivery_txs_;
-        executed_order_status_txs += clients[c]->executed_order_status_txs_;
-        executed_payment_txs += clients[c]->executed_payment_txs_;
-        executed_new_order_txs += clients[c]->executed_new_order_txs_;
-    }
+  for ( c = 0; c < num_clients; c++ )
+  {
+    executed_stock_level_txs += clients[c]->executed_stock_level_txs_;
+    executed_delivery_txs += clients[c]->executed_delivery_txs_;
+    executed_order_status_txs += clients[c]->executed_order_status_txs_;
+    executed_payment_txs += clients[c]->executed_payment_txs_;
+    executed_new_order_txs += clients[c]->executed_new_order_txs_;
+  }
 
-    double sum_txs_exec = executed_stock_level_txs + executed_delivery_txs + executed_order_status_txs
-            + executed_payment_txs + executed_new_order_txs;
-    printf("\nExecuted the following txs types:\n");
-    printf("\tStockLevel : %.2f\t%lu\n", (executed_stock_level_txs / sum_txs_exec), executed_stock_level_txs);
-    printf("\tDelivery   : %.2f\t%lu\n", (executed_delivery_txs / sum_txs_exec), executed_delivery_txs);
-    printf("\tOrderStatus: %.2f\t%lu\n", (executed_order_status_txs / sum_txs_exec), executed_order_status_txs);
-    printf("\tPayment    : %.2f\t%lu\n", (executed_payment_txs / sum_txs_exec), executed_payment_txs);
-    printf("\tNewOrder   : %.2f\t%lu\n", (executed_new_order_txs / sum_txs_exec), executed_new_order_txs);
+  double sum_txs_exec = executed_stock_level_txs + executed_delivery_txs + executed_order_status_txs
+          + executed_payment_txs + executed_new_order_txs;
+  printf("\nExecuted the following txs types:\n");
+  printf("\tStockLevel : %.2f\t%lu\n", (executed_stock_level_txs / sum_txs_exec), executed_stock_level_txs);
+  printf("\tDelivery   : %.2f\t%lu\n", (executed_delivery_txs / sum_txs_exec), executed_delivery_txs);
+  printf("\tOrderStatus: %.2f\t%lu\n", (executed_order_status_txs / sum_txs_exec), executed_order_status_txs);
+  printf("\tPayment    : %.2f\t%lu\n", (executed_payment_txs / sum_txs_exec), executed_payment_txs);
+  printf("\tNewOrder   : %.2f\t%lu\n", (executed_new_order_txs / sum_txs_exec), executed_new_order_txs);
 
-    printf("%ld transactions in %ld ms = %.2f txns/s\n", (long)sum_txs_exec,
-            (microseconds + 500)/1000, sum_txs_exec / (double) microseconds * 1000000.0);
+  printf("%ld transactions in %ld ms = %.2f txns/s\n", (long)sum_txs_exec,
+          (microseconds + 500)/1000, sum_txs_exec / (double) microseconds * 1000000.0);
 
-    printf("Txs: %ld\n", (long)sum_txs_exec);
-    printf("Total time (secs): %.3f\n", (microseconds / 1000000.0));
+  printf("Txs: %ld\n", (long)sum_txs_exec);
+  printf("Total time (secs): %.3f\n", (microseconds / 1000000.0));
 
-	TM_SHUTDOWN();
+  TM_SHUTDOWN();
 
-    return 0;
+  return 0;
 }

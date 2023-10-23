@@ -10,6 +10,7 @@ extern "C" {
 __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t debug[MAXTHREADS];
 __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t ts_state[MAXTHREADS];
 __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t order_ts[MAXTHREADS];
+__attribute__((aligned(CACHE_LINE_SIZE))) __thread tx_local_vars_t tx_local_variables;
 
 __thread __attribute__((aligned(CACHE_LINE_SIZE))) long ts_snapshot[80];
 __thread __attribute__((aligned(CACHE_LINE_SIZE))) long state_snapshot[80];

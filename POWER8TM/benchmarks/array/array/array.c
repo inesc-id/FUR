@@ -117,7 +117,7 @@ static void *test(void *arg)
 
   // uintptr_t *a = d->array + d->id * 512;
   while (__atomic_load_n(&stop, __ATOMIC_ACQUIRE) == 0)
-    tx(d->id * 32, i++);
+    tx(d->id * 512, i++);
 
   TM_THREAD_EXIT();
   barrier_cross(d->barrier);
@@ -198,7 +198,7 @@ int main(int argc, char **argv)
        nb_threads = atoi(optarg);
        break;
      case 'm':
-       nb_threads = atoi(optarg);
+       nb_items = atoi(optarg);
        break;
      case '?':
        printf("Use -h or --help for help\n");

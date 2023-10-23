@@ -165,10 +165,10 @@ __TM_is_tfiar_exact(void* const TM_buff)
 #  define TM_THREAD_EXIT()
 
 # define IS_LOCKED(lock)        *((volatile int*)(&lock)) != 0
+# define IS_GLOBAL_LOCKED(lock) *((volatile int*)(&lock)) == 2
 
-# define IS_GLOBAL_LOCKED(lock)        *((volatile int*)(&lock)) == 2
-
-# define TM_BEGIN(ro) TM_BEGIN_EXT(0,ro)
+# define TM_BEGIN(ro) \
+  TM_BEGIN_EXT(0,ro)
 
 # define READ_TIMESTAMP(dest) __asm__ volatile("0:                  \n\tmfspr   %0,268           \n": "=r"(dest));
 

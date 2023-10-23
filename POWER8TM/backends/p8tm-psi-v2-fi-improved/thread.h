@@ -169,64 +169,42 @@ void
 my_tm_thread_enter();
 
 
-#define write_in_log(ptr,addr,val,start,end)\
-*ptr=(uint64_t)addr;\
-ptr = start + (((ptr-start)+1)&LOGSIZE_mask);\
-/*ptr=(ptr+1)&LOGSIZE_mask;*/\
-/*if(end-ptr<=0){\
-    ptr=start;\
-}*/\
-*ptr=val;\
-ptr = start + (((ptr-start)+1)&LOGSIZE_mask);\
-/*if(end-ptr<=0){\
-    ptr=start;\
-}*/\
-//assert(ptr!=0 && "ptr is null");\
-//assert(ptr-end<=0 && "ptr is larger than end of the log");\
-
-
 # define delay_for_pm 25 //number that gives a latency between 0.18 usec and 0.5 usec
 # define delay_per_cache_line 140
 extern __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t max_cache_line[80];
 
-# define emulate_pm_slowdown(n_cache){\
-int j;\
-for(j=0;j<n_cache;j++){\
-volatile int i;\
-    for(i=0;i<delay_for_pm;i++);{\
-    }\
-}\
-}\
 
-
-#define commit_log(ptr, ts, start, end) \
-    if (mylogpointer_snapshot < ptr) { \
-        while (mylogpointer_snapshot<=ptr) { \
-            __dcbst(mylogpointer_snapshot,0); \
-            max_cache_line[local_thread_id].value++; \
-            /*emulate_pm_slowdown();\
-            /*advance one cacheline */ \
-            mylogpointer_snapshot+=16; \
+#define commit_log_no_wait(ptr, ts, start, end) \
+if (mylogpointer_snapshot < ptr) /* handles normal case */ \
+{ \
+    while (mylogpointer_snapshot <= ptr) \
+    { \
+        __dcbst(mylogpointer_snapshot,0); \
+        max_cache_line[local_thread_id].value++; \
+        /*emulate_pm_slowdown();\
+        /*advance one cacheline */ \
+        mylogpointer_snapshot += 16; \
+    } \
+} \
+else /* handles warp around case */ \
+{ \
+    while (mylogpointer_snapshot != ptr) \
+    { \
+        __dcbst(mylogpointer_snapshot,0); \
+        max_cache_line[local_thread_id].value++;\
+        /*emulate_pm_slowdown();\
+        /*advance one cacheline */\
+        int _i;\
+        for ( _i=0; _i<16; _i++) \
+        { \
+            if ( mylogpointer_snapshot == ptr ) \
+                break;\
+            mylogpointer_snapshot++;\
+            if ( end-mylogpointer_snapshot <= 0 ) \
+                mylogpointer_snapshot = start;\
         } \
     } \
-    else \
-    { \
-        while(mylogpointer_snapshot!=ptr){ \
-            __dcbst(mylogpointer_snapshot,0); \
-            max_cache_line[local_thread_id].value++;\
-            /*emulate_pm_slowdown();\
-            /*advance one cacheline */\
-            int _i;\
-            for ( _i=0; _i<16; _i++) \
-            { \
-                if ( mylogpointer_snapshot==ptr ) \
-                    break;\
-                mylogpointer_snapshot++;\
-                if ( end-mylogpointer_snapshot<=0 ) \
-                    mylogpointer_snapshot = start;\
-            }\
-        } \
-    }\
+}\
 
 
 #define commit_log_marker(ptr,ts,start,end) \

@@ -177,44 +177,44 @@ __TM_is_tfiar_exact(void* const TM_buff)
     unsigned long rot_capacity_aborts = 0; \
     unsigned long rot_other_aborts = 0; \
     unsigned long gl_commits = 0; \
-	unsigned long commit_time = 0; \
+		unsigned long commit_time = 0; \
     unsigned long abort_time = 0; \
     int i = 0; \
     for (; i < 80; i++) { \
-       wait_time += stats_array[i].wait_time; \
-       total_time += stats_array[i].total_time; \
-       read_commits += stats_array[i].read_commits; \
-       htm_commits += stats_array[i].htm_commits; \
-       htm_conflict_aborts += stats_array[i].htm_conflict_aborts; \
-       htm_user_aborts += stats_array[i].htm_user_aborts; \
-       htm_self_conflicts += stats_array[i].htm_self_conflicts; \
-       htm_trans_conflicts += stats_array[i].htm_trans_conflicts; \
-       htm_nontrans_conflicts += stats_array[i].htm_nontrans_conflicts; \
-       htm_persistent_aborts += stats_array[i].htm_persistent_aborts; \
-       htm_capacity_aborts += stats_array[i].htm_capacity_aborts; \
-       htm_other_aborts += stats_array[i].htm_other_aborts; \
-       rot_commits += stats_array[i].rot_commits; \
-       rot_conflict_aborts += stats_array[i].rot_conflict_aborts; \
-       rot_user_aborts += stats_array[i].rot_user_aborts; \
-       rot_self_conflicts += stats_array[i].rot_self_conflicts; \
-       rot_trans_conflicts += stats_array[i].rot_trans_conflicts; \
-       rot_nontrans_conflicts += stats_array[i].rot_nontrans_conflicts; \
-       rot_other_conflicts += stats_array[i].rot_other_conflicts; \
-       rot_persistent_aborts += stats_array[i].rot_persistent_aborts; \
-       rot_capacity_aborts += stats_array[i].rot_capacity_aborts; \
-       rot_other_aborts += stats_array[i].rot_other_aborts; \
-       gl_commits += stats_array[i].gl_commits; \
-	   commit_time += stats_array[i].commit_time; \
-       abort_time += stats_array[i].abort_time; \
+			wait_time += stats_array[i].wait_time; \
+			total_time += stats_array[i].total_time; \
+			read_commits += stats_array[i].read_commits; \
+			htm_commits += stats_array[i].htm_commits; \
+			htm_conflict_aborts += stats_array[i].htm_conflict_aborts; \
+			htm_user_aborts += stats_array[i].htm_user_aborts; \
+			htm_self_conflicts += stats_array[i].htm_self_conflicts; \
+			htm_trans_conflicts += stats_array[i].htm_trans_conflicts; \
+			htm_nontrans_conflicts += stats_array[i].htm_nontrans_conflicts; \
+			htm_persistent_aborts += stats_array[i].htm_persistent_aborts; \
+			htm_capacity_aborts += stats_array[i].htm_capacity_aborts; \
+			htm_other_aborts += stats_array[i].htm_other_aborts; \
+			rot_commits += stats_array[i].rot_commits; \
+			rot_conflict_aborts += stats_array[i].rot_conflict_aborts; \
+			rot_user_aborts += stats_array[i].rot_user_aborts; \
+			rot_self_conflicts += stats_array[i].rot_self_conflicts; \
+			rot_trans_conflicts += stats_array[i].rot_trans_conflicts; \
+			rot_nontrans_conflicts += stats_array[i].rot_nontrans_conflicts; \
+			rot_other_conflicts += stats_array[i].rot_other_conflicts; \
+			rot_persistent_aborts += stats_array[i].rot_persistent_aborts; \
+			rot_capacity_aborts += stats_array[i].rot_capacity_aborts; \
+			rot_other_aborts += stats_array[i].rot_other_aborts; \
+			gl_commits += stats_array[i].gl_commits; \
+			commit_time += stats_array[i].commit_time; \
+			abort_time += stats_array[i].abort_time; \
     } \
     printf("Total sum time: %lu\n \
-	Total commit time: %lu\n \
+		Total commit time: %lu\n \
     Total abort time: %lu\n \
     Total wait time: %lu\n \
     Total commits: %lu\n \
        \tRead commits: %lu\n \
-       \tHTM commits:  %lu\n \
-       \tROT commits:  %lu\n \
+       \tHTM commits: %lu\n \
+       \tROT commits: %lu\n \
        \tGL commits: %lu\n \
     Total aborts: %lu\n \
        \tHTM conflict aborts:  %lu\n \

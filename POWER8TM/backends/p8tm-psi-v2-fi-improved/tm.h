@@ -138,6 +138,7 @@
 # define QUIESCENCE_CALL_ROT(){ \
   __attribute__((aligned(CACHE_LINE_SIZE))) static __thread volatile QUIESCENCE_CALL_ARGS_t q_args;\
 	q_args.num_threads = (long)global_numThread; \
+	READ_TIMESTAMP(q_args.start_wait_time); \
 	for(q_args.index=0; q_args.index < 80; q_args.index++) \
   { \
     if (q_args.index == q_args.num_threads) \
@@ -147,83 +148,84 @@
 		q_args.temp = ts_state[q_args.index].value; \
 		q_args.state = (q_args.temp & (3l<<62))>>62; \
 		switch(q_args.state) { \
-			case INACTIVE:\
-        state_snapshot[q_args.index] = 0; \
-        break;\
 			case ACTIVE:\
 				state_snapshot[q_args.index] = q_args.temp; \
 				break;\
+			case INACTIVE:\
 			case NON_DURABLE:\
-				state_snapshot[q_args.index] = 0; \
-				break;\
 			default:\
 				state_snapshot[q_args.index] = 0; \
 				break;\
 		} \
   } \
-	READ_TIMESTAMP(q_args.start_wait_time); \
 	for(q_args.index=0; q_args.index < q_args.num_threads; q_args.index++) \
   { \
 		if(q_args.index == local_thread_id) \
       continue; \
 		if(state_snapshot[q_args.index] != 0) \
     { \
-      commit_log(mylogpointer,order_ts[local_thread_id].value,mylogstart,mylogend);\
 			while(ts_state[q_args.index].value==state_snapshot[q_args.index] || ts_state[q_args.index].value > state_snapshot[q_args.index]) \
       { cpu_relax(); } \
 		} \
 	} \
   READ_TIMESTAMP(q_args.end_wait_time); \
-  if(((q_args.end_wait_time - q_args.start_wait_time)/delay_per_cache_line)<max_cache_line[local_thread_id].value){\
-    emulate_pm_slowdown(max_cache_line[local_thread_id].value-((q_args.end_wait_time - q_args.start_wait_time)/delay_per_cache_line));\
-  }\
   stats_array[local_thread_id].wait_time += q_args.end_wait_time - q_args.start_wait_time; \
+  max_cache_line[local_thread_id].value = 0; \
+  commit_log_no_wait(mylogpointer,order_ts[local_thread_id].value,mylogstart,mylogend);\
+  if (((q_args.end_wait_time - q_args.start_wait_time)/delay_per_cache_line) < max_cache_line[local_thread_id].value) \
+  {\
+    emulate_pm_slowdown_foreach_line(  /* 0); */ \
+    max_cache_line[local_thread_id].value /* computed number of cache-lines to flush*/ \
+    - ((q_args.end_wait_time - q_args.start_wait_time)/delay_per_cache_line) /* discount of the wait phase */ );\
+  }\
+  READ_TIMESTAMP(q_args.start_wait_time); \
+  stats_array[local_thread_id].flush_time += q_args.start_wait_time - q_args.end_wait_time; \
 };
 
 
 //
 //
 # define RELEASE_WRITE_LOCK(){ \
-	if(local_exec_mode == 1){ \
-    READ_TIMESTAMP(start_sus);\
+	if(local_exec_mode == 1) \
+  { \
 	  __TM_suspend(); \
+      READ_TIMESTAMP(start_sus);\
 	    UPDATE_TS_STATE(NON_DURABLE); /* committing rot*/ \
       order_ts[local_thread_id].value=atomicInc();\
-		QUIESCENCE_CALL_ROT(); \
+		  QUIESCENCE_CALL_ROT(); \
       rmb(); \
+      READ_TIMESTAMP(end_sus);\
+      stats_array[local_thread_id].sus_time+=end_sus-start_sus;\
 	  __TM_resume(); \
-    READ_TIMESTAMP(end_sus);\
-    stats_array[local_thread_id].sus_time+=end_sus-start_sus;\
 		__TM_end(); \
-  \
-  READ_TIMESTAMP(end_tx); \
-  stats_array[local_thread_id].commit_time += end_tx - start_tx;\
-  \
-  \
-  READ_TIMESTAMP(start_flush);\
-  /*commit_log(mylogpointer,order_ts[local_thread_id].value,mylogstart,mylogend);*/\
-	commit_log_marker(mylogpointer,order_ts[local_thread_id].value,mylogstart,mylogend); \
-  READ_TIMESTAMP(end_flush);\
-  stats_array[local_thread_id].flush_time+=end_flush-start_flush;\
-  long num_threads = global_numThread; \
-  long index;\
-  long state;\
-  READ_TIMESTAMP(start_wait2);\
-  for(index=0; index < num_threads; index++){ \
-	  if(index == local_thread_id) continue; \
-      state= (ts_state[index].value & (3l<<62))>>62;\
-	  while(state == NON_DURABLE && order_ts[index].value <= order_ts[local_thread_id].value){ \
-	  	cpu_relax(); \
-	  } \
-	} \
-  READ_TIMESTAMP(end_wait2);\
-  stats_array[local_thread_id].wait2_time+=end_wait2-start_wait2;\
+    READ_TIMESTAMP(end_tx); \
+    stats_array[local_thread_id].commit_time += end_tx - start_tx;\
+    READ_TIMESTAMP(start_flush);\
+    /*commit_log(mylogpointer,order_ts[local_thread_id].value,mylogstart,mylogend);*/\
+    commit_log_marker(mylogpointer,order_ts[local_thread_id].value,mylogstart,mylogend); \
+    READ_TIMESTAMP(end_flush);\
+    stats_array[local_thread_id].flush_time+=end_flush-start_flush;\
+    long num_threads = global_numThread; \
+    long index;\
+    long state;\
+    READ_TIMESTAMP(start_wait2);\
+    for(index=0; index < num_threads; index++) \
+    { \
+      if(index == local_thread_id) \
+        continue; \
+      state = (ts_state[index].value & (3l<<62))>>62;\
+      while(state == NON_DURABLE && order_ts[index].value <= order_ts[local_thread_id].value)\
+      { cpu_relax(); } \
+    } \
+    READ_TIMESTAMP(end_wait2);\
+    stats_array[local_thread_id].wait2_time+=end_wait2-start_wait2;\
 		UPDATE_STATE(INACTIVE); /* inactive rot*/ \
 		stats_array[local_thread_id].rot_commits++; \
 	} \
-	else{ \
-    order_ts[local_thread_id].value=global_order_ts++;\
-    rmb();\
+	else \
+  { \
+    order_ts[local_thread_id].value = global_order_ts++; \
+    rmb(); \
 		pthread_spin_unlock(&single_global_lock); \
 		stats_array[local_thread_id].gl_commits++; \
 	} \

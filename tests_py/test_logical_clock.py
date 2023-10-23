@@ -12,8 +12,8 @@ if __name__ == "__main__":
   # params.set_params("-i", [262144])
   # params.set_params("-r", [262144])
   params.set_params("-n", [1, 2, 4, 8, 12, 16, 20, 24, 32])
-  params.set_params("-m", [10])
-  nb_samples = 10
+  params.set_params("-m", [2, 16])
+  nb_samples = 3
   locations = [
     "/home/ubuntu/PersistentSiHTM/POWER8TM/benchmarks/array",
     "/home/ubuntu/PersistentSiHTM/POWER8TM/benchmarks/array",
