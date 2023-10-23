@@ -57,14 +57,18 @@ typedef struct quiscence_call_args {
 } __attribute__((aligned(CACHE_LINE_SIZE))) QUIESCENCE_CALL_ARGS_t;
 
 typedef struct tx_local_vars {
-    char prefixPadding[CACHE_LINE_SIZE];
-    volatile int rot_budget;
-    volatile unsigned char tx_status;
-    volatile unsigned char rot_status;
-    TM_buff_type TM_buff;
-    volatile long ts1;
-    volatile long ts2;
-    char suffixPadding[CACHE_LINE_SIZE];
+  char prefixPadding[CACHE_LINE_SIZE];
+  volatile int rot_budget;
+  volatile unsigned char tx_status;
+  volatile unsigned char rot_status;
+  TM_buff_type TM_buff;
+  volatile uint64_t *mylogpointer;
+  volatile uint64_t *mylogpointer_snapshot;
+  volatile uint64_t *mylogend;
+  volatile uint64_t *mylogstart;
+  volatile long ts1;
+  volatile long ts2;
+  char suffixPadding[CACHE_LINE_SIZE];
 } __attribute__((aligned(CACHE_LINE_SIZE))) tx_local_vars_t;
 
 typedef struct padded_pointer {
@@ -132,10 +136,10 @@ extern __attribute__((aligned(CACHE_LINE_SIZE))) __thread tx_local_vars_t tx_loc
 extern __attribute__((aligned(CACHE_LINE_SIZE))) int global_order_ts;
 extern uint64_t **log_per_thread;
 extern uint64_t **log_pointer;
-extern __thread volatile uint64_t* mylogpointer;
-extern __thread volatile uint64_t* mylogpointer_snapshot;
-extern __thread volatile uint64_t* mylogend;
-extern __thread volatile uint64_t* mylogstart;
+// extern __thread volatile uint64_t* mylogpointer;
+// extern __thread volatile uint64_t* mylogpointer_snapshot;
+// extern __thread volatile uint64_t* mylogend;
+// extern __thread volatile uint64_t* mylogstart;
 extern uint64_t  **log_replayer_start_ptr;
 extern uint64_t  **log_replayer_end_ptr;
 extern __thread volatile long start_tx;
@@ -195,14 +199,19 @@ my_tm_thread_enter();
   __dcbst(ptr, 0); /* flush the marker to the log */ \
   ptr = start + (((ptr - start) + 1) & LOGSIZE_mask); \
   atomic_STORE(log_replayer_end_ptr[local_thread_id], ptr); \
-  mylogpointer_snapshot = ptr; \
+  tx_local_variables.mylogpointer_snapshot = ptr; \
 // end place_abort_marker_in_log
 
 #define abortMarker() \
 { \
   if ( order_ts[local_thread_id].value != -1 ) \
   { \
-    place_abort_marker_in_log(mylogpointer,order_ts[local_thread_id].value,mylogstart,mylogend);\
+    place_abort_marker_in_log( \
+      tx_local_variables.mylogpointer, \
+      order_ts[local_thread_id].value, \
+      tx_local_variables.mylogstart, \
+      tx_local_variables.mylogend \
+    );\
   } \
   UPDATE_STATE(INACTIVE); \
 }; \
@@ -241,32 +250,32 @@ my_tm_thread_enter();
 }\
 
 #define commit_log(ptr, ts, start, end)\
-if ( mylogpointer_snapshot < ptr ) \
+if ( tx_local_variables.mylogpointer_snapshot < ptr ) \
 {\
-  while ( mylogpointer_snapshot <= ptr ) \
+  while ( tx_local_variables.mylogpointer_snapshot <= ptr ) \
   { \
-    __dcbst(mylogpointer_snapshot, 0); \
+    __dcbst(tx_local_variables.mylogpointer_snapshot, 0); \
     emulate_pm_slowdown(); \
     /*advance one cacheline */ \
-    mylogpointer_snapshot += 16; \
+    tx_local_variables.mylogpointer_snapshot += 16; \
   } \
 } \
 else \
 { \
-  while ( mylogpointer_snapshot != ptr ) \
+  while ( tx_local_variables.mylogpointer_snapshot != ptr ) \
   { \
-    __dcbst(mylogpointer_snapshot,0); \
+    __dcbst(tx_local_variables.mylogpointer_snapshot, 0); \
     emulate_pm_slowdown(); \
     /*advance one cacheline */ \
     int _i;\
     for( _i = 0; _i < 16; _i++ ) \
     { \
-      if ( mylogpointer_snapshot == ptr ) \
+      if ( tx_local_variables.mylogpointer_snapshot == ptr ) \
         break;\
-      mylogpointer_snapshot++; \
-      if ( end-mylogpointer_snapshot <= 0 ) \
+      tx_local_variables.mylogpointer_snapshot++; \
+      if ( end - tx_local_variables.mylogpointer_snapshot <= 0 ) \
       { \
-        mylogpointer_snapshot = start; \
+        tx_local_variables.mylogpointer_snapshot = start; \
       } \
     } \
   } \
@@ -415,7 +424,7 @@ else \
 	rs_counter = 0; \
 	local_thread_id = SPECIAL_THREAD_ID();\
   order_ts[local_thread_id].value = -1;\
-  mylogpointer_snapshot = mylogpointer;\
+  tx_local_variables.mylogpointer_snapshot = tx_local_variables.mylogpointer;\
 	if ( ro ) \
   { \
 		ACQUIRE_READ_LOCK(); \

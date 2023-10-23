@@ -94,10 +94,10 @@ __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t not_durable[MAXTHREADS
 __attribute__((aligned(CACHE_LINE_SIZE))) uint64_t heap[SIZE_HEAP];
 uint64_t *heappointer=heap;
 
-__thread uint64_t* mylogpointer;
-__thread uint64_t* mylogpointer_snapshot;
-__thread uint64_t* mylogend;
-__thread uint64_t* mylogstart;
+// __thread uint64_t* mylogpointer;
+// __thread uint64_t* mylogpointer_snapshot;
+// __thread uint64_t* mylogend;
+// __thread uint64_t* mylogstart;
 
 uint64_t  **log_per_thread;
 uint64_t  **log_pointer;
@@ -105,6 +105,8 @@ uint64_t  **log_replayer_start_ptr;
 uint64_t  **log_replayer_end_ptr;
 
 int global_order_ts=0;
+
+extern __attribute__((aligned(CACHE_LINE_SIZE))) __thread tx_local_vars_t tx_local_variables;
 
 
 
@@ -343,9 +345,9 @@ void *log_replayer1234(void *a){
 void
 my_tm_thread_enter()
 {
-    mylogpointer=log_pointer[global_threadId];
-    mylogend= mylogpointer+LOGSIZE-1;
-    mylogstart= mylogpointer;
+    tx_local_variables.mylogpointer = log_pointer[global_threadId];
+    tx_local_variables.mylogend= tx_local_variables.mylogpointer+LOGSIZE-1;
+    tx_local_variables.mylogstart= tx_local_variables.mylogpointer;
     if(thread_getId()==0){
        pthread_t t;
        if(pthread_create(&t,NULL,log_replayer1234,NULL)){
