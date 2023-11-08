@@ -26,6 +26,7 @@ class BackendDataset:
 
 class LinesPlot:
   def __init__(self, title, filename, figsize=(5, 4)):
+    print(f"LinesPlot title {title}")
     self.title = title
     self.filename = filename
     self.figsize = figsize

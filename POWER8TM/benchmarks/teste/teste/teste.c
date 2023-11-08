@@ -45,7 +45,6 @@ __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t triggers[80];
 __attribute__((aligned(CACHE_LINE_SIZE))) padded_statistics_t stats_array[80];
 __thread unsigned int local_exec_mode = 0;
 __thread unsigned int local_thread_id;
-__thread unsigned long rs_counter;
 //----------------------
 static volatile int stop;
 

@@ -94,8 +94,6 @@ extern __thread unsigned long cm_seed;
 #  define MAX_BACKOFF                   (1UL << 31)
 # endif /* MAX_BACKOFF */
 
-extern __attribute__((aligned(CACHE_LINE_SIZE))) pthread_spinlock_t single_global_lock;
-
 extern __attribute__((aligned(CACHE_LINE_SIZE))) padded_statistics_t stats_array[];
 
 extern __thread long counters_snapshot[80];
@@ -107,7 +105,6 @@ extern long              global_numThread;
 //static long global_numThread = 1;
 
 extern __thread unsigned int local_thread_id;
-
 extern __thread unsigned int local_exec_mode;
 
 #ifndef REDUCED_TM_API
@@ -135,10 +132,6 @@ extern __attribute__((aligned(CACHE_LINE_SIZE))) __thread long state_snapshot[80
 extern __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t debug[];
 extern uint64_t  **log_per_thread;
 extern uint64_t  **log_pointer;
-extern __thread volatile uint64_t* mylogpointer;
-extern __thread volatile uint64_t* mylogpointer_snapshot;
-extern __thread volatile uint64_t* mylogend;
-extern __thread volatile uint64_t* mylogstart;
 extern uint64_t  **log_replayer_start_ptr;
 extern uint64_t  **log_replayer_end_ptr;
 extern __thread volatile long start_tx;
@@ -169,49 +162,13 @@ void
 my_tm_thread_enter();
 
 
-# define delay_for_pm 25 //number that gives a latency between 0.18 usec and 0.5 usec
-# define delay_per_cache_line 140
 extern __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t max_cache_line[80];
-
-
-#define commit_log_no_wait(ptr, ts, start, end) \
-if (mylogpointer_snapshot < ptr) /* handles normal case */ \
-{ \
-    while (mylogpointer_snapshot <= ptr) \
-    { \
-        __dcbst(mylogpointer_snapshot,0); \
-        max_cache_line[local_thread_id].value++; \
-        /*emulate_pm_slowdown();\
-        /*advance one cacheline */ \
-        mylogpointer_snapshot += 16; \
-    } \
-} \
-else /* handles warp around case */ \
-{ \
-    while (mylogpointer_snapshot != ptr) \
-    { \
-        __dcbst(mylogpointer_snapshot,0); \
-        max_cache_line[local_thread_id].value++;\
-        /*emulate_pm_slowdown();\
-        /*advance one cacheline */\
-        int _i;\
-        for ( _i=0; _i<16; _i++) \
-        { \
-            if ( mylogpointer_snapshot == ptr ) \
-                break;\
-            mylogpointer_snapshot++;\
-            if ( end-mylogpointer_snapshot <= 0 ) \
-                mylogpointer_snapshot = start;\
-        } \
-    } \
-}\
-
 
 #define commit_log_marker(ptr,ts,start,end) \
     *ptr = bit63one | ts; \
     __dcbst(ptr,0); \
     ptr = start + (((ptr-start)+1)&LOGSIZE_mask); \
-    atomic_STORE(log_replayer_end_ptr[local_thread_id], ptr); \
+    atomic_STORE(log_replayer_end_ptr[q_args.tid], ptr); \
 
 
 

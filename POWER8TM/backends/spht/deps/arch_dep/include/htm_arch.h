@@ -44,6 +44,7 @@
 		HTM_NON_TRANS,
 		HTM_OTHER,
 		HTM_FALLBACK,
+		HTM_SELF,
 		HTM_PERSISTENT
   } errors_e;
 
@@ -63,19 +64,13 @@
 		code; \
 	})
 
-  extern __inline long
-__attribute__ ((__gnu_inline__, __always_inline__, __artificial__))
-__TM_user_abort (void* const TM_buff)
-{
-  texasr_t texasr = *_TEXASR_PTR (TM_buff);
-  return _TEXASR_ABORT (texasr);
-}
+
 extern __inline long
 __attribute__ ((__gnu_inline__, __always_inline__, __artificial__))
-__TM_capacity_abort (void* const TM_buff)
+__TM_is_self_conflict(void* const TM_buff)
 {
-  texasr_t texasr = *_TEXASR_PTR (TM_buff);
-  return _TEXASR_FOOTPRINT_OVERFLOW (texasr);
+  texasr_t texasr = __builtin_get_texasr ();
+  return _TEXASR_SELF_INDUCED_CONFLICT (texasr);
 }
 
 extern __inline long
@@ -96,6 +91,14 @@ __TM_is_nontrans_conflict(void* const TM_buff)
 
 extern __inline long
 __attribute__ ((__gnu_inline__, __always_inline__, __artificial__))
+__TM_is_persistent_abort(void* const TM_buff)
+{
+  texasr_t texasr = *_TEXASR_PTR (TM_buff);
+  return _TEXASR_FAILURE_PERSISTENT (texasr);
+}
+
+extern __inline long
+__attribute__ ((__gnu_inline__, __always_inline__, __artificial__))
 __TM_conflict(void* const TM_buff)
 {
   texasr_t texasr = *_TEXASR_PTR (TM_buff);
@@ -104,17 +107,60 @@ __TM_conflict(void* const TM_buff)
   return (_TEXASR_EXTRACT_BITS (texasr, 14, 4)) ? 1 : 0;
 }
 
+extern __inline long
+__attribute__ ((__gnu_inline__, __always_inline__, __artificial__))
+__TM_user_abort (void* const TM_buff)
+{
+  texasr_t texasr = *_TEXASR_PTR (TM_buff);
+  return _TEXASR_ABORT (texasr);
+}
+
+extern __inline long
+__attribute__ ((__gnu_inline__, __always_inline__, __artificial__))
+__TM_capacity_abort (void* const TM_buff)
+{
+  texasr_t texasr = *_TEXASR_PTR (TM_buff);
+  return _TEXASR_FOOTPRINT_OVERFLOW (texasr);
+}
+
+extern __inline long
+__attribute__ ((__gnu_inline__, __always_inline__, __artificial__))
+__TM_begin_rot (void* const TM_buff)
+{
+  *_TEXASRL_PTR (TM_buff) = 0;
+  if (__builtin_expect (__builtin_tbegin (1), 1)){
+    return _HTM_TBEGIN_STARTED;
+  }
+#ifdef __powerpc64__
+  *_TEXASR_PTR (TM_buff) = __builtin_get_texasr ();
+#else
+  *_TEXASRU_PTR (TM_buff) = __builtin_get_texasru ();
+  *_TEXASRL_PTR (TM_buff) = __builtin_get_texasr ();
+#endif
+  *_TFIAR_PTR (TM_buff) = __builtin_get_tfiar ();
+  return 0;
+}
+
+extern __inline long
+__attribute__ ((__gnu_inline__, __always_inline__, __artificial__))
+__TM_is_tfiar_exact(void* const TM_buff)
+{
+  texasr_t texasr = *_TEXASR_PTR (TM_buff);
+ return _TEXASR_TFIAR_EXACT(texasr);
+}
+
   // TODO: do also for TSX only with the common aborts
 	#define P8_ERROR_TO_INDEX(tm_buffer) ({ \
 	  errors_e code = HTM_OTHER; \
-	  if(__TM_is_illegal  ((tm_buffer)))          code = HTM_ILLEGAL; \
-	  else if(__TM_capacity_abort((tm_buffer)))  	   code = HTM_CAPACITY; \
+	  if(__TM_is_illegal  ((tm_buffer)))               code = HTM_ILLEGAL; \
+	  else if(__TM_capacity_abort((tm_buffer)))  	     code = HTM_CAPACITY; \
 	  else if(__TM_is_trans_conflict((tm_buffer)))     code = HTM_TRANS; \
 	  else if(__TM_is_nontrans_conflict((tm_buffer)))  code = HTM_NON_TRANS; \
 	  else if(__TM_user_abort((tm_buffer)))            code = HTM_EXPLICIT; \
+	  else if(__TM_is_self_conflict((tm_buffer)))      code = HTM_SELF; \
 	  else if(__TM_is_failure_persistent((tm_buffer))) code = HTM_PERSISTENT; \
-	  else if(__TM_conflict((tm_buffer)))           	   code = HTM_CONFLICT; \
-	  else    code = HTM_SUCCESS; \
+		else if(__TM_conflict((tm_buffer)))           	 code = HTM_CONFLICT; \
+	  else                                             code = HTM_SUCCESS; \
 	  code; \
 	})
 
@@ -143,6 +189,8 @@ __TM_conflict(void* const TM_buff)
 		HTM_RETRY,
 		HTM_CONFLICT,
     HTM_CAPACITY,
+    HTM_SELF,
+    HTM_PERSISTENT,
 		HTM_DEBUG,
 		HTM_NESTED,
 		HTM_OTHER,

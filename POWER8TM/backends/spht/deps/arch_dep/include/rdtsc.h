@@ -46,26 +46,37 @@ static __inline__ unsigned long long rdtsc(void) {
 
 #elif defined(__powerpc__)
 
-static __inline__ unsigned long long rdtsc(void) {
-    unsigned long long int result = 0;
-    unsigned long int upper, lower, tmp;
-    __asm__ volatile(
-            "0:               \n\t"
-            "mftbu   %0       \n\t"
-            "mftb    %1       \n\t"
-            "mftbu   %2       \n\t"
-            "cmpw    %2,%0    \n\t"
-            "bne     0b"
-            : "=r"(upper), "=r"(lower), "=r"(tmp)
-            );
-    result = upper;
-    result = result << 32;
-    result = result | lower;
-
-    return (result);
+// # define READ_TIMESTAMP(dest) __asm__ volatile("0:                  \n\tmfspr   %0,268           \n": "=r"(dest));
+static __inline__ 
+__attribute__ ((__gnu_inline__, __always_inline__, __artificial__))
+unsigned long long rdtsc(void) {
+  unsigned long long dest;
+  __asm__ volatile("0:                  \n\tmfspr   %0,268           \n": "=r"(dest));
+  return dest;
 }
 
-static __inline__ unsigned long long rdtscp(void) {
+// static __inline__ unsigned long long rdtsc(void) {
+//     unsigned long long int result = 0;
+//     unsigned long int upper, lower, tmp;
+//     __asm__ volatile(
+//             "0:               \n\t"
+//             "mftbu   %0       \n\t"
+//             "mftb    %1       \n\t"
+//             "mftbu   %2       \n\t"
+//             "cmpw    %2,%0    \n\t"
+//             "bne     0b"
+//             : "=r"(upper), "=r"(lower), "=r"(tmp)
+//             );
+//     result = upper;
+//     result = result << 32;
+//     result = result | lower;
+
+//     return (result);
+// }
+
+static __inline__ 
+__attribute__ ((__gnu_inline__, __always_inline__, __artificial__))
+unsigned long long rdtscp(void) {
   return rdtsc();
 }
 

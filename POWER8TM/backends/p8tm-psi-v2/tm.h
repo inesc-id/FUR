@@ -150,8 +150,12 @@ __TM_is_tfiar_exact(void* const TM_buff)
  return _TEXASR_TFIAR_EXACT(texasr);
 }
 
-#  define TM_STARTUP(numThread, bId) my_tm_startup(numThread);READ_TIMESTAMP(start_ts);
-#  define TM_SHUTDOWN(){ \
+#  define TM_STARTUP(numThread, bId) \
+  my_tm_startup(numThread); \
+  READ_TIMESTAMP(start_ts); \
+//
+#  define TM_SHUTDOWN() \
+{ \
 	  FINAL_PRINT(start_ts, end_ts); \
     /*printf("first time: %d, second time: %d\n",total_first_time,total_second_time);*/ \
 } \

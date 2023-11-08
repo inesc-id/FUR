@@ -10,7 +10,9 @@ extern "C" {
 __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t debug[MAXTHREADS];
 __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t ts_state[MAXTHREADS];
 __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t order_ts[MAXTHREADS];
-__attribute__((aligned(CACHE_LINE_SIZE))) __thread tx_local_vars_t tx_local_variables;
+__attribute__((aligned(CACHE_LINE_SIZE))) __thread tx_local_vars_t loc_var;
+__attribute__((aligned(CACHE_LINE_SIZE))) __thread QUIESCENCE_CALL_ARGS_t q_args;
+__attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t max_cache_line[80];
 
 __thread __attribute__((aligned(CACHE_LINE_SIZE))) long ts_snapshot[80];
 __thread __attribute__((aligned(CACHE_LINE_SIZE))) long state_snapshot[80];
@@ -18,10 +20,9 @@ __thread __attribute__((aligned(CACHE_LINE_SIZE))) long state_snapshot[80];
 __attribute__((aligned(CACHE_LINE_SIZE))) uint64_t heap[SIZE_HEAP];
 uint64_t *heappointer=heap;
 
-__thread volatile uint64_t* mylogpointer;
-__thread volatile uint64_t* mylogpointer_snapshot;
-__thread volatile uint64_t* mylogend;
-__thread volatile uint64_t* mylogstart;
+__thread unsigned int local_thread_id;
+__thread unsigned int local_exec_mode;
+
 __thread volatile long start_tx;
 __thread volatile long end_tx;
 __thread volatile long start_ts;
@@ -38,27 +39,11 @@ uint64_t  **log_pointer;
 uint64_t  **log_replayer_start_ptr;
 uint64_t  **log_replayer_end_ptr;
 
+__attribute__((aligned(CACHE_LINE_SIZE))) int single_global_lock;
 __attribute__((aligned(CACHE_LINE_SIZE))) int global_order_ts = 0;
 __attribute__((aligned(CACHE_LINE_SIZE))) int place_abort_marker = 1;
-
-/*__attribute__((aligned(CACHE_LINE_SIZE))) pthread_spinlock_t writers_lock = 0;
-
-__attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t counters[80];
-
-__attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t rot_counters[80];*/
-
-//__thread readset_t* rot_readset;
-/*__thread void* rot_readset[1000000];
 __thread unsigned long rs_counter;
-
-__thread unsigned long backoff = MIN_BACKOFF;
-__thread unsigned long cm_seed = 123456789UL;
-
 __attribute__((aligned(CACHE_LINE_SIZE))) padded_statistics_t stats_array[80];
-
-*/
-/*__thread unsigned int local_thread_id;
-__thread unsigned int local_exec_mode;*/
 
 void
 my_tm_startup(int numThread)
@@ -92,9 +77,9 @@ log_replayer1234(void *a)
 void
 my_tm_thread_enter()
 {
-  mylogpointer = log_pointer[global_threadId];
-  mylogend = mylogpointer + LOGSIZE - 1;
-  mylogstart = mylogpointer;
+  loc_var.mylogpointer = log_pointer[global_threadId];
+  loc_var.mylogend = loc_var.mylogpointer + LOGSIZE - 1;
+  loc_var.mylogstart = loc_var.mylogpointer;
   if ( thread_getId() == 0 )
   {
     pthread_t t;
@@ -103,7 +88,7 @@ my_tm_thread_enter()
       perror("failure creating thread");
     }
   }
-  assert(mylogpointer!=0 && "mylogpointer is null");\
+  assert(loc_var.mylogpointer!=0 && "mylogpointer is null");\
 }
 
 

@@ -278,4 +278,6 @@ thread_getNumThread()
     return global_numThread;
 }
 
+#include "extra_threadc.h"
+
 #endif

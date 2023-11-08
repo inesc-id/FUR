@@ -106,7 +106,7 @@ uint64_t  **log_replayer_end_ptr;
 
 int global_order_ts=0;
 
-extern __attribute__((aligned(CACHE_LINE_SIZE))) __thread tx_local_vars_t tx_local_variables;
+extern __attribute__((aligned(CACHE_LINE_SIZE))) __thread tx_local_vars_t loc_var;
 
 
 
@@ -345,9 +345,9 @@ void *log_replayer1234(void *a){
 void
 my_tm_thread_enter()
 {
-    tx_local_variables.mylogpointer = log_pointer[global_threadId];
-    tx_local_variables.mylogend= tx_local_variables.mylogpointer+LOGSIZE-1;
-    tx_local_variables.mylogstart= tx_local_variables.mylogpointer;
+    loc_var.mylogpointer = log_pointer[global_threadId];
+    loc_var.mylogend= loc_var.mylogpointer+LOGSIZE-1;
+    loc_var.mylogstart= loc_var.mylogpointer;
     if(thread_getId()==0){
        pthread_t t;
        if(pthread_create(&t,NULL,log_replayer1234,NULL)){

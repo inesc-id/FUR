@@ -87,10 +87,11 @@
 #  define SPECIAL_THREAD_ID()          thread_getId()
 #endif
 
-
+#include "extra_MACROS.h"
 
 # define TM_STARTUP(numThread,dummy) \
   HTM_init(numThread); \
+  for (int i = 0; i < 80; i++) memset(&(stats_array[i]), 0, sizeof(stats_array[i])); \
   input_parse_file("nvhtm_params.txt"); \
   learn_spin_nops(CPU_FREQ, FLUSH_LAT, /* FORCE_LEARN */1); \
   input_handler(); \
@@ -105,94 +106,14 @@
     PINNING_MAT, \
     G_NUMA_PINNING, \
     NVRAM_REGIONS \
-  );printf("flush lat %d\n",FLUSH_LAT) \
+  ); \
+  READ_TIMESTAMP(start_ts); \
+  printf("flush lat %d\n",FLUSH_LAT) \
 //
 
-# define TM_SHUTDOWN() { \
-    unsigned long wait_time = 0; \
-    unsigned long total_time = 0; \
-    unsigned long read_commits = 0; \
-    unsigned long htm_commits = 0; \
-    unsigned long htm_conflict_aborts = 0; \
-    unsigned long htm_user_aborts = 0; \
-    unsigned long htm_self_conflicts = 0; \
-    unsigned long htm_trans_conflicts = 0; \
-    unsigned long htm_nontrans_conflicts = 0; \
-    unsigned long htm_persistent_aborts = 0; \
-    unsigned long htm_capacity_aborts = 0; \
-    unsigned long htm_other_aborts = 0; \
-    unsigned long rot_commits = 0; \
-    unsigned long rot_conflict_aborts = 0; \
-    unsigned long rot_user_aborts = 0; \
-    unsigned long rot_self_conflicts = 0; \
-    unsigned long rot_trans_conflicts = 0; \
-    unsigned long rot_nontrans_conflicts = 0; \
-    unsigned long rot_other_conflicts = 0; \
-    unsigned long rot_persistent_aborts = 0; \
-    unsigned long rot_capacity_aborts = 0; \
-    unsigned long rot_other_aborts = 0; \
-    unsigned long gl_commits = 0; \
-    unsigned long commit_time = 0; \
-    unsigned long abort_time = 0; \
-    unsigned long commits = 0; \
-    int i = 0; \
-    \
-    wait_time += stats_array[i].wait_time; \
-    total_time += stats_array[i].total_time; \
-    read_commits += stats_array[i].read_commits; \
-    htm_commits += stats_array[i].htm_commits; \
-    commits=stats_nbSuccess;\
-    htm_conflict_aborts += stats_array[i].htm_conflict_aborts; \
-    htm_user_aborts += stats_array[i].htm_user_aborts; \
-    htm_self_conflicts += stats_array[i].htm_self_conflicts; \
-    htm_trans_conflicts += stats_array[i].htm_trans_conflicts; \
-    htm_nontrans_conflicts += stats_array[i].htm_nontrans_conflicts; \
-    htm_persistent_aborts += stats_array[i].htm_persistent_aborts; \
-    htm_capacity_aborts += stats_array[i].htm_capacity_aborts; \
-    htm_other_aborts += stats_array[i].htm_other_aborts; \
-    rot_commits += stats_array[i].rot_commits; \
-    rot_conflict_aborts += stats_array[i].rot_conflict_aborts; \
-    rot_user_aborts += stats_nbExpli; \
-    rot_self_conflicts += stats_array[i].rot_self_conflicts; \
-    rot_trans_conflicts += stats_nbTrans; \
-    rot_nontrans_conflicts += stats_nbNonTrans; \
-    rot_other_conflicts += stats_array[i].rot_other_conflicts; \
-    rot_persistent_aborts += stats_array[i].rot_persistent_aborts; \
-    rot_capacity_aborts += stats_nbCapac; \
-    rot_other_aborts += stats_array[i].rot_other_aborts; \
-    gl_commits += stats_array[i].gl_commits; \
-    commit_time += stats_array[i].commit_time; \
-    abort_time += stats_array[i].abort_time; \
-    \
-    printf("Total sum time: %lu\n \
-    Total commit time: %lu\n \
-    Total abort time: %lu\n \
-    Total wait time: %lu\n \
-    Total commits: %lu\n \
-       \tRead commits: %lu\n \
-       \tHTM commits:  %lu\n \
-       \tROT commits:  %lu\n \
-       \tGL commits: %lu\n \
-    Total aborts: %lu\n \
-       \tHTM conflict aborts:  %lu\n \
-          \t\tHTM self aborts:  %lu\n \
-          \t\tHTM trans aborts:  %lu\n \
-          \t\tHTM non-trans aborts:  %lu\n \
-       \tHTM user aborts :  %lu\n \
-       \tHTM capacity aborts:  %lu\n \
-          \t\tHTM persistent aborts:  %lu\n \
-       \tHTM other aborts:  %lu\n \
-       \tROT conflict aborts:  %lu\n \
-          \t\tROT self aborts:  %lu\n \
-          \t\tROT trans aborts:  %lu\n \
-          \t\tROT non-trans aborts:  %lu\n \
-          \t\tROT other conflict aborts:  %lu\n \
-       \tROT user aborts:  %lu\n \
-       \tROT capacity aborts:  %lu\n \
-          \t\tROT persistent aborts:  %lu\n \
-       \tROT other aborts:  %lu\n", total_time, commit_time, abort_time, wait_time, stats_nbSuccess+stats_nbFallback/*read_commits+htm_commits+rot_commits+gl_commits*/, read_commits, /* htm_commits */stats_nbSuccess, rot_commits, /* gl_commits */stats_nbFallback,stats_nbAbort/*htm_conflict_aborts+htm_user_aborts+htm_capacity_aborts+htm_other_aborts+rot_conflict_aborts+rot_user_aborts+rot_capacity_aborts+rot_other_aborts*/,htm_conflict_aborts,htm_self_conflicts,htm_trans_conflicts,htm_nontrans_conflicts,htm_user_aborts,htm_capacity_aborts,htm_persistent_aborts,htm_other_aborts,rot_conflict_aborts,rot_self_conflicts,rot_trans_conflicts,rot_nontrans_conflicts,rot_other_conflicts,rot_user_aborts,rot_capacity_aborts,rot_persistent_aborts,rot_other_aborts); \
-/*printf("first time: %d, second time: %d\n",total_first_time,total_second_time);*/ \
-  \
+# define TM_SHUTDOWN() \
+{ \
+  FINAL_PRINT(start_ts, end_ts); \
   printf("stats_nbSuccess: %li (%f\%)\nstats_nbAbort: %li (%f\%)\n\tconfl: %li (%f\%)\n\tcapac: %li (%f\%)\n\texpli: %li (%f\%)\n\tother: %li (%f\%)\nstats_nbFallback: %li (%f\%)\n", \
     stats_nbSuccess, (float)(1+stats_nbSuccess) * 100.0f / (stats_nbSuccess+stats_nbAbort+stats_nbFallback+1), \
     stats_nbAbort, (float)(1+stats_nbAbort) * 100.0f / (stats_nbSuccess+stats_nbAbort+stats_nbFallback+1), \
@@ -236,6 +157,15 @@
 
 # define TM_THREAD_EXIT() \
   TM_THREAD_EXIT_PROFILE(); \
+  int i = local_thread_id; \
+  stats_array[i].htm_commits = HTM_get_status_count(HTM_SUCCESS, NULL); \
+  stats_array[i].htm_conflict_aborts = HTM_get_status_count(HTM_CONFLICT, NULL); \
+  stats_array[i].htm_self_conflicts = HTM_get_status_count(HTM_SELF, NULL); \
+  stats_array[i].htm_trans_conflicts = HTM_get_status_count(HTM_TRANS, NULL); \
+  stats_array[i].htm_nontrans_conflicts = HTM_get_status_count(HTM_NON_TRANS, NULL); \
+  stats_array[i].htm_persistent_aborts = HTM_get_status_count(HTM_PERSISTENT, NULL); \
+  stats_array[i].rot_capacity_aborts = HTM_get_status_count(HTM_CAPACITY, NULL); \
+  stats_array[i].rot_other_aborts = HTM_get_status_count(HTM_OTHER, NULL); \
   __atomic_fetch_add(&stats_nbSuccess,  HTM_get_status_count(HTM_SUCCESS, NULL),  __ATOMIC_SEQ_CST); \
   __atomic_fetch_add(&stats_nbAbort,    HTM_get_status_count(HTM_ABORT, NULL),    __ATOMIC_SEQ_CST); \
   __atomic_fetch_add(&stats_nbConfl,    HTM_get_status_count(HTM_CONFLICT, NULL), __ATOMIC_SEQ_CST); \
@@ -243,7 +173,7 @@
   __atomic_fetch_add(&stats_nbExpli,    HTM_get_status_count(HTM_EXPLICIT, NULL), __ATOMIC_SEQ_CST); \
   __atomic_fetch_add(&stats_nbOther,    HTM_get_status_count(HTM_OTHER, NULL),    __ATOMIC_SEQ_CST); \
   __atomic_fetch_add(&stats_nbTrans,    HTM_get_status_count(HTM_TRANS, NULL),    __ATOMIC_SEQ_CST); \
-  __atomic_fetch_add(&stats_nbNonTrans, HTM_get_status_count(HTM_NON_TRANS, NULL),    __ATOMIC_SEQ_CST); \
+  __atomic_fetch_add(&stats_nbNonTrans, HTM_get_status_count(HTM_NON_TRANS, NULL),__ATOMIC_SEQ_CST); \
   __atomic_fetch_add(&stats_nbFallback, HTM_get_status_count(HTM_FALLBACK, NULL), __ATOMIC_SEQ_CST); \
   HTM_thr_exit(); \
 //
@@ -258,6 +188,8 @@ extern int isCraftySet; // need flag for crafty
 
 # define TM_END() \
   NV_HTM_END(HTM_SGL_tid) \
+  extern volatile __thread uint64_t timeScanning; \
+  stats_array[local_thread_id].wait_time += timeScanning; \
 //
 
 # define TM_RESTART()                  HTM_abort();

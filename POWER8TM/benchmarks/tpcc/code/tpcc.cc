@@ -32,34 +32,6 @@ int duration_secs;
 extern volatile int TM_isSequential;
 extern volatile int TM_totNbThreads;
 
-unsigned int htm_rot_enabled = 1;
-unsigned int allow_rots_ros = 1;
-unsigned int allow_htms = 1;
-unsigned int allow_stms = 0;
-
-// typedef __attribute__((aligned(CACHE_LINE_SIZE))) long padded_scalar_t;
-// __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t exists_sw;
-
-// __thread unsigned long backoff = MIN_BACKOFF;
-__thread unsigned long cm_seed = 123456789UL;
-
-// __attribute__((aligned(CACHE_LINE_SIZE))) padded_statistics_t stats_array[80];
-
-__attribute__((aligned(CACHE_LINE_SIZE))) padded_statistics_t stats_array[80];
-__attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t counters[80];
-__thread long counters_snapshot[80];
-__attribute__((aligned(CACHE_LINE_SIZE))) pthread_spinlock_t single_global_lock = 0;
-__attribute__((aligned(CACHE_LINE_SIZE))) pthread_spinlock_t fallback_in_use = 0;
-
-
-// __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t counters[80];
-
-__attribute__((aligned(CACHE_LINE_SIZE))) pthread_spinlock_t writers_lock = 0;
-
-__thread unsigned int local_exec_mode = 1;
-
-__thread unsigned int local_thread_id;
-
 __thread long rs_mask_2 = 0xffffffffffff0000;
 __thread long rs_mask_4 = 0xffffffff00000000;
 __thread long offset = 0;
@@ -69,14 +41,6 @@ __thread int16_t* i2p;
 __thread long moffset = 0;
 __thread long moffset_2 = 0;
 __thread long moffset_6 = 0;
-
-__thread void* rot_readset[1024];
-__thread char crot_readset[8192];
-__thread int irot_readset[2048];
-__thread int16_t i2rot_readset[4096];
-
-__thread unsigned long rs_counter = 0;
-
 
 unsigned int ucb_levers = 3;
 unsigned long ucb_trials[3];

@@ -116,14 +116,14 @@ typedef struct padded_statistics {
 } __attribute__((aligned(CACHE_LINE_SIZE))) padded_statistics_t;
 
 typedef struct readset_item {
-        long* addr;
+    long* addr;
 	long addr_p;
 	int type;
-        struct readset_item *next;
+    struct readset_item *next;
 } readset_item_t;
 
 typedef struct readset {
-        readset_item_t *head;
+    readset_item_t *head;
 } readset_t;
 
 
@@ -157,7 +157,6 @@ extern long              global_numThread;
 //static long global_numThread = 1;
 
 extern __thread unsigned int local_thread_id;
-
 extern __thread unsigned int local_exec_mode;
 
 #ifndef REDUCED_TM_API

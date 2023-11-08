@@ -26,40 +26,6 @@
 
 #include "tm.h"
 
-
-__thread void* rot_readset[1024];
-__thread char crot_readset[8192];
-__thread int irot_readset[2048];
-__thread int16_t i2rot_readset[4096];
-
-unsigned int htm_rot_enabled = 1;
-unsigned int allow_rots_ros = 1;
-unsigned int allow_htms = 1;
-
-__attribute__((aligned(CACHE_LINE_SIZE))) pthread_spinlock_t fallback_in_use;
-__attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t exists_sw;
-
-//__thread unsigned long backoff = MIN_BACKOFF;
-__thread unsigned long cm_seed = 123456789UL;
-
-__attribute__((aligned(CACHE_LINE_SIZE))) padded_statistics_t stats_array[80];
-
-long total_first_time;
-long total_second_time;
-
-__attribute__((aligned(CACHE_LINE_SIZE))) pthread_spinlock_t single_global_lock;
-
-__attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t counters[80];
-
-__attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t tx_length[10];
-
-__attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t triggers[80];
-
-__thread unsigned int local_exec_mode = 0;
-
-__thread unsigned int local_thread_id;
-
-//long global_numThread;
 long alpha;
 int running;
 __thread __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t b_type;
@@ -87,8 +53,6 @@ __thread long moffset = 0;
 __thread long moffset_2 = 0;
 __thread long moffset_6 = 0;
 
-__thread unsigned long rs_counter = 0;
-
 unsigned int allow_stms = 0;
 
 unsigned int ucb_levers = 3;
@@ -98,13 +62,13 @@ unsigned int selected_lever[50000];
 
 typedef struct Node_HM_t
 {
-        long m_val;
-        struct Node_HM_t* m_next;
+  long m_val;
+  struct Node_HM_t* m_next;
 } Node_HM;
 
 typedef struct List_t
 {
-        Node_HM* sentinel;
+  Node_HM* sentinel;
 } List;
 
 static volatile int stop;

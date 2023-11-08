@@ -69,9 +69,14 @@ static volatile int stop;
 
 typedef rbtree_t intset_t;
 
+static long compare(const void *a, const void *b)
+{
+  return ((intptr_t)a - (intptr_t)b);
+}
+
 intset_t *set_new()
 {
-  return rbtree_alloc();
+  return rbtree_alloc(&compare);
 }
 
 void set_delete(intset_t *set)

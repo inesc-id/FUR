@@ -13,15 +13,15 @@
 extern "C" {
 #endif /* __cplusplus */
 
-#ifdef NPROFILE
-#define MEASURE_TS(ts_var) /* empty */
-#define MEASURE_INC(counter) /* empty */
-#define INC_PERFORMANCE_COUNTER(ts_var1, ts_var2, counter) /* empty */
-#else
+// #ifdef NPROFILE
+// #define MEASURE_TS(ts_var) /* empty */
+// #define MEASURE_INC(counter) /* empty */
+// #define INC_PERFORMANCE_COUNTER(ts_var1, ts_var2, counter) /* empty */
+// #else
 #define MEASURE_TS(ts_var) ts_var = rdtscp()
 #define MEASURE_INC(counter) counter++
 #define INC_PERFORMANCE_COUNTER(ts_var1, ts_var2, counter) counter += ts_var2 - ts_var1
-#endif
+// #endif
 
 // These are always done
 #define A_MEASURE_TS(ts_var) ts_var = rdtscp()

@@ -7,9 +7,7 @@
 #include <sys/time.h>
 #include <time.h>
 #include "timer.h"
-#include<unistd.h>
 
-#include <unistd.h>
 
 #define DEFAULT_DURATION                10000
 #define DEFAULT_INITIAL                 256
@@ -27,7 +25,29 @@
 
 #include "tm.h"
 
+__thread void* rot_readset[1024];
+__thread char crot_readset[8192];
+__thread int irot_readset[2048];
+__thread int16_t i2rot_readset[4096];
+
+unsigned int htm_rot_enabled = 1;
+unsigned int allow_rots_ros = 1;
+unsigned int allow_htms = 1;
+
+__attribute__((aligned(CACHE_LINE_SIZE))) pthread_spinlock_t fallback_in_use;
+__attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t exists_sw;
+
+__thread unsigned long backoff = MIN_BACKOFF;
+__thread unsigned long cm_seed = 123456789UL;
+
+__attribute__((aligned(CACHE_LINE_SIZE))) padded_statistics_t stats_array[80];
+
+__attribute__((aligned(CACHE_LINE_SIZE))) pthread_spinlock_t single_global_lock = 0;
+
+__attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t counters[80];
+
 __thread unsigned int local_exec_mode = 0;
+
 __thread unsigned int local_thread_id;
 
 __thread long rs_mask_2 = 0xffffffffffff0000;
@@ -40,6 +60,7 @@ __thread long moffset = 0;
 __thread long moffset_2 = 0;
 __thread long moffset_6 = 0;
 
+__thread unsigned long rs_counter = 0;
 
 unsigned int allow_stms = 0;
 
@@ -68,61 +89,57 @@ List** bucket;
 TM_CALLABLE
 long hm_insert_htm(TM_ARGDECL List* set, long val)
 {
-  // traverse the list to find the insertion point
-  Node_HM* prev = set->sentinel;
-  Node_HM* curr = (Node_HM*) FAST_PATH_SHARED_READ_P(prev->m_next);
+        // traverse the list to find the insertion point
+        Node_HM* prev = set->sentinel;
+        Node_HM* curr = FAST_PATH_SHARED_READ_P(prev->m_next);
 	long temp;
-  while (curr != NULL)
-  {
-    temp = FAST_PATH_SHARED_READ(curr->m_val);
-    if (temp >= val)
-      break;
-    prev = curr;
-    curr = (Node_HM*) FAST_PATH_SHARED_READ_P(prev->m_next);
-  }
-	if (curr)
-  {
+        while (curr != NULL) {
+		temp = FAST_PATH_SHARED_READ(curr->m_val);
+                if (temp >= val)
+                        break;
+                prev = curr;
+                curr = FAST_PATH_SHARED_READ_P(prev->m_next);
+        }
+	if(curr){
 		temp = FAST_PATH_SHARED_READ(curr->m_val);
 	}
-  if (!curr || (temp > val))
-  {
-    Node_HM* insert_point = (Node_HM*)(prev);
-    // create the new node
-    Node_HM* i = (Node_HM*)TM_MALLOC(sizeof(Node_HM));
-    i->m_val = val;
-    i->m_next = (Node_HM*)(curr);
-    //int x;
-    //for(x = 0; x < 1000 ; x++)
-    FAST_PATH_SHARED_WRITE_P(insert_point->m_next, i);
-    return 1;
-  }
+        if (!curr || (temp > val)) {
+                Node_HM* insert_point = (Node_HM*)(prev);
+
+                // create the new node
+                Node_HM* i = (Node_HM*)TM_MALLOC(sizeof(Node_HM));
+                i->m_val = val;
+                i->m_next = (Node_HM*)(curr);
+		//int x;
+		//for(x = 0; x < 1000 ; x++)
+                FAST_PATH_SHARED_WRITE_P(insert_point->m_next, i);
+		return 1;
+        }
 	return 0;
 }
 
 void hm_insert_seq(List* set, long val)
 {
-  Node_HM* prev = set->sentinel;
-  Node_HM* curr = prev->m_next;
+        Node_HM* prev = set->sentinel;
+        Node_HM* curr = prev->m_next;
 
-  while (curr != NULL)
-  {
-    if (curr->m_val >= val)
-      break;
-    prev = curr;
-    curr = prev->m_next;
-  }
+        while (curr != NULL) {
+                if (curr->m_val >= val)
+                        break;
+                prev = curr;
+                curr = prev->m_next;
+        }
 
-  // now insert new_node between prev and curr
-  if (!curr || (curr->m_val > val))
-  {
-    Node_HM* insert_point = (Node_HM*)(prev);
+        // now insert new_node between prev and curr
+        if (!curr || (curr->m_val > val)) {
+                Node_HM* insert_point = (Node_HM*)(prev);
 
-    // create the new node
-    Node_HM* i = (Node_HM*)malloc(sizeof(Node_HM));
-    i->m_val = val;
-    i->m_next = (Node_HM*)(curr);
-    insert_point->m_next = i;
-  }
+                // create the new node
+                Node_HM* i = (Node_HM*)malloc(sizeof(Node_HM));
+                i->m_val = val;
+                i->m_next = (Node_HM*)(curr);
+                insert_point->m_next = i;
+        }
 }
 
 TM_CALLABLE
@@ -130,13 +147,13 @@ long hm_lookup_htm(TM_ARGDECL List* set, long val)
 {
 	int found = 0;
 	const Node_HM* curr = set->sentinel;
-	curr = (const Node_HM*) FAST_PATH_SHARED_READ_P(curr->m_next);
+	curr = FAST_PATH_SHARED_READ_P(curr->m_next);
 	long temp; 
 	while (curr != NULL) {
 		temp = FAST_PATH_SHARED_READ(curr->m_val);
 		if (temp >= val)
 			break;
-		curr = (const Node_HM*) FAST_PATH_SHARED_READ_P(curr->m_next);
+		curr = FAST_PATH_SHARED_READ_P(curr->m_next);
 	}
 	if(curr != NULL){
 		temp = FAST_PATH_SHARED_READ(curr->m_val);
@@ -149,50 +166,56 @@ TM_CALLABLE
 int hm_remove_htm(TM_ARGDECL List* set, long val)
 {
 	Node_HM* prev = set->sentinel;
-	Node_HM* curr = (Node_HM*) FAST_PATH_SHARED_READ_P(prev->m_next);
+	Node_HM* curr = FAST_PATH_SHARED_READ_P(prev->m_next);
 	while (curr != NULL) {
 		long temp = FAST_PATH_SHARED_READ(curr->m_val);
-    Node_HM *temp_p, *aux_p;
+		Node_HM* temp_p;
 		if (temp == val) {
 			Node_HM* mod_point = (Node_HM*)(prev);
-			temp_p = (Node_HM*) SLOW_PATH_SHARED_READ_P(curr->m_next);
-      SLOW_PATH_SHARED_WRITE_P(curr->m_next, temp_p);
-			SLOW_PATH_SHARED_WRITE_P(mod_point->m_next, temp_p);
-
-//paranoid (debug)
-      // if (temp_p) {
-      //   aux_p = SLOW_PATH_SHARED_READ_P(temp_p->m_next);
-      //   SLOW_PATH_SHARED_WRITE_P(temp_p->m_next, aux_p);
-      // }
+			temp_p = FAST_PATH_SHARED_READ_P(curr->m_next);
+			FAST_PATH_SHARED_WRITE_P(mod_point->m_next, temp_p);
 
 			FAST_PATH_FREE((Node_HM*)(curr));
 			return 1;
-    }
-    else if (temp > val) {
+		}
+		else if (temp > val) {
 			return 0;
 		}
 		prev = curr;
-		curr = (Node_HM*) FAST_PATH_SHARED_READ_P(prev->m_next);
+		curr = FAST_PATH_SHARED_READ_P(prev->m_next);
 	}
 	return 0;
 }
 
-
 TM_CALLABLE
-long hm_traverse_stm(TM_ARGDECL List* set)
+long hm_insert_stm(TM_ARGDECL List* set, long val)
 {
-	Node_HM* prev = set->sentinel;
-  Node_HM* curr = (Node_HM*) SLOW_PATH_SHARED_READ_P(prev->m_next);
-	long new_val = 0, previous_val;
-	while (curr != NULL) {
-    previous_val = new_val;
-    new_val = SLOW_PATH_SHARED_READ(curr->m_val);
-    
-    assert(new_val >= previous_val);
-    prev = curr;
-		curr = (Node_HM*) SLOW_PATH_SHARED_READ_P(prev->m_next);
+        // traverse the list to find the insertion point
+        Node_HM* prev = set->sentinel;
+        Node_HM* curr = SLOW_PATH_SHARED_READ_P(prev->m_next);
+	long temp;
+        while (curr != NULL) {
+		temp = SLOW_PATH_SHARED_READ(curr->m_val);
+                if (temp >= val)
+                        break;
+                prev = curr;
+                curr = SLOW_PATH_SHARED_READ_P(prev->m_next);
+        }
+	if(curr){
+		temp = SLOW_PATH_SHARED_READ(curr->m_val);
 	}
-	return 1;
+	if(!curr || (temp > val)) {
+                Node_HM* insert_point = (Node_HM*)(prev);
+
+                // create the new node
+                Node_HM* i = (Node_HM*)TM_MALLOC(sizeof(Node_HM));
+                i->m_val = val;
+                i->m_next = (Node_HM*)(curr);
+		int red_i;
+                SLOW_PATH_SHARED_WRITE_P(insert_point->m_next, i);
+		return 1;
+	}
+	return 0;
 }
 
 TM_CALLABLE
@@ -200,14 +223,14 @@ long hm_lookup_stm(TM_ARGDECL List* set, long val)
 {
 	int found = 0;
 	Node_HM* prev = set->sentinel;
-  Node_HM* curr = (Node_HM*) SLOW_PATH_SHARED_READ_P(prev->m_next);
+        Node_HM* curr = SLOW_PATH_SHARED_READ_P(prev->m_next);
 	long temp;
 	while (curr != NULL) {
 		temp = SLOW_PATH_SHARED_READ(curr->m_val);
 		if (temp >= val)
 			break;
 		prev = curr;
-		curr = (Node_HM*) SLOW_PATH_SHARED_READ_P(prev->m_next);
+		curr = SLOW_PATH_SHARED_READ_P(prev->m_next);
 	}
 	if(curr != NULL){
 		temp = SLOW_PATH_SHARED_READ(curr->m_val);
@@ -217,95 +240,26 @@ long hm_lookup_stm(TM_ARGDECL List* set, long val)
 }
 
 TM_CALLABLE
-long hm_insert_stm(TM_ARGDECL List* set, long val)
-{
-  // hm_traverse_stm(TM_ARG set);
-  // traverse the list to find the insertion point
-  Node_HM* prev = set->sentinel;
-  Node_HM* curr = (Node_HM*) SLOW_PATH_SHARED_READ_P(prev->m_next);
-	long temp;
-  while (curr != NULL) {
-    temp = SLOW_PATH_SHARED_READ(curr->m_val);
-    if (temp >= val)
-      break;
-    prev = curr;
-    curr = (Node_HM*) SLOW_PATH_SHARED_READ_P(prev->m_next);
-  }
-	if(curr){
-		temp = SLOW_PATH_SHARED_READ(curr->m_val);
-	}
-	if(!curr || (temp > val)) {
-    Node_HM* insert_point = (Node_HM*)(prev);
-    // create the new node
-    Node_HM* i = (Node_HM*)TM_MALLOC(sizeof(Node_HM));
-    i->m_val = val;
-    i->m_next = (Node_HM*)(curr);
-    SLOW_PATH_SHARED_WRITE_P(insert_point->m_next, i);
-
-    // //paranoid (debug)
-    // if(curr){
-    //   Node_HM *aux = SLOW_PATH_SHARED_READ(curr->m_next);
-    //   SLOW_PATH_SHARED_WRITE(curr->m_next, aux);
-    // }
-
-    // hm_traverse_stm(TM_ARG set);
-
-    // if (hm_lookup_stm(TM_ARG set, val) == 0) {
-    //   printf("\n\n********** couldn't find value %d that was just added (inside tx)\n", val);
-
-    //         printf("adicionou %d -> [%d]", insert_point->m_val, val);
-    //         if (curr)
-    //           printf(" -> %d\n", temp);
-    //         else
-    //           printf("\n");
-    //         //sleep(5);
-    //         //printf("After sleep....\n");
-    // 	if (hm_lookup_stm(TM_ARG set, val))
-    //           printf("\n\n**********...however, trying again I managed to find it!\n");
-    //   else
-    //     printf("and still didn't find it (2nd try).\n");
-    // }
-
-    return 1;
-  }
-	return 0;
-}
-
-
-TM_CALLABLE
 int hm_remove_stm(TM_ARGDECL List* set, long val)
 {
-  // hm_traverse_stm(TM_ARG set);
 	Node_HM* prev = set->sentinel;
-	Node_HM* curr = (Node_HM*) SLOW_PATH_SHARED_READ_P(prev->m_next);
+	Node_HM* curr = SLOW_PATH_SHARED_READ_P(prev->m_next);
 	while (curr != NULL) {
 		long temp = SLOW_PATH_SHARED_READ(curr->m_val);
-    Node_HM *temp_p, *aux_p;
-    if (temp == val)
-    {
-      Node_HM* mod_point = (Node_HM*)(prev);
-			temp_p = (Node_HM*) SLOW_PATH_SHARED_READ_P(curr->m_next);
+		Node_HM* temp_p;
+		if (temp == val) {
+			Node_HM* mod_point = (Node_HM*)(prev);
+			temp_p = SLOW_PATH_SHARED_READ_P(curr->m_next);
 			SLOW_PATH_SHARED_WRITE_P(mod_point->m_next, temp_p);
-
-      //JOAO: I believe this extra write is needed for SI safety
-      SLOW_PATH_SHARED_WRITE_P(curr->m_next, temp_p);
-
-      // //paranoid (debug)
-      // if (temp_p) {
-      //   aux_p = SLOW_PATH_SHARED_READ_P(temp_p->m_next);
-      //   SLOW_PATH_SHARED_WRITE_P(temp_p->m_next, aux_p);
-      // }
-      
-      // hm_traverse_stm(TM_ARG set);
 
 			SLOW_PATH_FREE((Node_HM*)(curr));
 			return 1;
-    }
-    else if (temp > val) {
+		}
+		else if (temp > val) {
 			return 0;
 		}
 		prev = curr;
-		curr = (Node_HM*) SLOW_PATH_SHARED_READ_P(prev->m_next);
+		curr = SLOW_PATH_SHARED_READ_P(prev->m_next);
 	}
 	return 0;
 }
@@ -361,11 +315,8 @@ long set_add(TM_ARGDECL long val)
 {
     int res = 0;
     int ro = 0;
-
-    // printf("adding %d\n", val);
-    TM_BEGIN_EXT(0, ro);
+    TM_BEGIN_EXT(0,ro);
     res = (local_exec_mode == 3 || local_exec_mode == 1 || local_exec_mode == 4) ? priv_insert_stm(TM_ARG val) : priv_insert_htm(TM_ARG val);
-    // sleep(1);
     TM_END();
 
     return res;
@@ -376,12 +327,9 @@ int set_remove(TM_ARGDECL long val)
     int res = 0;
 
     int ro = 0;
-    // printf("removing %d\n", val);
     TM_BEGIN_EXT(1,ro);
     res = (local_exec_mode == 3 || local_exec_mode == 1 || local_exec_mode == 4) ? priv_remove_item_stm(TM_ARG val) : priv_remove_item_htm(TM_ARG val);
-    // sleep(1);
     TM_END();
-    // printf("committed removing %d\n", val);
 
   /*debug joao*/ 
   if (res==0)
@@ -414,7 +362,7 @@ long set_contains(TM_ARGDECL long  val)
   unsigned int seed;
   long operations;
 
-void test(void *data)
+void *test(void *data)
 {
 
   TM_THREAD_ENTER();
@@ -451,7 +399,7 @@ void test(void *data)
   }
 
   TM_THREAD_EXIT();
-  // return NULL;
+  return NULL;
 }
 
 # define no_argument        0

@@ -23,22 +23,23 @@ fi
 # cp ../../backends/POWER_common.h lib/
 # cp ../../backends/extra_threadc.h lib/
 
-cp ../../backends/extra_MACROS.h .
-cp ../../backends/POWER_common.h .
-cp ../../backends/extra_threadc.h .
+cp ../../backends/extra_MACROS.h code/
+cp ../../backends/POWER_common.h code/
+cp ../../backends/extra_threadc.h code/
 
 cp ../../backends/$backend/tm.h code/
 cp ../../backends/$backend/thread.c code/
 cp ../../backends/$backend/thread.h code/
 cp ../../backends/$backend/Makefile .
-cp ../../backends/$backend/Makefile.common .
+# cp ../../backends/$backend/Makefile.common .
 cp ../../backends/$backend/Makefile.flags .
 cp ../../backends/$backend/Defines.common.mk .
 
 
 if [[ $backend == spht ]] ; then
     rm lib/rdtsc.h
-    source ../../backends/$backend/copy_spht.sh
+    mkdir lib/
+    bash ../../backends/$backend/copy_spht.sh $backend ./lib
 fi
 cd code;
 rm tpcc

@@ -96,8 +96,6 @@ extern __thread unsigned long cm_seed;
 #  define MAX_BACKOFF                   (1UL << 31)
 # endif /* MAX_BACKOFF */
 
-extern __attribute__((aligned(CACHE_LINE_SIZE))) pthread_spinlock_t single_global_lock;
-
 extern __attribute__((aligned(CACHE_LINE_SIZE))) padded_statistics_t stats_array[];
 
 extern __thread long counters_snapshot[80];
@@ -139,10 +137,6 @@ extern int global_order_ts;
 extern uint64_t  **log_per_thread;
 extern uint64_t  **log_pointer;
 extern int global_order_ts;
-extern __thread volatile uint64_t* mylogpointer;
-extern __thread volatile uint64_t* mylogpointer_snapshot;
-extern __thread volatile uint64_t* mylogend;
-extern __thread volatile uint64_t* mylogstart;
 extern uint64_t  **log_replayer_start_ptr;
 extern uint64_t  **log_replayer_end_ptr;
 extern __thread volatile long start_tx;
@@ -188,28 +182,13 @@ ptr = start + (((ptr-start)+1)&LOGSIZE_mask);\
 //assert(ptr!=0 && "ptr is null");\
 //assert(ptr-end<=0 && "ptr is larger than end of the log");\
 
-
-# define delay_for_pm 25 //number that gives a latency between 0.18 usec and 0.5 usec
-# define delay_per_cache_line 140
 extern __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t max_cache_line[80];
-
-# define emulate_pm_slowdown(n_cache){\
-int j;\
-for(j=0;j<n_cache;j++){\
-volatile int i;\
-    for(i=0;i<delay_for_pm;i++);{\
-    }\
-}\
-}\
-
-
-
 
 #define commit_log(ptr,ts,start,end)\
 if(mylogpointer_snapshot<ptr){\
 while(mylogpointer_snapshot<=ptr){ \
         __dcbst(mylogpointer_snapshot,0); \
-        max_cache_line[local_thread_id].value++;\
+        max_cache_line[q_args.tid].value++;\
         /*emulate_pm_slowdown();\
         /*advance one cacheline */\
         mylogpointer_snapshot+=16;\
@@ -217,7 +196,7 @@ while(mylogpointer_snapshot<=ptr){ \
 }else{\
     while(mylogpointer_snapshot!=ptr){ \
         __dcbst(mylogpointer_snapshot,0); \
-        max_cache_line[local_thread_id].value++;\
+        max_cache_line[q_args.tid].value++;\
         /*emulate_pm_slowdown();\
         /*advance one cacheline */\
         int _i;\
@@ -236,7 +215,7 @@ while(mylogpointer_snapshot<=ptr){ \
 *ptr=bit63one | ts;\
 __dcbst(ptr,0); \
 ptr = start + (((ptr-start)+1)&LOGSIZE_mask);\
-atomic_STORE(log_replayer_end_ptr[local_thread_id],ptr);\
+atomic_STORE(log_replayer_end_ptr[q_args.tid],ptr);\
 
 
 

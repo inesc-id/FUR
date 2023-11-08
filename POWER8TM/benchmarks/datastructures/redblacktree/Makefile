@@ -1,30 +1,18 @@
 # ==============================================================================
 #
-# Defines.common.mk
+# Makefile.rtm
 #
 # ==============================================================================
 
 
-CC       := gcc
-CFLAGS   += -pthread
-CFLAGS   += -O2 -std=c++11 
-CFLAGS   += -I$(LIB)
-CPP      := g++
-CPPFLAGS += $(CFLAGS)
-LD       := g++
-LIBS     += -lpthread
-
-# Remove these files when doing clean
-OUTPUT +=
-
-LIB := ../lib
-
-STM := ../../..//stms/pisces
-
+include ../Defines.common.mk
+include ./Defines.common.mk
+include ../Makefile
 
 
 # ==============================================================================
 #
-# End of Defines.common.mk
+# Makefile.rtm
 #
 # ==============================================================================
+

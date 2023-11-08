@@ -86,7 +86,7 @@ __thread unsigned int local_thread_id;
 __thread unsigned int local_exec_mode;*/
 
 
-long              global_numThread    ;
+long              global_numThread;
 __thread unsigned int thread_id;
 
 #ifndef REDUCED_TM_API
@@ -264,5 +264,7 @@ thread_getNumThread()
 {
     return global_numThread;
 }
+
+#include "extra_threadc.h"
 
 #endif

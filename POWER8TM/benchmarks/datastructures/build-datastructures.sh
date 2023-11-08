@@ -1,6 +1,6 @@
 #!/bin/bash
 
-FOLDERS="hashmap"
+FOLDERS="hashmap redblacktree"
 
 if [ $# -eq 0 ] ; then
     echo " === ERROR At the very least, we need the backend name in the first parameter. === "
@@ -49,8 +49,7 @@ fi
 
 if [[ $backend == spht ]] ; then
     rm lib/rdtsc.h
-    
-    source ../../backends/$backend/copy_spht.sh
+    bash ../../backends/$backend/copy_spht.sh $backend ./code
 fi
 
 for F in $FOLDERS

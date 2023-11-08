@@ -46,7 +46,7 @@ if __name__ == "__main__":
           backend,
           f"{data_folder}/{backend}-s{s}"
         )
-      data.run_sample(params)
+      # data.run_sample(params)
       parser = Parser(f"{data_folder}/{backend}-s{s}")
       parser.parse_all(f"{data_folder}/{backend}-s{s}.csv")
     for i in params.params["-m"]: # TODO: this for-loop was originally to plot 10%, 50%, 90% updates
@@ -56,7 +56,7 @@ if __name__ == "__main__":
         name_map[backend],
         [f"{data_folder}/{backend}-s{s}.csv" for s in range(nb_samples)],
         lambda e: e["-n"], "Nb. Threads",
-        lambda e: e["total-commits"]/e["time"], "Throughput (T/s)", {}
+        lambda e: e["total-commits"]/e["time"], "Throughput (T/s)", {"-m": i}
       )
       ds.add_stack("Commits vs Aborts", "Count", {
         "HTM-commits": lambda e: e["htm-commits"],
@@ -65,17 +65,24 @@ if __name__ == "__main__":
         "aborts": lambda e: e["total-aborts"]
       })
       ds.add_stack("Abort types", "Nb. aborts", {
-        "conflict-transactional": lambda e: e["confl-trans"],
-        "conflict-non-transactional": lambda e: e["confl-non-trans"],
-        "self": lambda e: e["confl-self"],
-        "capacity": lambda e: e["capac-aborts"],
-        "persistent": lambda e: e["persis-aborts"],
-        "user": lambda e: e["user-aborts"],
-        "other": lambda e: e["other-aborts"]
+        "conflict-transactional": lambda e: e["rot-trans-aborts"],
+        "conflict-non-transactional": lambda e: e["rot-non-trans-aborts"],
+        "self": lambda e: e["rot-self-aborts"],
+        "capacity": lambda e: e["rot-capac-aborts"],
+        "persistent": lambda e: e["rot-persis-aborts"],
+        "user": lambda e: e["rot-user-aborts"],
+        "other": lambda e: e["rot-other-aborts"]
+      })
+      ds.add_stack("Time profiling", "Ratio of time", {
+        "time-commit": lambda e: e["total-commit-time"] / e["-n"] / e["total-sum-time"],
+        "time-abort": lambda e: e["total-abort-time"] / e["-n"] / e["total-sum-time"],
+        "time-wait": lambda e: e["total-wait-time"] / e["-n"] / e["total-sum-time"],
+        "time-sus": lambda e: e["total-sus-time"] / e["-n"] / e["total-sum-time"],
+        "time-flush": lambda e: e["total-flush-time"] / e["-n"] / e["total-sum-time"]
       })
       datasets_thr[i] += [ds]
     
   for k,v in datasets_thr.items():
-    lines_plot = LinesPlot(f"{i}", f"thr_{k}writes.pdf")
+    lines_plot = LinesPlot(f"Nb Writes = {k}", f"thr_{k}writes.pdf")
     lines_plot.plot(v)
     lines_plot.plot_stack(v)

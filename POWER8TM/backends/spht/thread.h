@@ -75,15 +75,15 @@
 #include <pthread.h>
 
 
-extern long              global_numThread    ;
+extern long              global_numThread;
 
 extern __thread unsigned long backoff;
 extern __thread unsigned long cm_seed;
 
+extern __thread unsigned int local_thread_id;
 extern __thread unsigned int local_exec_mode;
 
 extern __thread void* rot_readset[];
-extern __thread unsigned long rs_counter;
 
 #ifndef REDUCED_TM_API
 
@@ -122,46 +122,6 @@ extern "C" {
 #define THREAD_COND_BROADCAST(cond)         pthread_cond_broadcast(&(cond))
 #define THREAD_COND_WAIT(cond, lock)        pthread_cond_wait(&(cond), &(lock))
 
-
-typedef struct padded_scalar {
-    char prefixPadding[CACHE_LINE_SIZE];
-    volatile long value;
-//    char suffixPadding[CACHE_LINE_SIZE];
-} __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t;
-
-typedef struct padded_pointer {
-    long* addr;
-    char suffixPadding[CACHE_LINE_SIZE];
-} __attribute__((aligned(CACHE_LINE_SIZE))) padded_pointer_t;
-
-typedef struct padded_statistics {
-    unsigned long total_time;
-    unsigned long wait_time;
-    unsigned long read_commits;
-    unsigned long htm_commits;
-    unsigned long htm_conflict_aborts;
-    unsigned long htm_self_conflicts;
-    unsigned long htm_trans_conflicts;
-    unsigned long htm_nontrans_conflicts;
-    unsigned long htm_user_aborts;
-    unsigned long htm_capacity_aborts;
-    unsigned long htm_persistent_aborts;
-    unsigned long htm_other_aborts;
-    unsigned long rot_commits;
-    unsigned long rot_conflict_aborts;
-    unsigned long rot_self_conflicts;
-    unsigned long rot_trans_conflicts;
-    unsigned long rot_nontrans_conflicts;
-    unsigned long rot_other_conflicts;
-    unsigned long rot_user_aborts;
-    unsigned long rot_persistent_aborts;
-    unsigned long rot_capacity_aborts;
-    unsigned long rot_other_aborts;
-    unsigned long gl_commits;
-    unsigned long commit_time;
-    unsigned long abort_time;
-    char suffixPadding[CACHE_LINE_SIZE];
-} __attribute__((aligned(CACHE_LINE_SIZE))) padded_statistics_t;
 
 // #  define THREAD_BARRIER_T                  barrier_t
 // #  define THREAD_BARRIER_ALLOC(N)           barrier_alloc()

@@ -96,8 +96,6 @@ __thread unsigned int local_exec_mode = 0;
 
 __thread unsigned int local_thread_id;
 
-__thread unsigned long rs_counter;
-
 /* ################################################################### *
  * GLOBALS
  * ################################################################### */

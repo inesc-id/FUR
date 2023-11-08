@@ -32,10 +32,18 @@ extern "C" {
 #define __dcbst(base, index)  \
   __asm__ ("dcbst %0, %1" : /*no result*/ : "b%" (index), "r" (base) : "memory")
 
+# define IS_LOCKED(lock)    (atomic_LOAD(lock) != 0 && atomic_LOAD(lock) != (loc_var.tid + 1))
+# define TRY_LOCK(lock)     __sync_bool_compare_and_swap((volatile int*)(&lock), 0, loc_var.tid + 1)
+# define UNLOCK(lock)       atomic_STORE(lock, 0)
+
+#ifndef READ_TIMESTAMP
+# define READ_TIMESTAMP(dest) __asm__ volatile("0:                  \n\tmfspr   %0,268           \n": "=r"(dest));
+#endif 
+
 extern int place_abort_marker;
 
 typedef struct spinlock {
-    pthread_spinlock_t lock;
+    int lock;
     char suffixPadding[CACHE_LINE_SIZE];
 } __attribute__((aligned(CACHE_LINE_SIZE))) spinlock_t;
 
@@ -47,12 +55,16 @@ typedef struct padded_scalar {
 
 typedef struct quiscence_call_args {
     char prefixPadding[CACHE_LINE_SIZE];
-    volatile long num_threads;
-    volatile long index;
-    volatile long state;
-    volatile long temp; 
+    volatile int num_threads;
+    volatile int tid;
+    volatile int index;
+    volatile int state;
+    volatile long temp;
+    volatile uint64_t *logptr;
     volatile long start_wait_time; 
     volatile long end_wait_time; 
+    volatile long ts1; 
+    volatile long ts2; 
     char suffixPadding[CACHE_LINE_SIZE];
 } __attribute__((aligned(CACHE_LINE_SIZE))) QUIESCENCE_CALL_ARGS_t;
 
@@ -66,6 +78,8 @@ typedef struct tx_local_vars {
   volatile uint64_t *mylogpointer_snapshot;
   volatile uint64_t *mylogend;
   volatile uint64_t *mylogstart;
+  volatile int tid;
+  volatile int exec_mode;
   volatile long ts1;
   volatile long ts2;
   char suffixPadding[CACHE_LINE_SIZE];
@@ -124,14 +138,16 @@ extern __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t counters[];
 extern __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t rot_counters[];
 extern __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t triggers[];
 extern __attribute__((aligned(CACHE_LINE_SIZE))) padded_statistics_t stats_array[];
-extern __attribute__((aligned(CACHE_LINE_SIZE))) pthread_spinlock_t single_global_lock;
+extern __attribute__((aligned(CACHE_LINE_SIZE))) int single_global_lock;
+extern __thread unsigned long rs_counter;
 
 extern __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t ts_state[];
 extern __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t order_ts[];
 
 extern __attribute__((aligned(CACHE_LINE_SIZE))) __thread long ts_snapshot[80];
 extern __attribute__((aligned(CACHE_LINE_SIZE))) __thread long state_snapshot[80];
-extern __attribute__((aligned(CACHE_LINE_SIZE))) __thread tx_local_vars_t tx_local_variables;
+extern __attribute__((aligned(CACHE_LINE_SIZE))) __thread tx_local_vars_t loc_var;
+extern __attribute__((aligned(CACHE_LINE_SIZE))) __thread QUIESCENCE_CALL_ARGS_t q_args;
 
 extern __attribute__((aligned(CACHE_LINE_SIZE))) int global_order_ts;
 extern uint64_t **log_per_thread;
@@ -168,49 +184,51 @@ my_tm_thread_enter();
 
 
 # define UPDATE_TS_STATE(state){\
-  long temp;\
+  register long temp; \
   READ_TIMESTAMP(temp);\
-  temp=temp & first_2bits_zero;\
+  temp = temp & first_2bits_zero;\
   temp = (state<<62)|temp;\
-  ts_state[local_thread_id].value=temp;\
+  ts_state[loc_var.tid].value=temp;\
 }\
 
-# define UPDATE_STATE(state){\
-  long temp=state;\
-  temp=temp<<2;\
-  temp=temp>>2;\
-  temp = (state<<62)|temp;\
-  ts_state[local_thread_id].value=temp;\
+# define UPDATE_STATE(state) \
+{ \
+  long temp = state;\
+  temp = temp<<2;\
+  temp = temp>>2;\
+  temp = (state << 62) | temp;\
+  ts_state[loc_var.tid].value = temp;\
 }\
+// UPDATE_STATE
 
 # define check_state(temp)({\
   (temp & (3l<<62))>>62;\
 })\
 
-#define commit_log_marker(ptr,ts,start,end)\
-  *ptr=bit63one | ts; \
-  __dcbst(ptr,0); \
-  ptr = start + (((ptr - start) + 1) & LOGSIZE_mask); \
-  atomic_STORE(log_replayer_end_ptr[local_thread_id],ptr); \
-// end commit_log_marker
+#define flush_log_commit_marker(ptr,ts,start,end)\
+  *(ptr)=bit63one | ts; \
+  __dcbst((ptr),0); \
+  ptr = start + ((((ptr) - (start)) + 1) & LOGSIZE_mask); \
+  atomic_STORE(log_replayer_end_ptr[loc_var.tid],ptr); \
+// end flush_log_commit_marker
 
 #define place_abort_marker_in_log(ptr, ts, start, end) \
-  *ptr = bit62one | ts; \
-  __dcbst(ptr, 0); /* flush the marker to the log */ \
-  ptr = start + (((ptr - start) + 1) & LOGSIZE_mask); \
-  atomic_STORE(log_replayer_end_ptr[local_thread_id], ptr); \
-  tx_local_variables.mylogpointer_snapshot = ptr; \
+  *(ptr) = bit62one | ts; \
+  __dcbst((ptr), 0); /* flush the marker to the log */ \
+  (ptr) = start + ((((ptr) - (start)) + 1) & LOGSIZE_mask); \
+  atomic_STORE(log_replayer_end_ptr[loc_var.tid], ptr); \
+  loc_var.mylogpointer_snapshot = ptr; \
 // end place_abort_marker_in_log
 
 #define abortMarker() \
 { \
-  if ( order_ts[local_thread_id].value != -1 ) \
+  if ( order_ts[loc_var.tid].value != -1 ) \
   { \
     place_abort_marker_in_log( \
-      tx_local_variables.mylogpointer, \
-      order_ts[local_thread_id].value, \
-      tx_local_variables.mylogstart, \
-      tx_local_variables.mylogend \
+      loc_var.mylogpointer, \
+      order_ts[loc_var.tid].value, \
+      loc_var.mylogstart, \
+      loc_var.mylogend \
     );\
   } \
   UPDATE_STATE(INACTIVE); \
@@ -220,10 +238,10 @@ my_tm_thread_enter();
 # define atomicInc()   __atomic_add_fetch(&global_order_ts, 1, __ATOMIC_RELEASE) 
 
 #define write_in_log(ptr,addr,val,start,end) \
-  *ptr = (uint64_t)addr; \
-  ptr = start + (((ptr-start)+1)&LOGSIZE_mask); \
-  *ptr = val; \
-  ptr = start + (((ptr-start)+1)&LOGSIZE_mask); \
+  *(ptr) = (uint64_t)addr; \
+  ptr = (start) + ((((ptr)-(start))+1)&LOGSIZE_mask); \
+  *(ptr) = val; \
+  ptr = (start) + ((((ptr)-(start))+1)&LOGSIZE_mask); \
   /* assert(ptr!=0 && "ptr is null"); */ \
   /* assert(ptr-end<=0 && "ptr is larger than end of the log"); */ \
 
@@ -231,6 +249,7 @@ my_tm_thread_enter();
 # ifndef delay_for_pm
 // # define delay_for_pm 25 //number that gives a latency between 0.18 usec and 0.5 usec
 # define delay_for_pm 25 //number that gives a latency between 0.18 usec and 0.5 usec
+# define delay_per_cache_line 25
 # endif
 
 # define emulate_pm_slowdown() \
@@ -249,37 +268,70 @@ my_tm_thread_enter();
     }\
 }\
 
-#define commit_log(ptr, ts, start, end)\
-if ( tx_local_variables.mylogpointer_snapshot < ptr ) \
+#define flush_log_entries(ptr, ptr_snapshot, start, end)\
+if (ptr_snapshot < ptr ) \
 {\
-  while ( tx_local_variables.mylogpointer_snapshot <= ptr ) \
+  while (ptr_snapshot <= ptr ) \
   { \
-    __dcbst(tx_local_variables.mylogpointer_snapshot, 0); \
+    __dcbst(ptr_snapshot, 0); /* TODO: sometimes it breaks the ROTs */ \
     emulate_pm_slowdown(); \
     /*advance one cacheline */ \
-    tx_local_variables.mylogpointer_snapshot += 16; \
+   ptr_snapshot += 16; \
   } \
 } \
 else \
 { \
-  while ( tx_local_variables.mylogpointer_snapshot != ptr ) \
+  while (ptr_snapshot != ptr ) \
   { \
-    __dcbst(tx_local_variables.mylogpointer_snapshot, 0); \
+    __dcbst(ptr_snapshot, 0); \
     emulate_pm_slowdown(); \
     /*advance one cacheline */ \
     int _i;\
     for( _i = 0; _i < 16; _i++ ) \
     { \
-      if ( tx_local_variables.mylogpointer_snapshot == ptr ) \
+      if (ptr_snapshot == ptr ) \
         break;\
-      tx_local_variables.mylogpointer_snapshot++; \
-      if ( end - tx_local_variables.mylogpointer_snapshot <= 0 ) \
+      ptr_snapshot++; \
+      if ( end - ptr_snapshot <= 0 ) \
       { \
-        tx_local_variables.mylogpointer_snapshot = start; \
+        ptr_snapshot = start; \
       } \
     } \
   } \
 } \
+
+#define flush_log_entries_no_wait(ptr, ptr_snapshot, start, end) \
+if (ptr_snapshot < ptr) /* handles normal case */ \
+{ \
+    while (ptr_snapshot <= ptr) \
+    { \
+        __dcbst(ptr_snapshot,0); \
+        max_cache_line[local_thread_id].value++; \
+        /*emulate_pm_slowdown();\
+        /*advance one cacheline */ \
+        ptr_snapshot += 16; \
+    } \
+} \
+else /* handles warp around case */ \
+{ \
+    while (ptr_snapshot != ptr) \
+    { \
+        __dcbst(ptr_snapshot,0); \
+        max_cache_line[local_thread_id].value++;\
+        /*emulate_pm_slowdown();\
+        /*advance one cacheline */\
+        int _i;\
+        for ( _i=0; _i<16; _i++) \
+        { \
+            if ( ptr_snapshot == ptr ) \
+                break;\
+            ptr_snapshot++;\
+            if ( end-ptr_snapshot <= 0 ) \
+                ptr_snapshot = start;\
+        } \
+    } \
+}\
+
 
 # define WAIT(_cond) \
   while ( _cond ) \
@@ -322,7 +374,7 @@ else \
 { \
 	UPDATE_STATE(INACTIVE); \
   rmb(); \
-	WAIT( pthread_spin_trylock(&single_global_lock) != 0 ); \
+	WAIT( TRY_LOCK(single_global_lock) ); \
 	QUIESCENCE_CALL_GL(); \
 };\
 // end ACQUIRE_GLOBAL_LOCK
@@ -330,71 +382,72 @@ else \
 //Begin ROT
 # define USE_ROT() \
 { \
-	tx_local_variables.rot_budget = ROT_RETRIES; \
+	loc_var.rot_budget = ROT_RETRIES; \
 	WAIT( IS_LOCKED(single_global_lock) ); \
-	while ( tx_local_variables.rot_budget > 0 ) \
+	while ( loc_var.rot_budget > 0 ) \
   { \
-		tx_local_variables.rot_status = 1; \
+		loc_var.rot_status = 1; \
+    READ_TIMESTAMP(loc_var.ts1); \
     UPDATE_TS_STATE(ACTIVE);\
 		rmb(); \
 		CONTINUE_LOOP_IF( IS_LOCKED(single_global_lock), \
     { \
+      READ_TIMESTAMP(loc_var.ts1); \
 			UPDATE_TS_STATE(INACTIVE); /* inactive rot*/ \
 			rmb(); \
 			WAIT ( IS_LOCKED(single_global_lock) ); \
 		}); \
 		/*BEGIN_ROT ------------------------------------------------*/ \
     READ_TIMESTAMP(start_tx); \
-    tx_local_variables.tx_status = __TM_begin_rot(&(tx_local_variables.TM_buff)); \
-		BREAK_LOOP_IF ( tx_local_variables.tx_status == _HTM_TBEGIN_STARTED ); \
+    loc_var.tx_status = __TM_begin_rot(&(loc_var.TM_buff)); \
+		BREAK_LOOP_IF ( loc_var.tx_status == _HTM_TBEGIN_STARTED ); \
     /* ABORT HAPPENS !!!! */ \
     if ( place_abort_marker ) \
-    { \
-      abortMarker(); \
-    } \
-    tx_local_variables.rot_status = 0; \
-    tx_local_variables.rot_budget--; \
+    { abortMarker(); } \
+    loc_var.rot_status = 0; \
+    loc_var.rot_budget--; \
     READ_TIMESTAMP(end_tx); \
-    stats_array[local_thread_id].abort_time += end_tx - start_tx;\
-		if ( __TM_conflict(&(tx_local_variables.TM_buff)) ) \
+    stats_array[loc_var.tid].abort_time += end_tx - start_tx;\
+		if ( __TM_conflict(&(loc_var.TM_buff)) ) \
     { \
-      stats_array[local_thread_id].rot_conflict_aborts ++; \
-			if ( __TM_is_self_conflict(&(tx_local_variables.TM_buff)) ) \
-        stats_array[local_thread_id].rot_self_conflicts++; \
-			else if ( __TM_is_trans_conflict(&(tx_local_variables.TM_buff)) ) \
-        stats_array[local_thread_id].rot_trans_conflicts++; \
-			else if ( __TM_is_nontrans_conflict(&(tx_local_variables.TM_buff)) ) \
-        stats_array[local_thread_id].rot_nontrans_conflicts++; \
+      stats_array[loc_var.tid].rot_conflict_aborts ++; \
+			if ( __TM_is_self_conflict(&(loc_var.TM_buff)) ) \
+        stats_array[loc_var.tid].rot_self_conflicts++; \
+			else if ( __TM_is_trans_conflict(&(loc_var.TM_buff)) ) \
+        stats_array[loc_var.tid].rot_trans_conflicts++; \
+			else if ( __TM_is_nontrans_conflict(&(loc_var.TM_buff)) ) \
+        stats_array[loc_var.tid].rot_nontrans_conflicts++; \
 			else \
-        stats_array[local_thread_id].rot_other_conflicts++; \
-			int state = check_state(ts_state[local_thread_id].value); \
-      if ( state == ACTIVE ) \
+        stats_array[loc_var.tid].rot_other_conflicts++; \
+			int state = check_state(ts_state[loc_var.tid].value); \
+      if ( state == ACTIVE ) { \
         UPDATE_STATE(INACTIVE);\
         rmb(); \
+      } \
     } \
-    else if (__TM_user_abort(&(tx_local_variables.TM_buff))) \
-    { stats_array[local_thread_id].rot_user_aborts ++; } \
-    else if ( __TM_capacity_abort(&(tx_local_variables.TM_buff)) ) \
+    else if (__TM_user_abort(&(loc_var.TM_buff))) \
+    { stats_array[loc_var.tid].rot_user_aborts ++; } \
+    else if ( __TM_capacity_abort(&(loc_var.TM_buff)) ) \
     { \
-			stats_array[local_thread_id].rot_capacity_aborts ++; \
-			if ( __TM_is_persistent_abort(&(tx_local_variables.TM_buff)) ) \
-        stats_array[local_thread_id].rot_persistent_aborts ++; \
+			stats_array[loc_var.tid].rot_capacity_aborts ++; \
+			if ( __TM_is_persistent_abort(&(loc_var.TM_buff)) ) \
+        stats_array[loc_var.tid].rot_persistent_aborts ++; \
       break; \
 		} \
     else \
-    { stats_array[local_thread_id].rot_other_aborts ++; } \
+    { stats_array[loc_var.tid].rot_other_aborts ++; } \
 	} \
 };\
 
 //Begin WRITE
 # define ACQUIRE_WRITE_LOCK() \
 { \
-	local_exec_mode = 1; \
-	tx_local_variables.rot_status = 0; \
+	loc_var.exec_mode = 1; \
+	loc_var.rot_status = 0; \
 	USE_ROT(); \
-	if ( !tx_local_variables.rot_status ) \
+	if ( !loc_var.rot_status ) \
   { \
-		local_exec_mode = 2; \
+		loc_var.exec_mode = 2; \
 		ACQUIRE_GLOBAL_LOCK(); \
 	} \
 };\
@@ -405,6 +458,7 @@ else \
 { \
 	while ( 1 ) \
   { \
+    READ_TIMESTAMP(loc_var.ts1); \
 		UPDATE_TS_STATE(ACTIVE); \
 		rmb(); \
 		CONTINUE_LOOP_IF ( IS_LOCKED(single_global_lock), \
@@ -420,11 +474,14 @@ else \
 
 # define TM_BEGIN_EXT(b,ro) \
 {  \
-	local_exec_mode = 0; \
+	loc_var.exec_mode = 0; \
 	rs_counter = 0; \
 	local_thread_id = SPECIAL_THREAD_ID();\
   order_ts[local_thread_id].value = -1;\
-  tx_local_variables.mylogpointer_snapshot = tx_local_variables.mylogpointer;\
+  loc_var.mylogpointer_snapshot = loc_var.mylogpointer;\
+  loc_var.tid = local_thread_id;\
+  q_args.tid = local_thread_id;\
+  q_args.num_threads = global_numThread;\
 	if ( ro ) \
   { \
 		ACQUIRE_READ_LOCK(); \
@@ -436,7 +493,7 @@ else \
 } \
 // end TM_BEGIN_EXT
 
-# define TM_END() { \
+# define TM_END() \
 	if ( ro ) \
   { \
 		RELEASE_READ_LOCK(); \
@@ -445,14 +502,13 @@ else \
   { \
 		RELEASE_WRITE_LOCK(); \
 	} \
-}; \
 // end TM_END
 
 //-------------------------------TM_END------------------------------
 
 #define FINAL_PRINT(_start_ts, _end_ts) \
   READ_TIMESTAMP(_end_ts); \
-  stats_array[0].total_time = end_ts - _start_ts;\
+  stats_array[0].total_time = _end_ts - _start_ts;\
   unsigned long wait_time = 0; \
   unsigned long total_time = 0; \
   unsigned long read_commits = 0; \

@@ -5,22 +5,16 @@
 # ==============================================================================
 
 
-CC       := gcc
-CFLAGS   += -pthread
-CFLAGS   += -O2 -std=c++11 
-CFLAGS   += -I$(LIB)
-CPP      := g++
-CPPFLAGS += $(CFLAGS)
-LD       := g++
-LIBS     += -lpthread
+PROG := redblacktree
 
-# Remove these files when doing clean
-OUTPUT +=
-
-LIB := ../lib
-
-STM := ../../..//stms/pisces
-
+SRCS += \
+	redblacktree.cpp \
+	rbtree.cpp \
+	$(LIB)/mt19937ar.c \
+	$(LIB)/random.c \
+	$(LIB)/thread.c \
+#
+OBJS := ${SRCS:.c=.o}
 
 
 # ==============================================================================

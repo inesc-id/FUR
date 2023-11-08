@@ -73,10 +73,6 @@
 #  define TM_THREAD_ENTER()        my_tm_thread_enter()
 #  define TM_THREAD_EXIT()
 
-# define IS_LOCKED(lock)           *((volatile int*)(&lock)) != 0
-
-# define IS_GLOBAL_LOCKED(lock)    *((volatile int*)(&lock)) == 2
-
 # define TM_BEGIN(ro) \
   TM_BEGIN_EXT(0,ro)
 
@@ -87,18 +83,13 @@
 
 //todo use qf of si
 # define QUIESCENCE_CALL_ROT() { \
-  __attribute__((aligned(CACHE_LINE_SIZE))) static __thread volatile QUIESCENCE_CALL_ARGS_t q_args;\
 	q_args.num_threads = (long)global_numThread; \
-	READ_TIMESTAMP(q_args.start_wait_time); \
-  commit_log(mylogpointer,order_ts[local_thread_id].value,mylogstart,mylogend);\
-	READ_TIMESTAMP(q_args.end_wait_time); \
-  stats_array[local_thread_id].flush_time += q_args.end_wait_time - q_args.start_wait_time; \
 	READ_TIMESTAMP(q_args.start_wait_time); \
 	for ( q_args.index = 0; q_args.index < 80; q_args.index++ ) \
   { \
     if (q_args.index == q_args.num_threads) \
       break; \
-		if(q_args.index == local_thread_id) \
+		if(q_args.index == loc_var.tid) \
       continue; \
 		q_args.temp = ts_state[q_args.index].value; \
 		q_args.state = (q_args.temp & (3l<<62))>>62; \
@@ -115,7 +106,7 @@
   } \
 	for ( q_args.index=0; q_args.index < q_args.num_threads; q_args.index++ ) \
   { \
-		if(q_args.index == local_thread_id) \
+		if(q_args.index == loc_var.tid) \
       continue; \
 		if(state_snapshot[q_args.index] != 0) \
     { \
@@ -126,72 +117,83 @@
 	} \
   READ_TIMESTAMP(q_args.end_wait_time); \
   stats_array[local_thread_id].wait_time += q_args.end_wait_time - q_args.start_wait_time; \
-};
+	READ_TIMESTAMP(q_args.start_wait_time); \
+  q_args.logptr = loc_var.mylogpointer_snapshot; \
+  flush_log_entries( \
+    loc_var.mylogpointer, \
+    q_args.logptr, \
+    loc_var.mylogstart, \
+    loc_var.mylogend \
+  );\
+	READ_TIMESTAMP(q_args.end_wait_time); \
+  stats_array[local_thread_id].flush_time += q_args.end_wait_time - q_args.start_wait_time; \
+}
 
 
 //todo if spinunlock already has an rmb remove line 491
 # define RELEASE_WRITE_LOCK() { \
-  volatile long _ts1, _ts2; \
-	if (local_exec_mode == 1) \
+	if (loc_var.exec_mode == 1) \
   { \
 	  __TM_suspend(); \
-    READ_TIMESTAMP(_ts1); \
+    READ_TIMESTAMP(q_args.ts1); \
     UPDATE_TS_STATE(NON_DURABLE); /* committing rot */ \
-    order_ts[local_thread_id].value = atomicInc();\
+    order_ts[loc_var.tid].value = atomicInc(); \
     QUIESCENCE_CALL_ROT(); \
     rmb(); \
-    READ_TIMESTAMP(_ts2); \
-    stats_array[local_thread_id].sus_time += _ts2 - _ts1;\
+    READ_TIMESTAMP(q_args.ts2); \
+    stats_array[loc_var.tid].sus_time += q_args.ts2 - q_args.ts1;\
 	  __TM_resume(); \
 		__TM_end(); \
     READ_TIMESTAMP(end_tx); \
-    stats_array[local_thread_id].commit_time += end_tx - start_tx;\
-    /*commit_log(mylogpointer,order_ts[local_thread_id].value,mylogstart,mylogend);*/\
-	  READ_TIMESTAMP(_ts1); \
-    commit_log_marker(mylogpointer,order_ts[local_thread_id].value,mylogstart,mylogend); \
-    READ_TIMESTAMP(_ts2); \
-    stats_array[local_thread_id].flush_time += _ts2 - _ts1; \
-    long num_threads = global_numThread; \
-    long index;\
+    stats_array[loc_var.tid].commit_time += end_tx - start_tx;\
+	  READ_TIMESTAMP(loc_var.ts1); \
+    loc_var.mylogpointer_snapshot = q_args.logptr /* cannot write within sus-res */; \
+    flush_log_commit_marker( \
+      loc_var.mylogpointer, \
+      order_ts[loc_var.tid].value, \
+      loc_var.mylogstart, \
+      loc_var.mylogend \
+    ); \
+    READ_TIMESTAMP(loc_var.ts2); \
+    stats_array[loc_var.tid].flush_time += loc_var.ts2 - loc_var.ts1; \
     long state;\
-	  READ_TIMESTAMP(_ts1); \
-    for ( index = 0; index < num_threads; index++ ) \
+	  READ_TIMESTAMP(loc_var.ts1); \
+    for ( int index = 0; index < global_numThread; index++ ) \
     { \
-      if ( index == local_thread_id ) \
+      if ( index == loc_var.tid ) \
         continue; \
       state = (ts_state[index].value & (3l<<62))>>62;\
-      while(state == NON_DURABLE && order_ts[index].value <= order_ts[local_thread_id].value) \
+      while(state == NON_DURABLE && order_ts[index].value <= order_ts[loc_var.tid].value) \
       { cpu_relax(); } \
     } \
+    READ_TIMESTAMP(loc_var.ts2); \
+    stats_array[loc_var.tid].wait2_time += loc_var.ts2 - loc_var.ts1; \
     UPDATE_STATE(INACTIVE); /* inactive rot*/ \
-    stats_array[local_thread_id].rot_commits++; \
-    READ_TIMESTAMP(_ts2); \
-    stats_array[local_thread_id].wait2_time += _ts2 - _ts1; \
+    stats_array[loc_var.tid].rot_commits++; \
 	} \
 	else \
   { \
-    order_ts[local_thread_id].value=global_order_ts++;\
+    order_ts[loc_var.tid].value = global_order_ts++;\
     rmb();\
-		pthread_spin_unlock(&single_global_lock); \
-		stats_array[local_thread_id].gl_commits++; \
+		UNLOCK(single_global_lock); \
+		stats_array[loc_var.tid].gl_commits++; \
 	} \
 };
 
 # define RELEASE_READ_LOCK(){\
   rwmb();\
   UPDATE_STATE(INACTIVE);\
-  stats_array[local_thread_id].read_commits++;\
-  \ 
+  stats_array[loc_var.tid].read_commits++;\
   long num_threads = global_numThread; \
   long index;\
-  volatile long ts_snapshot = ts_state[local_thread_id].value; \
+  volatile long ts_snapshot = ts_state[loc_var.tid].value; \
   long state;\
   for ( index = 0; index < num_threads; index++ ) \
   { \
-    if(index == local_thread_id) \
+    if(index == loc_var.tid) \
       continue; \
     state = (ts_state[index].value & (3l<<62))>>62; \
-    while(state == NON_DURABLE && ts_state[index].value < ts_state[local_thread_id].value) \
+    while(state == NON_DURABLE && ts_state[index].value < ts_state[loc_var.tid].value) \
     { cpu_relax(); } \
 	} \
 }\
@@ -213,10 +215,11 @@
 #define FAST_PATH_SHARED_READ_D(var)               var
 #define FAST_PATH_SHARED_READ_F(var)               var
 
-# define FAST_PATH_SHARED_WRITE(var, val)   ({var = val;/*write_in_log(mylogpointer,&(var),val,mylogstart,mylogend);*/ var;})
-# define FAST_PATH_SHARED_WRITE_P(var, val) ({var = val;/*write_in_log(mylogpointer,&(var),val,mylogstart,mylogend);*/ var;})
-# define FAST_PATH_SHARED_WRITE_D(var, val) ({var = val;/*write_in_log(mylogpointer,&(var),val,mylogstart,mylogend);*/ var;})
-# define FAST_PATH_SHARED_WRITE_F(var, val) ({var = val;/*write_in_log(mylogpointer,&(var),val,mylogstart,mylogend);*/ var;})
+#define SHARED_WRITE(var, val) ({var = val; write_in_log(loc_var.mylogpointer,&(var),val,loc_var.mylogstart,loc_var.mylogend); var;})
+# define FAST_PATH_SHARED_WRITE(var, val)   SHARED_WRITE(var, val)
+# define FAST_PATH_SHARED_WRITE_P(var, val) SHARED_WRITE(var, val)
+# define FAST_PATH_SHARED_WRITE_D(var, val) SHARED_WRITE(var, val)
+# define FAST_PATH_SHARED_WRITE_F(var, val) SHARED_WRITE(var, val)
 
 # define SLOW_PATH_RESTART() FAST_PATH_RESTART()
 # define SLOW_PATH_SHARED_WRITE(var, val)     FAST_PATH_SHARED_WRITE(var, val)

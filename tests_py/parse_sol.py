@@ -39,6 +39,9 @@ class Parser:
     catch_param["total-commit-time"] = re.compile(r"\s*Total commit (time):\s+(\d+)")
     catch_param["total-abort-time"] = re.compile(r"\s*Total abort (time):\s+(\d+)")
     catch_param["total-wait-time"] = re.compile(r"\s*Total wait (time):\s+(\d+)")
+    catch_param["total-sus-time"] = re.compile(r"\s*Total sus (time):\s+(\d+)")
+    catch_param["total-flush-time"] = re.compile(r"\s*Total flush (time):\s+(\d+)")
+    catch_param["total-wait2-time"] = re.compile(r"\s*Total wait2 (time):\s+(\d+)")
     o = {}
     with open(file, "r") as f:
       for l in f.readlines():
