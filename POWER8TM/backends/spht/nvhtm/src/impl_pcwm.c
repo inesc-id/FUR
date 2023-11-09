@@ -200,8 +200,14 @@ void on_after_htm_commit_pcwm(int threadId)
   // printf("[%i] did TX=%lx\n", threadId, readClockVal);
 
   if (writeLogStart == writeLogEnd) {
+    /* Read-only transaction is about to return */
+
     // tells the others to move on
     __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, onesBit63(readClockVal), __ATOMIC_RELEASE);
+
+    /* RO durability wait (bug fix by Joao)*/
+    RO_wait_for_durable_reads(threadId, readClockVal);
+
     goto ret;
   }
 
@@ -321,6 +327,19 @@ outerLoop:
 ret:
   MEASURE_INC(countCommitPhases);
 }
+
+void RO_wait_for_durable_reads(int threadId, uint64_t myPreCommitTS)
+{
+  uint64_t otherTS;
+  
+  for (int i = 0; i < gs_appInfo->info.nbThreads; i++) {
+    if (i!=threadId) {
+      do {
+        otherTS = zeroBit63(__atomic_load_n(&(gs_ts_array[i].comm2.ts), __ATOMIC_ACQUIRE));
+      }
+      while (otherTS < myPreCommitTS);
+    }
+ }
 
 void wait_commit_pcwm(int threadId)
 {
