@@ -32,6 +32,7 @@ rm lib/tm.h
 cp ../../backends/extra_MACROS.h lib/
 cp ../../backends/POWER_common.h lib/
 cp ../../backends/extra_threadc.h lib/
+cp ../../backends/seq_log.h lib/
 
 
 cp ../../backends/$backend/Defines.common.mk .

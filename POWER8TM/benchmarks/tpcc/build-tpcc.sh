@@ -26,6 +26,7 @@ fi
 cp ../../backends/extra_MACROS.h code/
 cp ../../backends/POWER_common.h code/
 cp ../../backends/extra_threadc.h code/
+cp ../../backends/seq_log.h code/
 
 cp ../../backends/$backend/tm.h code/
 cp ../../backends/$backend/thread.c code/
