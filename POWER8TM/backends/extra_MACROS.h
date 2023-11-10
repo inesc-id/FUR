@@ -220,6 +220,7 @@ my_tm_thread_enter();
   loc_var.mylogpointer_snapshot = ptr; \
 // end place_abort_marker_in_log
 
+#ifndef abortMarker
 #define abortMarker() \
 { \
   if ( order_ts[loc_var.tid].value != -1 ) \
@@ -234,6 +235,7 @@ my_tm_thread_enter();
   UPDATE_STATE(INACTIVE); \
 }; \
 // end abortMarker
+#endif
 
 # define atomicInc()   __atomic_add_fetch(&global_order_ts, 1, __ATOMIC_RELEASE) 
 

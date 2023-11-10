@@ -58,6 +58,9 @@
 #    define SPECIAL_THREAD_ID()         thread_getId()
 #endif
 
+// overrides the abortMarker() on "extra_MACROS.h"
+#define abortMarker() SEQL_ABORT(order_ts[q_args.tid].value)
+
 #include "POWER_common.h"
 #include "extra_MACROS.h"
 #include "seq_log.h"
@@ -217,7 +220,8 @@
 	  __TM_suspend(); \
     READ_TIMESTAMP(start_sus);\
     UPDATE_TS_STATE(NON_DURABLE); /* committing rot*/ \
-    order_ts[q_args.tid].value=atomicInc();\
+    order_ts[q_args.tid].value = atomicInc();\
+    SEQL_START(order_ts[q_args.tid].value, q_args.tid, (loc_var.mylogpointer_snapshot - loc_var.mylogstart)); \
     QUIESCENCE_CALL_ROT(); \
     rmb(); \
     READ_TIMESTAMP(end_sus);\
@@ -227,13 +231,13 @@
     READ_TIMESTAMP(end_tx); \
     stats_array[q_args.tid].commit_time += end_tx - start_tx;\
     READ_TIMESTAMP(start_flush);\
-    /*commit_log(mylogpointer,order_ts[q_args.tid].value,mylogstart,mylogend);*/\
-    flush_log_commit_marker( \
+    /* flush_log_commit_marker( \
       loc_var.mylogpointer, \
       order_ts[q_args.tid].value, \
       loc_var.mylogstart, \
       loc_var.mylogend \
-    ); \
+    ); */ \
+    SEQL_COMMIT(order_ts[q_args.tid].value, (loc_var.mylogpointer - loc_var.mylogstart)); \
     READ_TIMESTAMP(end_flush);\
     stats_array[q_args.tid].flush_time += end_flush-start_flush;\
     long num_threads = global_numThread; \
