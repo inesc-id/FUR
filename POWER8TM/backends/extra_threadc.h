@@ -4,6 +4,8 @@
 extern "C" {
 #endif
 
+#include "seq_log.h"
+
 #define MAXTHREADS 80
 #define SIZE_HEAP 1048576
 
@@ -44,6 +46,8 @@ __attribute__((aligned(CACHE_LINE_SIZE))) int global_order_ts = 0;
 __attribute__((aligned(CACHE_LINE_SIZE))) int place_abort_marker = 1;
 __thread unsigned long rs_counter;
 __attribute__((aligned(CACHE_LINE_SIZE))) padded_statistics_t stats_array[80];
+
+seql_node_t *seql_global_ptr; // seq_log.h
 
 void
 my_tm_startup(int numThread)

@@ -188,8 +188,8 @@ extern int isCraftySet; // need flag for crafty
 
 # define TM_END() \
   NV_HTM_END(HTM_SGL_tid) \
-  extern volatile __thread uint64_t timeScanning; \
-  stats_array[local_thread_id].wait_time += timeScanning; \
+  /* extern volatile __thread uint64_t timeScanning; \
+  stats_array[local_thread_id].wait_time += timeScanning; */ \
 //
 
 # define TM_RESTART()                  HTM_abort();

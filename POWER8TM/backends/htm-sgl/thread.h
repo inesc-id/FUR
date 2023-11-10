@@ -76,6 +76,18 @@
 
 #include <pthread.h>
 
+# ifndef MIN_BACKOFF
+#  define MIN_BACKOFF                   (1UL << 2)
+# endif /* MIN_BACKOFF */
+# ifndef MAX_BACKOFF
+#  define MAX_BACKOFF                   (1UL << 31)
+# endif /* MAX_BACKOFF */
+
+#ifndef REDUCED_TM_API
+
+#include <stdlib.h>
+#include "types.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -96,20 +108,6 @@ extern unsigned int htm_rot_enabled;
 extern unsigned int allow_rots_ros;
 extern unsigned int allow_htms;
 extern unsigned int allow_stms;
-
-# ifndef MIN_BACKOFF
-#  define MIN_BACKOFF                   (1UL << 2)
-# endif /* MIN_BACKOFF */
-# ifndef MAX_BACKOFF
-#  define MAX_BACKOFF                   (1UL << 31)
-# endif /* MAX_BACKOFF */
-
-#ifndef REDUCED_TM_API
-
-#include <stdlib.h>
-#include "types.h"
-
-
 
 #define THREAD_T                            pthread_t
 #define THREAD_ATTR_T                       pthread_attr_t

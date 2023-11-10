@@ -17,8 +17,6 @@ cp ../../backends/$1/nvhtm/include/impl.h $2
 cp ../../backends/$1/nvhtm/include/htm_impl.h $2
 cp ../../backends/$1/nvhtm/include/spins.h $2
 
-
-
 cp ../../backends/$1/deps/input_handler/include/input_handler.h $2
 cp ../../backends/$1/deps/input_handler/src/input_handler.cpp $2
 
