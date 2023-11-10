@@ -49,7 +49,7 @@ fi
 
 if [[ $backend == spht ]] ; then
     rm lib/rdtsc.h
-    bash ../../backends/$backend/copy_spht.sh $backend ./code
+    bash ../../backends/$backend/copy_spht.sh $backend ./lib
 fi
 
 for F in $FOLDERS

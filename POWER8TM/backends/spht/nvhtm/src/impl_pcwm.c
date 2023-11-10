@@ -35,6 +35,10 @@ static volatile __thread uint64_t timeWaiting = 0;
 static volatile __thread uint64_t timeFlushing = 0;
 static volatile __thread uint64_t timeTX = 0;
 
+static volatile __thread uint64_t timeScanning = 0;
+
+static volatile __thread uint64_t durability_RO_spins = 0;
+
 static volatile __thread uint64_t countCommitPhases = 0;
 
 // static volatile uint64_t incNbSamples = 0;
@@ -67,6 +71,8 @@ void state_gather_profiling_info_pcwm(int threadId)
   __sync_fetch_and_add(&incTX, timeTX);
   __sync_fetch_and_add(&timeSGL_global, timeSGL);
   __sync_fetch_and_add(&timeAbortedTX_global, timeAbortedTX);
+
+printf("durability_RO_spins: %d\n", durability_RO_spins);
 
   timeSGL = 0;
   timeAbortedTX = 0;
@@ -334,12 +340,15 @@ void RO_wait_for_durable_reads(int threadId, uint64_t myPreCommitTS)
   
   for (int i = 0; i < gs_appInfo->info.nbThreads; i++) {
     if (i!=threadId) {
+      durability_RO_spins --;
       do {
         otherTS = zeroBit63(__atomic_load_n(&(gs_ts_array[i].comm2.ts), __ATOMIC_ACQUIRE));
+        durability_RO_spins ++;
       }
       while (otherTS < myPreCommitTS);
     }
- }
+  }
+}
 
 void wait_commit_pcwm(int threadId)
 {

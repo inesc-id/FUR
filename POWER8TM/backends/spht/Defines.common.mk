@@ -22,5 +22,6 @@ SRCS+=\
 	$(LIB)/htm.cpp\
 	$(LIB)/spins.cpp\
 	$(LIB)/impl_htmOnly.c\
+	$(LIB)/impl_pcwm.c\
 # Remove these files when doing clean
 OUTPUT +=

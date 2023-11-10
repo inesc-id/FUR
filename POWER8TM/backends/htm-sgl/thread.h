@@ -76,6 +76,10 @@
 
 #include <pthread.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 extern long              global_numThread    ;
 
@@ -105,9 +109,6 @@ extern unsigned int allow_stms;
 #include <stdlib.h>
 #include "types.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 
 #define THREAD_T                            pthread_t
