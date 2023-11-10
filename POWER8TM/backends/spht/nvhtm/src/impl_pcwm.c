@@ -35,8 +35,6 @@ static volatile __thread uint64_t timeWaiting = 0;
 static volatile __thread uint64_t timeFlushing = 0;
 static volatile __thread uint64_t timeTX = 0;
 
-static volatile __thread uint64_t timeScanning = 0;
-
 static volatile __thread uint64_t durability_RO_spins = 0;
 
 static volatile __thread uint64_t countCommitPhases = 0;
