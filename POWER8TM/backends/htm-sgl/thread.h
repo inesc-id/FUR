@@ -92,6 +92,7 @@
 extern "C" {
 #endif
 
+
 extern long              global_numThread    ;
 
 extern __thread unsigned long backoff;
