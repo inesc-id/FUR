@@ -60,27 +60,28 @@
 
 #include "POWER_common.h"
 #include "extra_MACROS.h"
+#include "seq_log.h"
 
 #  define TM_STARTUP(numThread, bId) \
   place_abort_marker = 1; \
   my_tm_startup(numThread); \
+  seql_init(); \
   READ_TIMESTAMP(start_ts); \
 // end TM_STARTUP
 #  define TM_SHUTDOWN() \
 { \
+  seql_destroy(); \
   FINAL_PRINT(start_ts, end_ts); \
 /*printf("first time: %d, second time: %d\n",total_first_time,total_second_time);*/ \
 } \
 // end TM_SHUTDOWN
 
-#  define TM_THREAD_ENTER() my_tm_thread_enter()
+#  define TM_THREAD_ENTER()       my_tm_thread_enter()
 #  define TM_THREAD_EXIT()
 
-# define IS_LOCKED(lock)        *((volatile int*)(&lock)) != 0
-
-# define IS_GLOBAL_LOCKED(lock)        *((volatile int*)(&lock)) == 2
-
-# define TM_BEGIN(ro) TM_BEGIN_EXT(0,ro)
+# define IS_LOCKED(lock)          *((volatile int*)(&lock)) != 0
+# define IS_GLOBAL_LOCKED(lock)   *((volatile int*)(&lock)) == 2
+# define TM_BEGIN(ro)             TM_BEGIN_EXT(0,ro)
 
 // static __inline__ 
 // __attribute__ ((__gnu_inline__, __always_inline__, __artificial__))

@@ -76,23 +76,6 @@
 
 #include <pthread.h>
 
-
-extern long              global_numThread    ;
-
-extern __thread unsigned long backoff;
-extern __thread unsigned long cm_seed;
-
-extern __thread unsigned int local_exec_mode;
-extern __thread unsigned int local_thread_id;
-
-extern __thread void* rot_readset[];
-extern __thread unsigned long rs_counter;
-
-extern unsigned int htm_rot_enabled;
-extern unsigned int allow_rots_ros;
-extern unsigned int allow_htms;
-extern unsigned int allow_stms;
-
 # ifndef MIN_BACKOFF
 #  define MIN_BACKOFF                   (1UL << 2)
 # endif /* MIN_BACKOFF */
@@ -109,6 +92,21 @@ extern unsigned int allow_stms;
 extern "C" {
 #endif
 
+extern long              global_numThread    ;
+
+extern __thread unsigned long backoff;
+extern __thread unsigned long cm_seed;
+
+extern __thread unsigned int local_exec_mode;
+extern __thread unsigned int local_thread_id;
+
+extern __thread void* rot_readset[];
+extern __thread unsigned long rs_counter;
+
+extern unsigned int htm_rot_enabled;
+extern unsigned int allow_rots_ros;
+extern unsigned int allow_htms;
+extern unsigned int allow_stms;
 
 #define THREAD_T                            pthread_t
 #define THREAD_ATTR_T                       pthread_attr_t
