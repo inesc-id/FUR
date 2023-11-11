@@ -334,13 +334,13 @@ ret:
 
 void RO_wait_for_durable_reads(int threadId, uint64_t myPreCommitTS)
 {
-  uint64_t otherTS;
+  volatile uint64_t otherTS;
   
   for (int i = 0; i < gs_appInfo->info.nbThreads; i++) {
     if (i!=threadId) {
       durability_RO_spins --;
       do {
-        otherTS = zeroBit63(__atomic_load_n(&(gs_ts_array[i].comm2.ts), __ATOMIC_ACQUIRE));
+        otherTS = __atomic_load_n(&(gs_ts_array[i].pcwm.ts), __ATOMIC_ACQUIRE);
         durability_RO_spins ++;
       }
       while (otherTS < myPreCommitTS);
