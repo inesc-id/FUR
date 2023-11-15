@@ -152,7 +152,6 @@ extern __attribute__((aligned(CACHE_LINE_SIZE))) pthread_spinlock_t single_globa
 extern __attribute__((aligned(CACHE_LINE_SIZE))) padded_statistics_t stats_array[];
 
 
-
 extern long              global_numThread;
 //static long global_numThread = 1;
 

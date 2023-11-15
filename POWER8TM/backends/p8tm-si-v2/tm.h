@@ -91,20 +91,20 @@
 # define INACTIVE    0
 # define ACTIVE      1
 # define NON_DURABLE 2
-# define first_2bits_zero 0x3ffffffffffffffff
+# define first_2bits_zero 0x3fffffffffffffff
 
 # define UPDATE_TS_STATE(state){\
   long temp;\
   READ_TIMESTAMP(temp);\
   temp=temp & first_2bits_zero;\
-  temp = (state<<62)|temp;\
+  temp = (((long) state)<<62)|temp;\
   ts_state[local_thread_id].value=temp;\
 }\
 
 # define UPDATE_STATE(state){\
   long temp=state;\
   temp=temp & first_2bits_zero;\
-  temp = (state<<62)|temp;\
+  temp = (((long) state)<<62)|temp;\
   ts_state[local_thread_id].value=temp;\
 }\
 
@@ -147,6 +147,8 @@
 		rot_status = 1; \
 		TM_buff_type TM_buff; \
     UPDATE_TS_STATE(ACTIVE);\
+	u_int64_t aux = check_state(ts_state[local_thread_id].value); \
+	assert( aux == ACTIVE); \
 		rmb(); \
 		if(IS_LOCKED(single_global_lock)){ \
 			UPDATE_TS_STATE(INACTIVE); /* inactive rot*/ \
@@ -255,6 +257,12 @@
 
 //-------------------------------TM_END------------------------------
 
+
+#define MAX_PROFILE_COUNT 10000
+extern uint64_t **SI_wait_duration;
+extern uint64_t *SI_wait_count;
+extern uint64_t *SI_wait_spins;
+
 # define QUIESCENCE_CALL_ROT(){ \
 	long num_threads = global_numThread; \
 	long index;\
@@ -272,6 +280,7 @@
         break;\
 			case ACTIVE:\
 				state_snapshot[index] = temp; \
+				printf("quiescence wait: encontrou ACTIVE......\n"); \
 				break;\
 			case NON_DURABLE:\
 				state_snapshot[index] = 0; \
@@ -282,18 +291,27 @@
 		} \
   } \
   long start_wait_time; \
+  int spins=0; \
 	READ_TIMESTAMP(start_wait_time); \
 	for(index=0; index < num_threads; index++){ \
 		if(index == local_thread_id) continue; \
 		if(state_snapshot[index] != 0){ \
+printf("quiescence wait......\n"); \
 			while(ts_state[index].value==state_snapshot[index] || ts_state[index].value > state_snapshot[index]){ \
 				cpu_relax(); \
+				spins ++; \
 			} \
 		} \
 	} \
   long end_wait_time; \
   READ_TIMESTAMP(end_wait_time); \
   stats_array[local_thread_id].wait_time += end_wait_time - start_wait_time; \
+  int c = SI_wait_count[local_thread_id]; \
+  if (c < MAX_PROFILE_COUNT) { \
+    SI_wait_duration[local_thread_id][c] = end_wait_time - start_wait_time; \
+    SI_wait_count[local_thread_id]++; \
+  } \
+  SI_wait_spins[local_thread_id]+=spins; \
 };
 
 

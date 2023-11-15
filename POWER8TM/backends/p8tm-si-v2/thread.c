@@ -90,6 +90,15 @@ __thread volatile long start_sus;
 __thread volatile long end_sus;
 __thread unsigned int thread_id;
 
+
+
+/* Breakdown of the main stages (JOAO) */
+#define MAX_PROFILE_COUNT 10000
+uint64_t **SI_wait_duration;
+uint64_t *SI_wait_count;
+uint64_t *SI_wait_spins;
+
+
 #ifndef REDUCED_TM_API
 
 #include <assert.h>
@@ -148,6 +157,17 @@ thread_startup (long numThread)
     global_numThread = numThread;
     global_doShutdown = FALSE;
 
+
+#ifdef DETAILED_BREAKDOWN_PROFILING
+  SI_wait_duration = (uint64_t**)malloc(numThread*sizeof(uint64_t*));
+  SI_wait_count = (uint64_t*)malloc(numThread*sizeof(uint64_t));
+  SI_wait_spins = (uint64_t*)malloc(numThread*sizeof(uint64_t));
+  for (int i=0; i<numThread; i++) {
+    SI_wait_duration[i] = (uint64_t*)malloc(MAX_PROFILE_COUNT*sizeof(uint64_t));
+    SI_wait_count[i] = 0;
+    SI_wait_spins[i] = 0;
+  }
+#endif
 
     /* Set up barrier */
     assert(global_barrierPtr == NULL);
@@ -216,6 +236,29 @@ thread_shutdown ()
 
     free(global_threads);
     global_threads = NULL;
+
+
+#ifdef DETAILED_BREAKDOWN_PROFILING
+    FILE *fp = fopen("si-htm_detailed_profiling.csv", "w"); 
+    if (fp == NULL) {
+        printf("Cannot open detailed profiling file.\n");
+        return;
+    }
+    fprintf(fp, "STAGE: SI safety wait\n");  
+    for (int i=0; i<numThread; i++) {
+        int c = SI_wait_count[i];
+        for (int k = 0; k<c; k++) {
+            fprintf(fp, "%lu\n", SI_wait_duration[i][k]);
+        }
+    }
+
+    fprintf(fp, "Per-thread no. of SI wait spins\n");  
+    for (int i=0; i<numThread; i++) {
+        fprintf(fp, "%lu\n", SI_wait_spins[i]);
+    }
+
+    fclose(fp);
+#endif
 
 }
 
