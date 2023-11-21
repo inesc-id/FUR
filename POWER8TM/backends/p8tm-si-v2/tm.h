@@ -280,7 +280,6 @@ extern uint64_t *SI_wait_spins;
         break;\
 			case ACTIVE:\
 				state_snapshot[index] = temp; \
-				printf("quiescence wait: encontrou ACTIVE......\n"); \
 				break;\
 			case NON_DURABLE:\
 				state_snapshot[index] = 0; \
@@ -296,7 +295,6 @@ extern uint64_t *SI_wait_spins;
 	for(index=0; index < num_threads; index++){ \
 		if(index == local_thread_id) continue; \
 		if(state_snapshot[index] != 0){ \
-printf("quiescence wait......\n"); \
 			while(ts_state[index].value==state_snapshot[index] || ts_state[index].value > state_snapshot[index]){ \
 				cpu_relax(); \
 				spins ++; \

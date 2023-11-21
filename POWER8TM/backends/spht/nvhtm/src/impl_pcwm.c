@@ -35,7 +35,6 @@ static volatile __thread uint64_t timeWaiting = 0;
 static volatile __thread uint64_t timeFlushing = 0;
 static volatile __thread uint64_t timeTX = 0;
 
-static volatile __thread uint64_t durability_RO_spins = 0;
 
 static volatile __thread uint64_t countCommitPhases = 0;
 
@@ -53,6 +52,7 @@ static volatile uint64_t incTX = 0;
 static uint64_t **ro_durability_wait_duration;
 static uint64_t *ro_durability_wait_count;
 static uint64_t **upd_after_commit_duration;
+static uint64_t **upd_log_flush_duration;
 static uint64_t *upd_after_commit_count;
 #endif
 
@@ -70,19 +70,18 @@ void install_bindings_pcwm()
 
 void init_stats_pcwm() {
   #ifdef DETAILED_BREAKDOWN_PROFILING
-printf("debug 1. no. threads=%d\n", gs_appInfo->info.nbThreads);
-  //JOAO: aqui nao e' o melhor sitio para isto...
   ro_durability_wait_duration = (uint64_t**)malloc(gs_appInfo->info.nbThreads*sizeof(uint64_t*));
   ro_durability_wait_count = (uint64_t*)malloc(gs_appInfo->info.nbThreads*sizeof(uint64_t));
   upd_after_commit_duration = (uint64_t**)malloc(gs_appInfo->info.nbThreads*sizeof(uint64_t*));
+  upd_log_flush_duration = (uint64_t**)malloc(gs_appInfo->info.nbThreads*sizeof(uint64_t*));
   upd_after_commit_count = (uint64_t*)malloc(gs_appInfo->info.nbThreads*sizeof(uint64_t));
   for (int i=0; i<gs_appInfo->info.nbThreads; i++) {
     ro_durability_wait_duration[i] = (uint64_t*)malloc(MAX_PROFILE_COUNT*sizeof(uint64_t));
     ro_durability_wait_count[i] = 0;
     upd_after_commit_duration[i] = (uint64_t*)malloc(MAX_PROFILE_COUNT*sizeof(uint64_t));
+    upd_log_flush_duration[i] = (uint64_t*)malloc(MAX_PROFILE_COUNT*sizeof(uint64_t));
     upd_after_commit_count[i] = 0;
   }
-  printf("debug 2........\n");
 #endif
 }
 
@@ -97,8 +96,6 @@ void state_gather_profiling_info_pcwm(int threadId)
   __sync_fetch_and_add(&incTX, timeTX);
   __sync_fetch_and_add(&timeSGL_global, timeSGL);
   __sync_fetch_and_add(&timeAbortedTX_global, timeAbortedTX);
-
-printf("durability_RO_spins: %d\n", durability_RO_spins);
 
   timeSGL = 0;
   timeAbortedTX = 0;
@@ -137,7 +134,7 @@ void state_fprintf_profiling_info_pcwm(char *filename)
 
   #ifdef DETAILED_BREAKDOWN_PROFILING
   char fname_aux[200];
-  snprintf(fname_aux, 200, "%s.detailed", filename);
+  snprintf(fname_aux, 200, "detailed.%s", filename);
   fp = fopen(fname_aux, "w"); 
   if (fp == NULL) {
     printf("Cannot open %s! Try to remove it.\n", filename);
@@ -151,11 +148,11 @@ void state_fprintf_profiling_info_pcwm(char *filename)
       fprintf(fp, "%lu\n", ro_durability_wait_duration[i][k]);
     }
   }
-  fprintf(fp, "STAGE: Update post-commit until return\n");
+  fprintf(fp, "STAGE: Update post-commit until return\tSTAGE: Update flush log entries\n");
   for (int i=0; i<gs_appInfo->info.nbThreads; i++) {
     int c = upd_after_commit_count[i];
     for (int k = 0; k<c; k++) {
-      fprintf(fp, "%lu\n", upd_after_commit_duration[i][k]);
+      fprintf(fp, "%lu\t%lu\n", upd_after_commit_duration[i][k], upd_log_flush_duration[i][k]);
     }
   }
   fclose(fp);
@@ -396,6 +393,7 @@ ret:
     int c = upd_after_commit_count[threadId];
     if (c < MAX_PROFILE_COUNT) {
       upd_after_commit_duration[threadId][c] = ts2 - timeAfterTXTS1;
+      upd_log_flush_duration[threadId][c] = timeFlushTS2 - timeFlushTS1;
       upd_after_commit_count[threadId]++;
     }
   }
@@ -413,10 +411,8 @@ void RO_wait_for_durable_reads(int threadId, uint64_t myPreCommitTS)
   
   for (int i = 0; i < gs_appInfo->info.nbThreads; i++) {
     if (i!=threadId) {
-      durability_RO_spins --;
       do {
         otherTS = __atomic_load_n(&(gs_ts_array[i].pcwm.ts), __ATOMIC_ACQUIRE);
-        durability_RO_spins ++;
       }
       while (otherTS < myPreCommitTS);
     }
