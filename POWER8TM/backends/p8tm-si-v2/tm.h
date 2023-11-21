@@ -263,19 +263,15 @@
 	num_threads = (long)global_numThread; \
 	for(index=0; index < 80; index++){ \
     if (index == num_threads) break; \
-		if(index == local_thread_id) continue; \
+		if (index == local_thread_id) continue; \
 		temp = ts_state[index].value; \
 		state = (temp & (3l<<62))>>62; \
 		switch(state){ \
-			case INACTIVE:\
-        state_snapshot[index] = 0; \
-        break;\
 			case ACTIVE:\
 				state_snapshot[index] = temp; \
 				break;\
+			case INACTIVE:\
 			case NON_DURABLE:\
-				state_snapshot[index] = 0; \
-				break;\
 			default:\
 				state_snapshot[index] = 0; \
 				break;\
@@ -283,9 +279,10 @@
   } \
   long start_wait_time; \
 	READ_TIMESTAMP(start_wait_time); \
-	for(index=0; index < num_threads; index++){ \
-		if(index == local_thread_id) continue; \
-		if(state_snapshot[index] != 0){ \
+	for (index = 0; index < num_threads; index++)\
+  { \
+		if (index == local_thread_id) continue; \
+		if (state_snapshot[index] != 0){ \
 			while(ts_state[index].value==state_snapshot[index] || ts_state[index].value > state_snapshot[index]){ \
 				cpu_relax(); \
 			} \

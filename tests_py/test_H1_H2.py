@@ -23,7 +23,7 @@ if __name__ == "__main__":
   backends = [
     "pisces",
     "spht",
-    "p8tm-si",
+    "p8tm-si-v2",
     "p8tm-psi-v2-ci",
     "p8tm-psi-v2-fi-improved",
     "htm-sgl"
@@ -34,13 +34,15 @@ if __name__ == "__main__":
     "pisces" : "Pisces",
     "htm-sgl" : "HTM",
     "spht" : "SPHT",
-    "p8tm-si" : "SI-TM"
+    "p8tm-si-v2" : "SI-TM"
   }
   data_folder = "dataH1H2"
 
   datasets_thr = {}
   datasets_aborts = {}
   for loc,backend in zip(locations,backends):
+    if backend == "pisces" or backend == "spht" or backend == "p8tm-si-v2":
+      continue
     for s in range(nb_samples):
       data = CollectData(
           loc,
@@ -49,7 +51,7 @@ if __name__ == "__main__":
           backend,
           f"{data_folder}/{backend}-s{s}"
         )
-      # data.run_sample(params) # TODO: not running samples
+      data.run_sample(params) # TODO: not running samples
       parser = Parser(f"{data_folder}/{backend}-s{s}")
       parser.parse_all(f"{data_folder}/{backend}-s{s}.csv")
     for u in params.params["-u"]:

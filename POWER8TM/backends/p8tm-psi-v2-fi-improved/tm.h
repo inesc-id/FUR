@@ -221,7 +221,7 @@
     READ_TIMESTAMP(start_sus);\
     UPDATE_TS_STATE(NON_DURABLE); /* committing rot*/ \
     order_ts[q_args.tid].value = atomicInc();\
-    SEQL_START(order_ts[q_args.tid].value, q_args.tid, (loc_var.mylogpointer_snapshot - loc_var.mylogstart)); \
+    SEQL_START(order_ts[q_args.tid].value, q_args.tid, ((uint64_t)(loc_var.mylogpointer_snapshot - loc_var.mylogstart))); \
     QUIESCENCE_CALL_ROT(); \
     rmb(); \
     READ_TIMESTAMP(end_sus);\

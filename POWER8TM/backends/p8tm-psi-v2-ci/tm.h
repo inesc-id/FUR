@@ -61,10 +61,12 @@
 #  define TM_STARTUP(numThread, bId) \
   place_abort_marker = 1; \
   my_tm_startup(numThread); \
+  seql_init(); \
   READ_TIMESTAMP(start_ts); \
 // end TM_STARTUP
 #  define TM_SHUTDOWN() \
 { \
+  seql_destroy(); \
   FINAL_PRINT(start_ts, end_ts); \
 /*printf("first time: %d, second time: %d\n",total_first_time,total_second_time);*/ \
 } \
@@ -78,8 +80,12 @@
 
 # define READ_TIMESTAMP(dest) __asm__ volatile("0: \n\tmfspr   %0,268 \n": "=r"(dest));
 
+// overrides the abortMarker() on "extra_MACROS.h"
+#define abortMarker() SEQL_ABORT(order_ts[q_args.tid].value)
+
 #include "POWER_common.h"
 #include "extra_MACROS.h"
+#include "seq_log.h"
 
 //todo use qf of si
 # define QUIESCENCE_CALL_ROT() { \
@@ -138,6 +144,7 @@
     READ_TIMESTAMP(q_args.ts1); \
     UPDATE_TS_STATE(NON_DURABLE); /* committing rot */ \
     order_ts[loc_var.tid].value = atomicInc(); \
+    SEQL_START(order_ts[q_args.tid].value, q_args.tid, ((uint64_t)(loc_var.mylogpointer_snapshot - loc_var.mylogstart))); \
     QUIESCENCE_CALL_ROT(); \
     rmb(); \
     READ_TIMESTAMP(q_args.ts2); \
@@ -148,12 +155,13 @@
     stats_array[loc_var.tid].commit_time += end_tx - start_tx;\
 	  READ_TIMESTAMP(loc_var.ts1); \
     loc_var.mylogpointer_snapshot = q_args.logptr /* cannot write within sus-res */; \
-    flush_log_commit_marker( \
+    SEQL_COMMIT(order_ts[q_args.tid].value, (loc_var.mylogpointer - loc_var.mylogstart)); \
+    /* flush_log_commit_marker( \
       loc_var.mylogpointer, \
       order_ts[loc_var.tid].value, \
       loc_var.mylogstart, \
       loc_var.mylogend \
-    ); \
+    ); */ \
     READ_TIMESTAMP(loc_var.ts2); \
     stats_array[loc_var.tid].flush_time += loc_var.ts2 - loc_var.ts1; \
     long state;\

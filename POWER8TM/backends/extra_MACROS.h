@@ -12,7 +12,7 @@ extern "C" {
 # define INACTIVE         0
 # define ACTIVE           1
 # define NON_DURABLE      2
-# define first_2bits_zero 0x3ffffffffffffffff
+# define first_2bits_zero 0x3ffffffffffffffflu
 # define CACHE_LINE_SIZE  128
 
 #define LOGSIZE_mask ((1l<<LOGSIZE_bits)-1l)
@@ -32,12 +32,12 @@ extern "C" {
 #define __dcbst(base, index)  \
   __asm__ ("dcbst %0, %1" : /*no result*/ : "b%" (index), "r" (base) : "memory")
 
-# define IS_LOCKED(lock)    (atomic_LOAD(lock) != 0 && atomic_LOAD(lock) != (loc_var.tid + 1))
-# define TRY_LOCK(lock)     __sync_bool_compare_and_swap((volatile int*)(&lock), 0, loc_var.tid + 1)
-# define UNLOCK(lock)       atomic_STORE(lock, 0)
+# define IS_LOCKED(lock)      (atomic_LOAD(lock) != 0 && atomic_LOAD(lock) != (loc_var.tid + 1))
+# define TRY_LOCK(lock)       __sync_bool_compare_and_swap((volatile int*)(&lock), 0, loc_var.tid + 1)
+# define UNLOCK(lock)         atomic_STORE(lock, 0)
 
 #ifndef READ_TIMESTAMP
-# define READ_TIMESTAMP(dest) __asm__ volatile("0:                  \n\tmfspr   %0,268           \n": "=r"(dest));
+# define READ_TIMESTAMP(dest) __asm__ volatile("0: \n\tmfspr   %0,268 \n": "=r"(dest));
 #endif 
 
 extern int place_abort_marker;
@@ -196,7 +196,7 @@ my_tm_thread_enter();
   long temp = state;\
   temp = temp<<2;\
   temp = temp>>2;\
-  temp = (state << 62) | temp;\
+  temp = (((long)state)<<62) | temp;\
   ts_state[loc_var.tid].value = temp;\
 }\
 // UPDATE_STATE
@@ -204,6 +204,7 @@ my_tm_thread_enter();
 # define check_state(temp)({\
   (temp & (3l<<62))>>62;\
 })\
+// check_state
 
 #define flush_log_commit_marker(ptr,ts,start,end)\
   *(ptr)=bit63one | ts; \

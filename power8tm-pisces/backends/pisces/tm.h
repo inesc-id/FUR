@@ -66,10 +66,10 @@
 #    define TM_EARLY_RELEASE(var)       /* nothing */
 
 
-# define FAST_PATH_SHARED_READ(var) (var)
-# define FAST_PATH_SHARED_READ_P(var) (var)
-# define FAST_PATH_SHARED_READ_D(var) (var)
-# define FAST_PATH_SHARED_WRITE(var, val) ({var = val; var;})
+# define FAST_PATH_SHARED_READ(var)         (var)
+# define FAST_PATH_SHARED_READ_P(var)       (var)
+# define FAST_PATH_SHARED_READ_D(var)       (var)
+# define FAST_PATH_SHARED_WRITE(var, val)   ({var = val; var;})
 # define FAST_PATH_SHARED_WRITE_P(var, val) ({var = val; var;})
 # define FAST_PATH_SHARED_WRITE_D(var, val) ({var = val; var;})
 
@@ -81,8 +81,8 @@
 #  define SLOW_PATH_SHARED_WRITE_P(var, val)   STM_WRITE_P((var), val)
 #  define SLOW_PATH_SHARED_WRITE_D(var, val)   STM_WRITE_F((var), val)
 
-#  define TM_LOCAL_WRITE(var, val)      STM_LOCAL_WRITE(var, val)
-#  define TM_LOCAL_WRITE_P(var, val)    STM_LOCAL_WRITE_P(var, val)
-#  define TM_LOCAL_WRITE_D(var, val)    STM_LOCAL_WRITE_F(var, val)
+#  define TM_LOCAL_WRITE(var, val)             STM_LOCAL_WRITE(var, val)
+#  define TM_LOCAL_WRITE_P(var, val)           STM_LOCAL_WRITE_P(var, val)
+#  define TM_LOCAL_WRITE_D(var, val)           STM_LOCAL_WRITE_F(var, val)
 
 #endif

@@ -80,7 +80,6 @@
 
 extern __thread long rot_readset_values[];
 extern __thread void* rot_readset[];
-extern __thread unsigned long rs_counter;
 
 extern __thread unsigned long backoff;
 extern __thread unsigned long cm_seed;

@@ -243,7 +243,7 @@ __TM_is_tfiar_exact(void* const TM_buff)
   \
   READ_TIMESTAMP(start_flush);\
   commit_log(mylogpointer,order_ts[local_thread_id].value,mylogstart,mylogend);\
-	commit_log_marker(mylogpointer,order_ts[local_thread_id].value,mylogstart,mylogend); \
+	flush_log_commit_marker(mylogpointer,order_ts[local_thread_id].value,mylogstart,mylogend); \
   READ_TIMESTAMP(end_flush);\
   stats_array[local_thread_id].flush_time+=end_flush-start_flush;\
   long num_threads = global_numThread; \

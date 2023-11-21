@@ -53,7 +53,7 @@ static void seql_destroy()
 #define SEQL_START(_c, _tid, _start_ptr) \
   seql_global_ptr[SEQL_COUNTER_TO_IDX(_c)].start_addr.flags = SEQL_F_STARTED; \
   seql_global_ptr[SEQL_COUNTER_TO_IDX(_c)].start_addr.tid = _tid; \
-  seql_global_ptr[SEQL_COUNTER_TO_IDX(_c)].start_addr = _start_ptr; \
+  seql_global_ptr[SEQL_COUNTER_TO_IDX(_c)].start_addr.addr = _start_ptr; \
   /* __atomic_thread_fence(__ATOMIC_RELEASE); */ /* TODO: I think it is not needed */ \
 // end of SEQL_BEGIN
 

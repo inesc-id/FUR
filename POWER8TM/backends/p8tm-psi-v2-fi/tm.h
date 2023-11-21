@@ -62,100 +62,14 @@
 #include "POWER_common.h"
 #include "extra_MACROS.h"
 
-#  define TM_STARTUP(numThread, bId) my_tm_startup(numThread);READ_TIMESTAMP(start_ts);
+#  define TM_STARTUP(numThread, bId) \
+  my_tm_startup(numThread); \
+  seql_init(); \
+  READ_TIMESTAMP(start_ts); \
+//
 #  define TM_SHUTDOWN(){ \
-	  READ_TIMESTAMP(end_ts);\
-	  stats_array[0].total_time = end_ts - start_ts;\
-    unsigned long wait_time = 0; \
-    unsigned long total_time = 0; \
-    unsigned long read_commits = 0; \
-    unsigned long htm_commits = 0; \
-    unsigned long htm_conflict_aborts = 0; \
-    unsigned long htm_user_aborts = 0; \
-    unsigned long htm_self_conflicts = 0; \
-    unsigned long htm_trans_conflicts = 0; \
-    unsigned long htm_nontrans_conflicts = 0; \
-    unsigned long htm_persistent_aborts = 0; \
-    unsigned long htm_capacity_aborts = 0; \
-    unsigned long htm_other_aborts = 0; \
-    unsigned long rot_commits = 0; \
-    unsigned long rot_conflict_aborts = 0; \
-    unsigned long rot_user_aborts = 0; \
-    unsigned long rot_self_conflicts = 0; \
-    unsigned long rot_trans_conflicts = 0; \
-    unsigned long rot_nontrans_conflicts = 0; \
-    unsigned long rot_other_conflicts = 0; \
-    unsigned long rot_persistent_aborts = 0; \
-    unsigned long rot_capacity_aborts = 0; \
-    unsigned long rot_other_aborts = 0; \
-    unsigned long gl_commits = 0; \
-    unsigned long commit_time = 0; \
-    unsigned long abort_time = 0; \
-    unsigned long sus_time = 0; \
-    unsigned long flush_time = 0; \
-    unsigned long wait2_time = 0; \
-    int i = 0; \
-    for (; i < 80; i++) { \
-       wait_time += stats_array[i].wait_time; \
-       total_time += stats_array[i].total_time; \
-       read_commits += stats_array[i].read_commits; \
-       htm_commits += stats_array[i].htm_commits; \
-       htm_conflict_aborts += stats_array[i].htm_conflict_aborts; \
-       htm_user_aborts += stats_array[i].htm_user_aborts; \
-       htm_self_conflicts += stats_array[i].htm_self_conflicts; \
-       htm_trans_conflicts += stats_array[i].htm_trans_conflicts; \
-       htm_nontrans_conflicts += stats_array[i].htm_nontrans_conflicts; \
-       htm_persistent_aborts += stats_array[i].htm_persistent_aborts; \
-       htm_capacity_aborts += stats_array[i].htm_capacity_aborts; \
-       htm_other_aborts += stats_array[i].htm_other_aborts; \
-       rot_commits += stats_array[i].rot_commits; \
-       rot_conflict_aborts += stats_array[i].rot_conflict_aborts; \
-       rot_user_aborts += stats_array[i].rot_user_aborts; \
-       rot_self_conflicts += stats_array[i].rot_self_conflicts; \
-       rot_trans_conflicts += stats_array[i].rot_trans_conflicts; \
-       rot_nontrans_conflicts += stats_array[i].rot_nontrans_conflicts; \
-       rot_other_conflicts += stats_array[i].rot_other_conflicts; \
-       rot_persistent_aborts += stats_array[i].rot_persistent_aborts; \
-       rot_capacity_aborts += stats_array[i].rot_capacity_aborts; \
-       rot_other_aborts += stats_array[i].rot_other_aborts; \
-       gl_commits += stats_array[i].gl_commits; \
-       commit_time += stats_array[i].commit_time; \
-       sus_time += stats_array[i].sus_time; \
-       flush_time += stats_array[i].flush_time; \
-       wait2_time += stats_array[i].wait2_time; \
-       abort_time += stats_array[i].abort_time; \
-    } \
-    printf("Total sum time: %lu\n \
-    Total commit time: %lu\n \
-    Total abort time: %lu\n \
-    Total wait time: %lu\n \
-    Total sus time: %lu\n \
-    Total flush time: %lu\n \
-    Total wait2 time: %lu\n \
-    Total commits: %lu\n \
-       \tRead commits: %lu\n \
-       \tHTM commits:  %lu\n \
-       \tROT commits:  %lu\n \
-       \tGL commits: %lu\n \
-    Total aborts: %lu\n \
-       \tHTM conflict aborts:  %lu\n \
-          \t\tHTM self aborts:  %lu\n \
-          \t\tHTM trans aborts:  %lu\n \
-          \t\tHTM non-trans aborts:  %lu\n \
-       \tHTM user aborts :  %lu\n \
-       \tHTM capacity aborts:  %lu\n \
-          \t\tHTM persistent aborts:  %lu\n \
-       \tHTM other aborts:  %lu\n \
-       \tROT conflict aborts:  %lu\n \
-          \t\tROT self aborts:  %lu\n \
-          \t\tROT trans aborts:  %lu\n \
-          \t\tROT non-trans aborts:  %lu\n \
-          \t\tROT other conflict aborts:  %lu\n \
-       \tROT user aborts:  %lu\n \
-       \tROT capacity aborts:  %lu\n \
-          \t\tROT persistent aborts:  %lu\n \
-       \tROT other aborts:  %lu\n", total_time, commit_time, abort_time, wait_time,sus_time,flush_time,wait2_time, read_commits+htm_commits+rot_commits+gl_commits, read_commits, htm_commits, rot_commits, gl_commits,htm_conflict_aborts+htm_user_aborts+htm_capacity_aborts+htm_other_aborts+rot_conflict_aborts+rot_user_aborts+rot_capacity_aborts+rot_other_aborts,htm_conflict_aborts,htm_self_conflicts,htm_trans_conflicts,htm_nontrans_conflicts,htm_user_aborts,htm_capacity_aborts,htm_persistent_aborts,htm_other_aborts,rot_conflict_aborts,rot_self_conflicts,rot_trans_conflicts,rot_nontrans_conflicts,rot_other_conflicts,rot_user_aborts,rot_capacity_aborts,rot_persistent_aborts,rot_other_aborts); \
-/*printf("first time: %d, second time: %d\n",total_first_time,total_second_time);*/ \
+  seql_destroy(); \
+  FINAL_PRINT(start_ts, end_ts); \
 } \
 
 #  define TM_THREAD_ENTER() my_tm_thread_enter()
