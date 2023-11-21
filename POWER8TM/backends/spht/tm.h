@@ -107,6 +107,7 @@
     G_NUMA_PINNING, \
     NVRAM_REGIONS \
   ); \
+  init_stats_pcwm(); \
   READ_TIMESTAMP(start_ts); \
   printf("flush lat %d\n",FLUSH_LAT) \
 //
@@ -354,8 +355,8 @@ static void input_handler()
     usePhysicalClocks = 0;
     install_bindings_pcwm();
     wait_commit_fn = wait_commit_pcwm;
-    //state_profile = state_gather_profiling_info_pcwm;
-    //state_print_profile = state_fprintf_profiling_info_pcwm;
+    state_profile = state_gather_profiling_info_pcwm;
+    state_print_profile = state_fprintf_profiling_info_pcwm;
     log_replay_flags |= LOG_REPLAY_PHYSICAL_CLOCKS;
   } else if (input_exists("usePCWM2")) {
     printf("usePCWM2 is set\n");
