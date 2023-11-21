@@ -156,6 +156,7 @@ void install_bindings_PHTM();
 void install_bindings_pcwc();
 void install_bindings_pcwc2();
 void install_bindings_pcwm();
+void init_stats_pcwm();
 void install_bindings_pcwm2();
 void install_bindings_pcwm3();
 void install_bindings_crafty();
