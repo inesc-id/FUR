@@ -11,7 +11,7 @@ if __name__ == "__main__":
   params.set_params("-i", [50000, 200000])
   params.set_params("-r", [400000])
   params.set_params("-n", [1, 2, 4, 8, 12, 16, 20, 24, 32])
-  nb_samples = 10
+  nb_samples = 3
   locations = [
     "/home/ubuntu/PersistentSiHTM/power8tm-pisces/benchmarks/datastructures",
     "/home/ubuntu/PersistentSiHTM/POWER8TM/benchmarks/datastructures",
@@ -41,8 +41,6 @@ if __name__ == "__main__":
   datasets_thr = {}
   datasets_aborts = {}
   for loc,backend in zip(locations,backends):
-    if backend == "pisces" or backend == "spht" or backend == "p8tm-si-v2":
-      continue
     for s in range(nb_samples):
       data = CollectData(
           loc,
@@ -51,10 +49,12 @@ if __name__ == "__main__":
           backend,
           f"{data_folder}/{backend}-s{s}"
         )
-      data.run_sample(params) # TODO: not running samples
+      # data.run_sample(params) # TODO: not running samples
       parser = Parser(f"{data_folder}/{backend}-s{s}")
       parser.parse_all(f"{data_folder}/{backend}-s{s}.csv")
     for u in params.params["-u"]:
+      if backend == "htm-sgl" or backend == "p8tm-si-v2":
+        continue
       if u not in datasets_thr:
         datasets_thr[u] = {}
       for i in params.params["-i"]:
@@ -75,13 +75,20 @@ if __name__ == "__main__":
             "aborts": lambda e: e["total-aborts"]
           })
           ds.add_stack("Abort types", "Nb. aborts", {
-            "conflict-transactional": lambda e: e["confl-trans"],
-            "conflict-non-transactional": lambda e: e["confl-non-trans"],
-            "self": lambda e: e["confl-self"],
-            "capacity": lambda e: e["capac-aborts"],
-            "persistent": lambda e: e["persis-aborts"],
-            "user": lambda e: e["user-aborts"],
-            "other": lambda e: e["other-aborts"]
+            "conflict-transactional": lambda e: e["confl-trans"] + e["rot-trans-aborts"],
+            "conflict-non-transactional": lambda e: e["confl-non-trans"] + e["rot-non-trans-aborts"],
+            "self": lambda e: e["confl-self"] + e["rot-self-aborts"],
+            "capacity": lambda e: e["capac-aborts"] + e["rot-capac-aborts"],
+            "persistent": lambda e: e["persis-aborts"] + e["rot-persis-aborts"],
+            "user": lambda e: e["user-aborts"] + e["rot-user-aborts"],
+            "other": lambda e: e["other-aborts"] + e["rot-other-aborts"]
+          })
+          ds.add_stack("Profile information", "fraction of time", {
+            "wait1": lambda e: (e["total-wait-time"] / e["-n"]) / (e["total-sum-time"]),
+            "sus-res": lambda e: (e["total-flush-time"] / e["-n"]) / (e["total-sum-time"]),
+            "wait2": lambda e: (e["total-wait2-time"] / e["-n"]) / (e["total-sum-time"]),
+            "commitTX": lambda e: (e["total-commit-time"] / e["-n"]) / (e["total-sum-time"]),
+            "abortedTX": lambda e: (e["total-abort-time"] / e["-n"]) / (e["total-sum-time"])
           })
         datasets_thr[u][i] += [ds]
     
