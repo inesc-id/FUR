@@ -112,13 +112,13 @@
 # define INACTIVE    0
 # define ACTIVE      1
 # define NON_DURABLE 2
-# define first_2bits_zero 0x3ffffffffffffffff
+# define first_2bits_zero 0x3fffffffffffffff
 
 # define UPDATE_TS_STATE(state){\
   static __thread long _temp;\
   READ_TIMESTAMP(_temp);\
   _temp=_temp & first_2bits_zero;\
-  _temp = (state<<62)|_temp;\
+  _temp = (((long) state)<<62)|_temp;\
   ts_state[q_args.tid].value=_temp;\
 }\
 
@@ -126,9 +126,11 @@
   static __thread long _temp=state;\
   _temp=_temp<<2;\
   _temp=_temp>>2;\
-  _temp = (state<<62)|_temp;\
+  _temp = (((long) state)<<62)|_temp;\
   ts_state[q_args.tid].value=_temp;\
 }\
+
+//Previously (22/11/2023): _temp = (state<<62)|_temp;\
 
 # define check_state(temp)({\
   (temp & (3l<<62))>>62;\
@@ -182,6 +184,7 @@
 				break;\
 		} \
   } \
+  int xpto=0; \
 	for ( q_args.index = 0; q_args.index < q_args.num_threads; q_args.index++ ) \
   { \
 		if ( q_args.index == q_args.tid ) \
@@ -189,9 +192,10 @@
 		if ( state_snapshot[q_args.index] != 0 ) \
     { \
 			while ( ts_state[q_args.index].value == state_snapshot[q_args.index] || ts_state[q_args.index].value > state_snapshot[q_args.index] ) \
-      { cpu_relax(); } \
+      { cpu_relax(); xpto++;} \
 		} \
 	} \
+  if (xpto) printf("spinned %d\n", xpto); \
   READ_TIMESTAMP(q_args.end_wait_time); \
   stats_array[q_args.tid].wait_time += q_args.end_wait_time - q_args.start_wait_time; \
   max_cache_line[q_args.tid].value = 0; \
