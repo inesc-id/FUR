@@ -19,6 +19,7 @@ if __name__ == "__main__":
   backends = [
     "htm-sgl",
     "htm-sgl-sr"
+    # SI-TM --> o custo do Sus-Res está escondido (definir em reunião)
   ]
   data_folder = "dataHTM-SR"
 

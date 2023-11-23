@@ -4,14 +4,29 @@ from common import BenchmarkParameters, CollectData
 from parse_sol import Parser
 from plot import LinesPlot, BackendDataset
 
+# Besides the parameters below, the PM latency in:
+# POWER8TM/backends/extra_MACROS.h (look up #define delay_for_pm)
+# may be relevant (TODO: check how many spins match "a latency between 0.18 usec and 0.5 usec")
+
 if __name__ == "__main__":
+  
+  # This class keeps the parameters for the benchmark.
+  # Pass a list of arguments that need to be passed to the bechmark during the experiment
   params = BenchmarkParameters(["-u", "-d", "-i", "-r", "-n"])
+
+  # Here set the possible values for each parameter (pass a list with valid values).
+  # Note the experiment will run all possible combinations of arguments.
   params.set_params("-u", [10, 50, 90])
   params.set_params("-d", [4000000])
   params.set_params("-i", [50000, 200000])
   params.set_params("-r", [400000])
   params.set_params("-n", [1, 2, 4, 8, 12, 16, 20, 24, 32])
-  nb_samples = 3
+
+  # Set the number of times each run is repeated (for average/stardard deviation computation).
+  nb_samples = 10
+
+  # Set the location of the benchmark here. Each backend needs to be associated with
+  # a benchmark (allows to compare with "exotic" implementations).
   locations = [
     "/home/ubuntu/PersistentSiHTM/power8tm-pisces/benchmarks/datastructures",
     "/home/ubuntu/PersistentSiHTM/POWER8TM/benchmarks/datastructures",
@@ -20,14 +35,18 @@ if __name__ == "__main__":
     "/home/ubuntu/PersistentSiHTM/POWER8TM/benchmarks/datastructures",
     "/home/ubuntu/PersistentSiHTM/POWER8TM/benchmarks/datastructures"
   ]
+  # The backend name goes here (don't forget to match the position in the
+  # "backends" list with the position in the "locations" list)
   backends = [
     "pisces",
     "spht",
+    "htm-sgl",
     "p8tm-si-v2",
     "p8tm-psi-v2-ci",
-    "p8tm-psi-v2-fi-improved",
-    "htm-sgl"
+    "p8tm-psi-v2-fi-improved"
   ]
+
+  # Label names in the plots
   name_map = {
     "p8tm-psi-v2-fi-improved" : "PSI-OL",
     "p8tm-psi-v2-ci" : "PSI",
@@ -36,11 +55,19 @@ if __name__ == "__main__":
     "spht" : "SPHT",
     "p8tm-si-v2" : "SI-TM"
   }
+
+  # IMPORTANT: set the name of the dataset here, this folder needs to be
+  # empty when taking new samples (else it can overwrite/append the stdout
+  # of the new samples with the stdout of the old samples).
   data_folder = "dataH1H2"
 
   datasets_thr = {}
   datasets_aborts = {}
+
+  # for-each pair <location,backend> collect data
   for loc,backend in zip(locations,backends):
+
+    # repeat for-each sample
     for s in range(nb_samples):
       data = CollectData(
           loc,
@@ -49,17 +76,32 @@ if __name__ == "__main__":
           backend,
           f"{data_folder}/{backend}-s{s}"
         )
-      # data.run_sample(params) # TODO: not running samples
+      
+      # This line starts the benchmark and tests all combinations parameters.
+      data.run_sample(params) # NOTE: comment if you already have the data and just want to refresh the plots.
+
+      # Parses the stdout into a .csv that can be used for the plots.
+      # Check the tests_py/parse_sol.py for the regular expressions that are catched in the stdout.
       parser = Parser(f"{data_folder}/{backend}-s{s}")
       parser.parse_all(f"{data_folder}/{backend}-s{s}.csv")
+
+    # Creates the plots. In this case we want 1 plot for each combination <"-u","-i">.
+    # for-each "-u" value
     for u in params.params["-u"]:
-      if backend == "htm-sgl" or backend == "p8tm-si-v2":
-        continue
+      # if backend == "htm-sgl" or backend == "p8tm-si-v2": # NOTE: this serves to ignore some lines in the plots
+      #   continue
       if u not in datasets_thr:
         datasets_thr[u] = {}
+
+      # for-each "-i" value
       for i in params.params["-i"]:
         if i not in datasets_thr[u]:
           datasets_thr[u][i] = []
+
+        # Filters the data for the plot. In this case we are taking "-n" in the x-axis and
+        # "-d"/"time" in the y-axis. Use a lambda function to take the required data into
+        # each axis. The final argument is a dictionary with the filter of the dataset.
+        # In this case we are looking for rows where "-u" == u AND "-i" == i.
         ds = BackendDataset(
           name_map[backend],
           [f"{data_folder}/{backend}-s{s}.csv" for s in range(nb_samples)],
@@ -67,13 +109,20 @@ if __name__ == "__main__":
           lambda e: e["-d"]/e["time"], "Throughput (T/s)",
           {"-u": u, "-i": i}
         )
+
+        # TODO: fix pisces stdout
         if backend != "pisces":
+
+          # Adds a bar plot for number of abort. The last argument is a dictionary with the label
+          # and the the data from the dataset (use a lambda function to calculate).
           ds.add_stack("Commits vs Aborts", "Count", {
             "ROT-commits": lambda e: e["rot-commits"] if "rot-commits" in e else 0,
             "HTM-commits": lambda e: e["htm-commits"],
             "SGL-commits": lambda e: e["gl-commits"],
             "aborts": lambda e: e["total-aborts"]
           })
+
+          # Adds a bar plot for the abort type.
           ds.add_stack("Abort types", "Nb. aborts", {
             "conflict-transactional": lambda e: e["confl-trans"] + e["rot-trans-aborts"],
             "conflict-non-transactional": lambda e: e["confl-non-trans"] + e["rot-non-trans-aborts"],
@@ -83,6 +132,8 @@ if __name__ == "__main__":
             "user": lambda e: e["user-aborts"] + e["rot-user-aborts"],
             "other": lambda e: e["other-aborts"] + e["rot-other-aborts"]
           })
+
+          # Adds a bar plot for the profile information.
           ds.add_stack("Profile information", "fraction of time", {
             "wait1": lambda e: (e["total-wait-time"] / e["-n"]) / (e["total-sum-time"]),
             "sus-res": lambda e: (e["total-flush-time"] / e["-n"]) / (e["total-sum-time"]),
@@ -92,8 +143,14 @@ if __name__ == "__main__":
           })
         datasets_thr[u][i] += [ds]
     
+  # this for-loop does the actual plotting (in the previous ones we are just
+  # setting up the data that we want to plot).
   for u,v in datasets_thr.items():
     for i,w in v.items():
       lines_plot = LinesPlot(f"{u}% updates, {i/1000}k initial items", f"thr_{u}upds_{i}items.pdf", figsize=(8, 4))
+      
+      # throughput plot
       lines_plot.plot(w)
+
+      # abort+profiling plot
       lines_plot.plot_stack(w)

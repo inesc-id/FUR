@@ -184,7 +184,7 @@
 				break;\
 		} \
   } \
-  int xpto=0; \
+  /* int xpto=0; */ \
 	for ( q_args.index = 0; q_args.index < q_args.num_threads; q_args.index++ ) \
   { \
 		if ( q_args.index == q_args.tid ) \
@@ -192,10 +192,10 @@
 		if ( state_snapshot[q_args.index] != 0 ) \
     { \
 			while ( ts_state[q_args.index].value == state_snapshot[q_args.index] || ts_state[q_args.index].value > state_snapshot[q_args.index] ) \
-      { cpu_relax(); xpto++;} \
+      { cpu_relax(); /* xpto++; */} \
 		} \
 	} \
-  if (xpto) printf("spinned %d\n", xpto); \
+  /* if (xpto) printf("spinned %d\n", xpto); */ \ 
   READ_TIMESTAMP(q_args.end_wait_time); \
   stats_array[q_args.tid].wait_time += q_args.end_wait_time - q_args.start_wait_time; \
   max_cache_line[q_args.tid].value = 0; \
