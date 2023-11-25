@@ -27,10 +27,15 @@
 // __INLINE__ long ReadSetCoherent (Thread*);
 
 
-# define delay_for_pm 25 //number that gives a latency between 0.18 usec and 0.5 usec
+# define delay_for_pm 46 //emulates 210ns write latency (as in euroys'22)
 # define emulate_pm_slowdown(){\
     for(volatile int i=0;i<delay_for_pm;i++);\
 }\
+
+
+#ifndef READ_TIMESTAMP
+# define READ_TIMESTAMP(dest) __asm__ volatile("0: \n\tmfspr   %0,268 \n": "=r"(dest));
+#endif 
 
 
 enum pisces_config {
@@ -100,6 +105,8 @@ struct _Thread {
 #define TABMSK (_TABSZ - 1)
 #define COLOR (128)
 #define PSSHIFT ((sizeof(void *) == 4) ? 2 : 3)
+
+static unsigned long start_time, end_time;
 
 static volatile lock_t *locked_avpairs[_TABSZ];
 static volatile Thread *lock_owners[_TABSZ];
@@ -265,6 +272,7 @@ TxOnce ()
 
     pthread_key_create(&global_key_self, NULL); /* CCM: do before we register handler */
 
+READ_TIMESTAMP(start_time);
 }
 
 
@@ -276,6 +284,105 @@ TxShutdown ()
            "  Overflows: R=%li W=%li L=%li\n"
            , StartTally, AbortTally,
            ReadOverflowTally, WriteOverflowTally, LocalOverflowTally);
+
+READ_TIMESTAMP(end_time);
+
+    // printf("pisces system shutdown:\n"
+    //        "  Starts=%li Aborts=%li\n"
+    //        "  Overflows: R=%li W=%li L=%li\n"
+    //        , StartTally, AbortTally,
+    //        ReadOverflowTally, WriteOverflowTally, LocalOverflowTally);
+
+  unsigned long wait_time = 0; \
+  unsigned long total_time = end_time - start_time; \
+  unsigned long read_commits = 0; \
+  unsigned long htm_commits = 0; \
+  unsigned long htm_conflict_aborts = 0; \
+  unsigned long htm_user_aborts = 0; \
+  unsigned long htm_self_conflicts = 0; \
+  unsigned long htm_trans_conflicts = 0; \
+  unsigned long htm_nontrans_conflicts = 0; \
+  unsigned long htm_persistent_aborts = 0; \
+  unsigned long htm_capacity_aborts = 0; \
+  unsigned long htm_other_aborts = 0; \
+  unsigned long rot_commits = 0; \
+  unsigned long rot_conflict_aborts = 0; \
+  unsigned long rot_user_aborts = 0; \
+  unsigned long rot_self_conflicts = 0; \
+  unsigned long rot_trans_conflicts = 0; \
+  unsigned long rot_nontrans_conflicts = 0; \
+  unsigned long rot_other_conflicts = 0; \
+  unsigned long rot_persistent_aborts = 0; \
+  unsigned long rot_capacity_aborts = 0; \
+  unsigned long rot_other_aborts = 0; \
+  unsigned long gl_commits = 0; \
+  unsigned long commit_time = 0; \
+  unsigned long abort_time = 0; \
+  unsigned long sus_time = 0; \
+  unsigned long flush_time = 0; \
+  unsigned long wait2_time = 0; \
+
+  printf(\
+"Total sum time: %lu\n" \
+"Total commit time: %lu\n" \
+"Total abort time: %lu\n" \
+"Total wait time: %lu\n" \
+"Total sus time: %lu\n" \
+"Total flush time: %lu\n" \
+"Total wait2 time: %lu\n" \
+"Total commits: %lu\n" \
+  "\tRead commits: %lu\n" \
+  "\tHTM commits:  %lu\n" \
+  "\tROT commits:  %lu\n" \
+  "\tGL commits: %lu\n" \
+"Total aborts: %lu\n" \
+  "\tHTM conflict aborts:  %lu\n" \
+    "\t\tHTM self aborts:  %lu\n" \
+    "\t\tHTM trans aborts:  %lu\n" \
+    "\t\tHTM non-trans aborts:  %lu\n" \
+  "\tHTM user aborts :  %lu\n" \
+  "\tHTM capacity aborts:  %lu\n" \
+    "\t\tHTM persistent aborts:  %lu\n" \
+  "\tHTM other aborts:  %lu\n" \
+  "\tROT conflict aborts:  %lu\n" \
+    "\t\tROT self aborts:  %lu\n" \
+    "\t\tROT trans aborts:  %lu\n" \
+    "\t\tROT non-trans aborts:  %lu\n" \
+    "\t\tROT other conflict aborts:  %lu\n" \
+  "\tROT user aborts:  %lu\n" \
+  "\tROT capacity aborts:  %lu\n" \
+    "\t\tROT persistent aborts:  %lu\n" \
+  "\tROT other aborts:  %lu\n", \
+  total_time, \
+  commit_time, \
+  abort_time, \
+  wait_time, \
+  sus_time, \
+  flush_time, \
+  wait2_time, \
+  StartTally-AbortTally, \
+  read_commits, \
+  htm_commits, \
+  rot_commits, \
+  gl_commits, \
+  AbortTally, \
+  htm_conflict_aborts, \
+  htm_self_conflicts, \
+  htm_trans_conflicts, \
+  htm_nontrans_conflicts, \
+  htm_user_aborts, \
+  htm_capacity_aborts, \
+  htm_persistent_aborts, \
+  htm_other_aborts, \
+  rot_conflict_aborts, \
+  rot_self_conflicts, \
+  rot_trans_conflicts, \
+  rot_nontrans_conflicts, \
+  rot_other_conflicts, \
+  rot_user_aborts, \
+  rot_capacity_aborts, \
+  rot_persistent_aborts, \
+  rot_other_aborts);
 
     pthread_key_delete(global_key_self);
     for (int i = 0; i < MAX_THREADS; i++) {
