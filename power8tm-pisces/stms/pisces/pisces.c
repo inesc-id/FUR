@@ -1,6 +1,6 @@
 /* =============================================================================
  *
- * pisces.h
+ * pisces.c
  *
  * Implementation of the Pisces STM algorithm, according to the pseudo-code
  * presented in the paper:
@@ -43,6 +43,7 @@ enum pisces_config {
 
 
 
+
 /* Write-set log entry */
 typedef struct _AVPair {
     struct _AVPair* Next;
@@ -64,26 +65,10 @@ typedef struct _Log {
 
 typedef struct _lock
 {
-    Thread *writer;
+    // Thread *writer;
     AVPair *avp;
     struct _lock *next;
 } lock_t;
-
-/* Based on TL2's lock table code */
-
-#define _TABSZ (1 << 20)
-#define TABMSK (_TABSZ - 1)
-#define COLOR (128)
-#define PSSHIFT ((sizeof(void *) == 4) ? 2 : 3)
-
-static volatile lock_t *lock_tab[_TABSZ];
-
-
-// *PSLOCK : maps variable address to lock address.
-#define PSLOCK(a) (lock_tab + (((UNS(a) + COLOR) >> PSSHIFT) & TABMSK))
-
-#define MAX_THREADS 64
-static volatile Thread* threads[MAX_THREADS];
 
 
 struct _Thread {
@@ -104,9 +89,44 @@ struct _Thread {
     // Pisces-specific
     volatile int isActive;
     volatile int inCritical;
-    long startTS;
-    long endTS;
+    volatile unsigned long startTS;
+    volatile unsigned long endTS;
 };
+
+
+/* Based on TL2's lock table code */
+
+#define _TABSZ (1 << 20)
+#define TABMSK (_TABSZ - 1)
+#define COLOR (128)
+#define PSSHIFT ((sizeof(void *) == 4) ? 2 : 3)
+
+static volatile lock_t *locked_avpairs[_TABSZ];
+static volatile Thread *lock_owners[_TABSZ];
+
+void assert_empty_locks(Thread *self) {
+    for (int i = 0; i < _TABSZ; i++) {
+        assert(lock_owners[i]!=self);
+        // if (lock_owners[i]==NULL)
+        //     assert(locked_avpairs[i] == NULL);
+    }
+}
+
+
+
+
+//map variable address to lock address.
+//TODO: revert to the following commented lines
+#define TAB_OFFSET(a) ((UNS(a) & TABMSK))
+#define LOCKED_AVPAIRS(a) (locked_avpairs + TAB_OFFSET(addr))
+#define LOCK_OWNER(a) (lock_owners + TAB_OFFSET(addr))
+
+
+#define MAX_THREADS 64
+static volatile Thread* threads[MAX_THREADS];
+
+
+
 
 typedef struct
 {
@@ -326,6 +346,9 @@ TxInitThread (Thread* t, long id)
 __INLINE__ void
 txReset (Thread* Self)
 {
+    //TO DO GC of previous AVPAirs (which now are simply mem leaked)
+    // Self->wrSet.List = MakeList(pisces_INIT_WRSET_NUM_ENTRY, Self);
+
     Self->wrSet.put = Self->wrSet.List;
     Self->wrSet.tail = NULL;
 
@@ -437,11 +460,8 @@ static __inline__ unsigned long long rdtsc(void)
 void
 TxAbort (Thread* Self)
 {
-  txReset(Self);
-  Self->Retries++;
-  Self->Aborts++;
-
-  printf("Aborted\n");
+  
+//    printf("Aborted\n");
 
   // unsigned long wait;
   // volatile int j;
@@ -455,10 +475,24 @@ TxAbort (Thread* Self)
   //    Self->cm_backoff <<= 1;
 
   // Releases all locks held by this tx
-  AVPair *e;
-  AVPair *End = Self->wrSet.put;
-  for (e = Self->wrSet.List; e != End; e = e->Next)
-        remove_lock(e->Addr);
+    AVPair *e;
+    AVPair *End = Self->wrSet.put;
+    // printf("Thread %d is aborting, removing locks in entries:", Self->UniqID);
+    for (e = Self->wrSet.List; e != End; e = e->Next)
+    {
+        remove_lock(e->Addr, Self);
+        // printf("%x, ", TAB_OFFSET(e->Addr));
+        // printf("TxAbort: removed lock from %x\n", e->Addr);
+    }
+    // printf("\n");
+
+    MEMBARSTLD();
+
+    txReset(Self);
+    Self->Retries++;
+    Self->Aborts++;
+
+    // assert_empty_locks(Self);
 
     SIGLONGJMP(*Self->envPtr, 1);
     ASSERT(0);
@@ -466,8 +500,8 @@ TxAbort (Thread* Self)
 //pthread_mutex_t cas_mutex;
 
 
-lock_t *get_lock(volatile intptr_t* addr) {
-    lock_t *l = *(PSLOCK(addr));
+lock_t *get_locked_avpair(volatile intptr_t* addr) {
+    lock_t *l = *(LOCKED_AVPAIRS(addr));
 
     while (l) {
         if (l->avp->Addr == addr)
@@ -477,36 +511,92 @@ lock_t *get_lock(volatile intptr_t* addr) {
     return NULL;
 }
 
-int remove_lock(volatile intptr_t* addr) {
-    lock_t **l_a = PSLOCK(addr);
+int remove_lock(volatile intptr_t* addr, Thread *self) {
 
-    while (*l_a) {
-        lock_t *l_b = (*l_a);
-        if (l_b->avp->Addr == addr)
-        {
-            if (CAS(l_a, l_b, l_b->next) == l_b)
-                //TODO gc (lock entry and AVPair)
-                return 1;
-            else
-                continue;
-        }
-        else
-            l_a = &(l_b->next);
+    Thread *owner = *(LOCK_OWNER(addr));
+    assert(owner == self || owner == NULL);
+    // NULL case (above) is possible if this tx had 2+ locations locked here, and already removed the
+    // lock with the first one
+
+    lock_t **l_a = LOCKED_AVPAIRS(addr);
+    // assert(!owner || *l_a);
+
+    if (*l_a) {
+        *l_a = NULL;
+        MEMBARLDLD();
+        *(LOCK_OWNER(addr)) = NULL;
     }
-    return 0;
+
+    return 1;
+
+    // while (*l_a) {
+    //     lock_t *l_b = (*l_a);
+    //     if (l_b->avp->Addr == addr)
+    //     {
+    //         if (CAS(l_a, l_b, l_b->next) == l_b)
+    //             //TODO gc (lock entry and AVPair)
+    //             return 1;
+    //         else
+    //             continue;
+    //     }
+    //     else
+    //         l_a = &(l_b->next);
+    // }
+    
+    //TO DO: free avpairs in list  
+
 }
+
+void assert_locked_wrset(Thread *self) {
+    AVPair *End = self->wrSet.put;
+    for (AVPair *e = self->wrSet.List; e != End; e = e->Next)
+    {
+        // assert(*(LOCK_OWNER(e->Addr)) == self);
+        assert((get_locked_avpair(e->Addr)->avp) == e);
+    }
+}
+
+
 
 
 void
 TxStore (Thread* Self, volatile intptr_t* addr, intptr_t valu)
 {
-    lock_t *l = get_lock(addr);
+    //lock_t *prev_lock = *(PSLOCK(addr));
+    // assert_locked_wrset(Self);
+    Thread *owner = *LOCK_OWNER(addr);
 
-    if (l && l->writer==Self)
-    {
-        l->avp->Valu = valu;
+    if (owner && owner != Self) {
+        // printf("I will abort because I tried to write in a locked location\n");
+        TxAbort(Self);
+        assert(0); //I should never reachi this point
         return;
     }
+
+    if (owner == Self) {
+        lock_t *l = get_locked_avpair(addr);
+        if (l) {
+            l->avp->Valu = valu;
+            assert(owner == *LOCK_OWNER(addr));
+            // assert_locked_wrset(Self);
+            return;
+        }
+    }
+    else {
+        if (CAS(LOCK_OWNER(addr), NULL, Self) != NULL) {
+            // printf("I will abort becaus CAS on txstore failed\n");
+            TxAbort(Self);
+            assert(0); //I should never reachi this point
+            return;
+        }
+        lock_t *l = get_locked_avpair(addr);
+        assert(l == NULL);
+        // assert(*LOCKED_AVPAIRS(addr) == NULL);
+    }
+
+    // assert_locked_wrset(Self);
+    assert (*LOCK_OWNER(addr) == Self);
+
 
     Log* k = &Self->wrSet;
     AVPair* e = k->put;
@@ -522,12 +612,23 @@ TxStore (Thread* Self, volatile intptr_t* addr, intptr_t valu)
 
     lock_t * new_lock = (lock_t *)malloc(sizeof(lock_t));
     new_lock->avp = e;
-    new_lock->writer = Self;
 
-    lock_t *prev_lock = *(PSLOCK(addr));
+    // new_lock->writer = Self;
+
+    lock_t *prev_lock = *(LOCKED_AVPAIRS(addr));
     new_lock->next = prev_lock;
-    if (CAS(PSLOCK(addr), prev_lock, new_lock) != prev_lock)
-        TxAbort(Self);
+    MEMBARLDLD();
+
+    *(LOCKED_AVPAIRS(addr)) = new_lock;
+
+    // if (CAS(PSLOCK(addr), prev_lock, new_lock) != prev_lock)
+    //     TxAbort(Self);
+
+    assert (TxLoad(Self, addr) == valu);
+
+    assert (*LOCK_OWNER(addr) == Self);
+
+    assert_locked_wrset(Self);
 
     return;
 }
@@ -535,24 +636,37 @@ TxStore (Thread* Self, volatile intptr_t* addr, intptr_t valu)
 intptr_t
 TxLoad (Thread* Self, volatile intptr_t* addr)
 {
-    lock_t *l = get_lock(addr);
+    // assert_locked_wrset(Self);
+
+    lock_t *l = get_locked_avpair(addr);
 
     if (l == NULL)
         return LDNF(addr);
 
-    Thread *wtx = l->writer;
-    if (wtx == Self)
+    Thread *wtx = *(LOCK_OWNER(addr));
+    if (wtx == Self) {
+        // assert_locked_wrset(Self);
         return l->avp->Valu;
+    }
     
-    while (wtx->inCritical) {/* wait */
+    while (wtx && wtx->inCritical) {/* wait */
         // printf("Thread %d waiting in txLoad\n", Self->UniqID);
     }
-        
 
-    if (wtx->endTS <= Self->startTS)
+    unsigned long endTS_lido;
+   
+   if (wtx) endTS_lido = wtx->endTS;
+
+    if (wtx && endTS_lido <= Self->startTS) {
+    // if (wtx && wtx->endTS <= Self->startTS) {
+        // printf("\n\n LEU DE LOCK DE OUTRO OWNER \n");
+        // assert_locked_wrset(Self);
         return l->avp->Valu;
-    else
+    }
+    else {
+        // assert_locked_wrset(Self);
         return LDNF(addr);
+    }
 }
 
 
@@ -560,6 +674,8 @@ void
 TxStart (Thread* Self, sigjmp_buf* envPtr)
 {
     txReset(Self);
+
+    // printf("TxStart (Self %x)\n", Self);
 
     /* Pisces specific */
     Self->isActive = 1;
@@ -582,12 +698,24 @@ TxStart (Thread* Self, sigjmp_buf* envPtr)
 int
 TxCommit (Thread* Self)
 {
+
+    // if ((rand() % 100) < 50) {
+    //     TxAbort(Self);
+    //     assert(0);
+    // } 
+        
+
     Self->isActive = 0;
 
     //If log is empty, it's a read-only tx
     if (Self->wrSet.put == Self->wrSet.List)
     {
         txCommitReset(Self);
+        // printf("*********************** committed tx with 0 writes (RO)\n");
+        
+        //debug - apagar
+        // assert_empty_locks(Self);
+
         return 1;
     }
 
@@ -600,7 +728,7 @@ TxCommit (Thread* Self)
         emulate_pm_slowdown();
     }
 
-    Self->wrSet.persistTS = LOCK;
+    Self->wrSet.persistTS = LOCK->value;
     //*Emulate* flush persistTS
     emulate_pm_slowdown();
 
@@ -610,9 +738,9 @@ TxCommit (Thread* Self)
 
     MEMBARLDLD();
 
-    Self->endTS = LOCK + 1;
+    Self->endTS = LOCK->value + 1;
     Self->inCritical = 0;
-    AtomicAdd(LOCK, 1);
+    AtomicAdd(&(LOCK->value), 1);
 
     /* stage 3: write-back stage */
 
@@ -625,15 +753,27 @@ TxCommit (Thread* Self)
         }
     }
 
-    End = Self->wrSet.put;
-    for (e = Self->wrSet.List; e != End; e = e->Next) {
-       *(e->Addr) = e->Valu;
-       //*Emulate* pflush(copy.source.content)
-       emulate_pm_slowdown();
-       remove_lock(e->Addr);
-    }
+    // printf("TxCommit: Self %x. Writeset: ", Self);
 
+    End = Self->wrSet.put;
+    int aux = 0;
+    for (e = Self->wrSet.List; e != End; e = e->Next)
+    {
+        *(e->Addr) = e->Valu;
+        //*Emulate* pflush(copy.source.content)
+        emulate_pm_slowdown();
+        MEMBARLDLD();
+        remove_lock(e->Addr, Self);
+        // printf("%x, ", e->Addr);
+        aux++;
+    }
+    // printf("\n");
+
+    // printf("*********************** committed tx with %d writes\n", aux);
     txCommitReset(Self);
+
+    //debug - apagar
+    // assert_empty_locks(Self);
 
     return 1;
 

@@ -29,6 +29,9 @@ enum {
     BLACK = 1
 };
 
+__thread unsigned int local_exec_mode = 0;
+__thread unsigned int local_thread_id;
+
 
 /*
  * See also:
