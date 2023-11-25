@@ -75,7 +75,7 @@ static void seql_destroy()
   seql_global_ptr[SEQL_COUNTER_TO_IDX(_c)].start_addr.flags = SEQL_F_ABORTED; \
   /* *** flush+fence *** */ \
   __dcbst(&(seql_global_ptr[SEQL_COUNTER_TO_IDX(_c)].start_addr), 0); /* TODO: sometimes it breaks the ROTs */ \
-  emulate_pm_slowdown(); \
+  //emulate_pm_slowdown(); \
   /* *** *********** *** */ \
 // end of SEQL_COMMIT
 
