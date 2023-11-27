@@ -384,6 +384,8 @@ READ_TIMESTAMP(end_time);
   rot_persistent_aborts, \
   rot_other_aborts);
 
+  printf("Emulated PM latency: %d\n", delay_for_pm);
+
     pthread_key_delete(global_key_self);
     for (int i = 0; i < MAX_THREADS; i++) {
         if (threads[i])
