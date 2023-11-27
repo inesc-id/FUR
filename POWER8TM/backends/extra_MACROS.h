@@ -251,7 +251,7 @@ my_tm_thread_enter();
 
 # ifndef delay_for_pm
 // # define delay_for_pm 25 // 25 number that gives a latency between 0.18 usec and 0.5 usec
-# define delay_for_pm 10 // 25 number that gives a latency between 0.18 usec and 0.5 usec
+# define delay_for_pm 46 //emulates 210ns write latency (as in euroys'22)
 # define delay_per_cache_line 10
 # endif
 
