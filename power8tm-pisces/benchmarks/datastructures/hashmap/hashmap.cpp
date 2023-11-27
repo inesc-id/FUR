@@ -433,11 +433,11 @@ void test(void *data)
         if(set_add(TM_ARG val) == 0) {
           val = -1;
         }
-        else {
-          /* debug joao */
-          if (set_contains(TM_ARG val)==0)
-            printf("after adding element, counldn't find it\n");
-        }
+        // else {
+        //   /* debug joao */
+        //   if (set_contains(TM_ARG val)==0)
+        //     printf("after adding element, counldn't find it\n");
+        // }
       } else {
         set_remove(TM_ARG  val);
         val = -1;
