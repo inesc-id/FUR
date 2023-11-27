@@ -184,7 +184,6 @@
 				break;\
 		} \
   } \
-  int xpto=0; \
 	for ( q_args.index = 0; q_args.index < q_args.num_threads; q_args.index++ ) \
   { \
 		if ( q_args.index == q_args.tid ) \
@@ -192,10 +191,9 @@
 		if ( state_snapshot[q_args.index] != 0 ) \
     { \
 			while ( ts_state[q_args.index].value == state_snapshot[q_args.index] || ts_state[q_args.index].value > state_snapshot[q_args.index] ) \
-      { cpu_relax(); xpto++;} \
+      { cpu_relax(); } \
 		} \
 	} \
-  if (xpto) printf("spinned %d\n", xpto); \
   READ_TIMESTAMP(q_args.end_wait_time); \
   stats_array[q_args.tid].wait_time += q_args.end_wait_time - q_args.start_wait_time; \
   max_cache_line[q_args.tid].value = 0; \
@@ -247,14 +245,14 @@
     long num_threads = global_numThread; \
     long state;\
     READ_TIMESTAMP(start_wait2);\
-    for ( int index = 0; index < num_threads; index++ ) \
-    { \
-      if ( index == q_args.tid ) \
-        continue; \
-      state = (ts_state[index].value & (3l<<62))>>62;\
-      while ( state == NON_DURABLE && order_ts[index].value <= order_ts[q_args.tid].value )\
-      { cpu_relax(); } \
-    } \
+  for(int index=0; index < num_threads; index++) \
+  { \
+    if(index == q_args.tid) \
+      continue; \
+    state = (ts_state[index].value & (3l<<62))>>62;\
+    while(state == NON_DURABLE && ts_state[index].value < ts_state[q_args.tid].value) \
+    { cpu_relax(); } \
+	} \
     READ_TIMESTAMP(end_wait2); \
     stats_array[q_args.tid].wait2_time += end_wait2 - start_wait2; \
 		UPDATE_STATE(INACTIVE); /* inactive rot*/ \
