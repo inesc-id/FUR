@@ -633,6 +633,7 @@ else /* handles warp around case */ \
   rot_capacity_aborts, \
   rot_persistent_aborts, \
   rot_other_aborts); \
+  printf("Emulated PM latency: %d\n", delay_for_pm); \
 // end FINAL_PRINT
 
 #ifdef __cplusplus

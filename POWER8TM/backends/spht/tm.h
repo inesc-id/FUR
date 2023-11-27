@@ -154,6 +154,7 @@
   stats_nbFallback = 0; \
   /* threading_pinThisThread(HTM_SGL_tid); */ /* Done in thread.h */ \
   HTM_set_is_record(1); \
+  local_thread_id = SPECIAL_THREAD_ID();\
 //
 
 # define TM_THREAD_EXIT() \
