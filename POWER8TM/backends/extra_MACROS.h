@@ -33,7 +33,7 @@ extern "C" {
   __asm__ ("dcbst %0, %1" : /*no result*/ : "b%" (index), "r" (base) : "memory")
 
 # define IS_LOCKED(lock)      (atomic_LOAD(lock) != 0 && atomic_LOAD(lock) != (loc_var.tid + 1))
-# define TRY_LOCK(lock)       __sync_bool_compare_and_swap((volatile int*)(&lock), 0, loc_var.tid + 1)
+# define TRY_LOCK(lock)       (__sync_val_compare_and_swap((volatile int*)(&lock), 0, loc_var.tid + 1) == 0)
 # define UNLOCK(lock)         atomic_STORE(lock, 0)
 
 #ifndef READ_TIMESTAMP

@@ -83,7 +83,7 @@
         int tle_budget = HTM_RETRIES; \
 	local_exec_mode = 0; \
 	/*backoff = MIN_BACKOFF;*/ \
-	local_thread_id = SPECIAL_THREAD_ID();\
+	loc_var.tid = SPECIAL_THREAD_ID();\
         while (1) { \
             while (IS_LOCKED(single_global_lock)) { \
 		cpu_relax(); \
@@ -132,7 +132,7 @@
             } \
             if (tle_budget <= 0) {   \
 		local_exec_mode = 2; \
-        	while (TRY_LOCK(single_global_lock) != 0) { \
+        	while (! TRY_LOCK(single_global_lock)) { \
                     cpu_relax(); \
                 } \
                 break; \
