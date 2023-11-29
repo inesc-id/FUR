@@ -304,7 +304,11 @@ long priv_insert_htm(TM_ARGDECL List** buck, long val)
 
 void priv_insert_seq(List** buck, long val)
 {
+  // static long count = 0;
+  // count++;
   hm_insert_seq( (buck[val % N_BUCKETS]), val);
+  // if ((count&0xFFF) == 0x100)
+  //   printf("Did %li inserts\n", count);
 }
 
 TM_CALLABLE

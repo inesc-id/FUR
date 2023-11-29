@@ -40,6 +40,13 @@ extern "C" {
 # define READ_TIMESTAMP(dest) __asm__ volatile("0: \n\tmfspr   %0,268 \n": "=r"(dest));
 #endif 
 
+#define PRE_TOUCH_CACHELINES(_start_addr, _size) ({ \
+  for (int i = 0; i < _size; i += CACHE_LINE_SIZE) { \
+    *(((uint8_t*)_start_addr) + i) = 0; \
+  } \
+}) \
+
+
 extern int place_abort_marker;
 
 typedef struct spinlock {

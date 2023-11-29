@@ -39,9 +39,9 @@
 #  define TM_BEGIN_WAIVER()
 #  define TM_END_WAIVER()
 
-#  define P_MALLOC(size)                malloc(size)
+#  define P_MALLOC(size)                ({ void* _res = malloc(size); PRE_TOUCH_CACHELINES(_res, size); _res; })
 #  define P_FREE(ptr)                   free(ptr)
-#  define TM_MALLOC(size)               malloc(size)
+#  define TM_MALLOC(size)               ({ void* _res = malloc(size); PRE_TOUCH_CACHELINES(_res, size); _res; })
 #  define FAST_PATH_FREE(ptr)           free(ptr)
 #  define SLOW_PATH_FREE(ptr)           free(ptr)
 
