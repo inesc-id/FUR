@@ -410,8 +410,10 @@ long set_contains(TM_ARGDECL long  val)
 
 //    while(res++<100) cpu_relax();
 
+  //This is necessary to force the optimizing compiler to actually run priv_lookup_htm
+  volatile int found = 0; 
   for(int i=0; i < nb_queries; i++){
-    priv_lookup_htm(TM_ARG val+i);
+    found += priv_lookup_htm(TM_ARG val+i);
   }
 
   TM_END();
