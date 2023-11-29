@@ -16,10 +16,10 @@ if __name__ == "__main__":
 
   # Here set the possible values for each parameter (pass a list with valid values).
   # Note the experiment will run all possible combinations of arguments.
-  params.set_params("-u", [10, 50, 90])
+  params.set_params("-u", [0, 10, 50, 90])
   params.set_params("-d", [4000000])
-  params.set_params("-i", [50000, 200000])
-  params.set_params("-r", [400000])
+  params.set_params("-i", [50000, 200000, 1000000])
+  params.set_params("-r", [2000000])
   params.set_params("-n", [1, 2, 4, 8, 12, 16, 20, 24, 32])
 
   # Set the number of times each run is repeated (for average/stardard deviation computation).
@@ -41,19 +41,19 @@ if __name__ == "__main__":
     "pisces",
     "spht",
     "htm-sgl",
-    "p8tm-si-v2",
-    "p8tm-psi-v2-ci",
-    "p8tm-psi-v2-fi-improved"
+    "si-htm",
+    #"p8tm-psi-v2-ci",
+    "psi"
   ]
 
   # Label names in the plots
   name_map = {
-    "p8tm-psi-v2-fi-improved" : "PSI-OL",
-    "p8tm-psi-v2-ci" : "PSI",
+    "psi" : "PSI",
+    # "p8tm-psi-v2-ci" : "PSI",
     "pisces" : "Pisces",
     "htm-sgl" : "HTM",
     "spht" : "SPHT",
-    "p8tm-si-v2" : "SI-TM"
+    "si-htm" : "SI-TM"
   }
 
   # IMPORTANT: set the name of the dataset here, this folder needs to be
