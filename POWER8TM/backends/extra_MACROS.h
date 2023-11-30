@@ -8,6 +8,7 @@ extern "C" {
 #include <pthread.h>
 #include "stdint.h"
 #include "htmxlintrin.h"
+#include <unistd.h>
 
 # define INACTIVE         0
 # define ACTIVE           1
@@ -384,7 +385,7 @@ else /* handles warp around case */ \
 { \
 	UPDATE_STATE(INACTIVE); \
   rmb(); \
-	WAIT( TRY_LOCK(single_global_lock) ); \
+	WAIT( ! TRY_LOCK(single_global_lock) ); \
 	QUIESCENCE_CALL_GL(); \
 };\
 // end ACQUIRE_GLOBAL_LOCK

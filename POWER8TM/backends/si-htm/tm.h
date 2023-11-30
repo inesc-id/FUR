@@ -130,7 +130,7 @@
 { \
 	UPDATE_STATE(INACTIVE); \
   rmb(); \
-	while (TRY_LOCK(single_global_lock) != 0) \
+	while (! TRY_LOCK(single_global_lock)) \
   { cpu_relax(); } \
 	QUIESCENCE_CALL_GL(); \
 };\
@@ -247,6 +247,7 @@
 	local_exec_mode = 0; \
 	rs_counter = 0; \
 	local_thread_id = SPECIAL_THREAD_ID();\
+	loc_var.tid = local_thread_id; \
 	if(ro){ \
 		ACQUIRE_READ_LOCK(); \
 	} \

@@ -154,7 +154,7 @@
 # define ACQUIRE_GLOBAL_LOCK(){ \
 	UPDATE_STATE(INACTIVE); \
   rmb(); \
-	while (TRY_LOCK(single_global_lock) != 0) \
+	while (! TRY_LOCK(single_global_lock) ) \
   { cpu_relax(); } \
 	QUIESCENCE_CALL_GL(); \
 };\
