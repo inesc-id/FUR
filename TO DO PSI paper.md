@@ -1,9 +1,12 @@
 TO DO PSI paper:
 
-- breakdown SPHT e SIHTM: análise por no. threads
-
-- resultados end-to-end
 
 - rever comentários no overleaf
-- reescrever background durHTM e novas técnicas PSI
+- reescrever novas técnicas PSI
 - fig arch.
+- testar SGL no PSI e SIHTM
+- implementar SPHT+SIHTM
+
+HOJE:
+- resultados end-to-end hashmap
+- breakdown SPHT e SIHTM: análise por no. threads
