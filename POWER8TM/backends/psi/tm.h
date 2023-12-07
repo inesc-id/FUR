@@ -137,25 +137,17 @@
 //todo retirar slowdowns do cmmit log (emulate_pm_slowdown)
 //cache line é calculada com um ++ em vez do emulate
 # define QUIESCENCE_CALL_ROT(){ \
-	READ_TIMESTAMP(q_args.start_wait_time); \
-	for(q_args.index=0; q_args.index < 80; q_args.index++) \
+	/* READ_TIMESTAMP(q_args.start_wait_time); */ \
+	for(q_args.index=0; q_args.index < q_args.num_threads; q_args.index++) \
   { \
-    if (q_args.index == q_args.num_threads) \
-      break; \
 		if(q_args.index == q_args.tid) \
       continue; \
 		q_args.temp = ts_state[q_args.index].value; \
-		q_args.state = (q_args.temp & (3l<<62))>>62; \
-		switch(q_args.state) { \
-			case ACTIVE:\
+		q_args.state = get_state(q_args.temp); \
+		if (q_args.state == ACTIVE) \
 				state_snapshot[q_args.index] = q_args.temp; \
-				break;\
-			case INACTIVE:\
-			case NON_DURABLE:\
-			default:\
+		else \
 				state_snapshot[q_args.index] = 0; \
-				break;\
-		} \
   } \
 	for ( q_args.index = 0; q_args.index < q_args.num_threads; q_args.index++ ) \
   { \
@@ -163,7 +155,7 @@
       continue; \
 		if ( state_snapshot[q_args.index] != 0 ) \
     { \
-			while ( ts_state[q_args.index].value == state_snapshot[q_args.index] || ts_state[q_args.index].value > state_snapshot[q_args.index] ) \
+			while ( ts_state[q_args.index].value == state_snapshot[q_args.index]) \
       { cpu_relax(); } \
 		} \
 	} \
@@ -187,6 +179,7 @@
   stats_array[q_args.tid].flush_time += q_args.start_wait_time - q_args.end_wait_time; \
 };
 
+
 //
 //
 # define RELEASE_WRITE_LOCK(){ \
@@ -196,8 +189,7 @@
     READ_TIMESTAMP(start_sus);\
     UPDATE_TS_STATE(NON_DURABLE); /* committing rot*/ \
     order_ts[q_args.tid].value = atomicInc();\
-    SEQL_START(order_ts[q_args.tid].value, q_args.tid, ((uint64_t)(loc_var.mylogpointer_snapshot - loc_var.mylogstart))); \
-    QUIESCENCE_CALL_ROT(); \
+    QUIESCENCE_CALL_ROT();  \
     rmb(); \
     READ_TIMESTAMP(end_sus);\
     stats_array[q_args.tid].sus_time += end_sus - start_sus;\
@@ -212,6 +204,7 @@
       loc_var.mylogstart, \
       loc_var.mylogend \
     ); */ \
+    SEQL_START(order_ts[q_args.tid].value, q_args.tid, ((uint64_t)(loc_var.mylogpointer_snapshot - loc_var.mylogstart))); \
     SEQL_COMMIT(order_ts[q_args.tid].value, (loc_var.mylogpointer - loc_var.mylogstart)); \
     READ_TIMESTAMP(end_flush);\
     stats_array[q_args.tid].flush_time += end_flush-start_flush;\
