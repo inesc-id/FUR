@@ -192,6 +192,12 @@ my_tm_thread_enter();
 # endif /* MAX_BACKOFF */
 
 
+
+# define get_state(state) ((state & (((uint64_t) 3l)<<62))>>62)
+
+# define get_ts_from_state(state) (state & first_2bits_zero)
+
+
 # define UPDATE_TS_STATE(state){\
   static __thread long _temp;\
   READ_TIMESTAMP(_temp);\
@@ -209,13 +215,9 @@ my_tm_thread_enter();
   _temp=_temp>>2;\
   _temp = (((long) state)<<62)|_temp;\
   ts_state[q_args.tid].value=_temp;\
-  if (dur_state[q_args.tid].value == NON_DURABLE) \
+  if (get_state(dur_state[q_args.tid].value) == NON_DURABLE) \
     dur_state[q_args.tid].value=_temp;\
 }\
-
-# define get_state(state) ((state & (3l<<62))>>62)
-
-# define get_ts_from_state(state) (state & first_2bits_zero)
 
 #define flush_log_commit_marker(ptr,ts,start,end)\
   *(ptr)=bit63one | ts; \

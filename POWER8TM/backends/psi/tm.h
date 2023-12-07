@@ -187,6 +187,7 @@
   { \
 	  __TM_suspend(); \
     READ_TIMESTAMP(start_sus);\
+    long myOldActiveState = ts_state[q_args.tid].value; \
     UPDATE_TS_STATE(NON_DURABLE); /* committing rot*/ \
     order_ts[q_args.tid].value = atomicInc();\
     QUIESCENCE_CALL_ROT();  \
@@ -209,14 +210,12 @@
     READ_TIMESTAMP(end_flush);\
     stats_array[q_args.tid].flush_time += end_flush-start_flush;\
     long num_threads = global_numThread; \
-    long state;\
     READ_TIMESTAMP(start_wait2);\
   for(int index=0; index < num_threads; index++) \
   { \
     if(index == q_args.tid) \
       continue; \
-    state = get_state(dur_state[index].value);\
-    while(state == NON_DURABLE && get_ts_from_state(ts_state[index].value) < get_ts_from_state(ts_state[q_args.tid].value)) \
+    while(get_state(dur_state[index].value) == NON_DURABLE && get_ts_from_state(ts_state[index].value) < get_ts_from_state(myOldActiveState)) \
     { cpu_relax(); } \
 	} \
     READ_TIMESTAMP(end_wait2); \
@@ -235,23 +234,22 @@
 
 # define RELEASE_READ_LOCK(){\
   rwmb();\
+  long myOldActiveState = ts_state[q_args.tid].value; \
   UPDATE_STATE(INACTIVE);\
   stats_array[q_args.tid].read_commits++;\
   \ 
   long num_threads = global_numThread; \
   long index;\
-  volatile long ts_snapshot = ts_state[q_args.tid].value; \
-  long state;\
   READ_TIMESTAMP(start_wait2);\
+  /*int spins = 0; */\
   for(index=0; index < num_threads; index++) \
   { \
     if(index == q_args.tid) \
       continue; \
-    state = get_state(dur_state[index].value);\
-    state = get_state(dur_state[index].value);\
-    while(state == NON_DURABLE && get_ts_from_state(ts_state[index].value) < get_ts_from_state(ts_state[q_args.tid].value)) \
-    { cpu_relax(); } \
+    while(get_state(dur_state[index].value) == NON_DURABLE && get_ts_from_state(dur_state[index].value) < get_ts_from_state(myOldActiveState)) \
+    { cpu_relax(); /*spins ++;*/} \
 	} \
+  /*printf("RO spins = %d\n", spins); */\
   READ_TIMESTAMP(end_wait2);\
   stats_array[q_args.tid].wait2_time += end_wait2-start_wait2;\
 } \

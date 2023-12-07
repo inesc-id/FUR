@@ -17,10 +17,10 @@ if __name__ == "__main__":
   # Here set the possible values for each parameter (pass a list with valid values).
   # Note the experiment will run all possible combinations of arguments.
   params.set_params("-u", [0, 10, 50, 90])
-  params.set_params("-d", [400000])
+  params.set_params("-d", [200000])
   params.set_params("-i", [50000, 200000, 1000000])
   params.set_params("-r", [2000000])
-  params.set_params("-n", [1, 2, 4, 8, 12, 16, 20, 24, 32])
+  params.set_params("-n", [1, 2, 4, 8, 16, 32])
 
   # Set the number of times each run is repeated (for average/stardard deviation computation).
   nb_samples = 1
@@ -29,10 +29,11 @@ if __name__ == "__main__":
   # a benchmark (allows to compare with "exotic" implementations).
   locations = [
     "../power8tm-pisces/benchmarks/datastructures",
-    "../benchmarks/datastructures",
-    "../benchmarks/datastructures",
-    "../benchmarks/datastructures",
-    "../benchmarks/datastructures",
+    "../POWER8TM/benchmarks/datastructures",
+    "../POWER8TM/benchmarks/datastructures",
+    "../POWER8TM/benchmarks/datastructures",
+    "../POWER8TM/benchmarks/datastructures",
+    "../POWER8TM/benchmarks/datastructures",
   ]
   # The backend name goes here (don't forget to match the position in the
   # "backends" list with the position in the "locations" list)
@@ -40,6 +41,7 @@ if __name__ == "__main__":
     "pisces",
     "spht",
     "htm-sgl",
+    "htm-sgl-sr",
     "si-htm",
     "psi"
   ]
