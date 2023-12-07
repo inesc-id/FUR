@@ -11,6 +11,7 @@ extern "C" {
 
 __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t debug[MAXTHREADS];
 __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t ts_state[MAXTHREADS];
+__attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t dur_state[MAXTHREADS];
 __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t order_ts[MAXTHREADS];
 __attribute__((aligned(CACHE_LINE_SIZE))) __thread tx_local_vars_t loc_var;
 __attribute__((aligned(CACHE_LINE_SIZE))) __thread QUIESCENCE_CALL_ARGS_t q_args;

@@ -107,34 +107,7 @@
 // }
 
 # define READ_TIMESTAMP(dest) __asm__ volatile("0:                  \n\tmfspr   %0,268           \n": "=r"(dest));
-// # define READ_TIMESTAMP(dest) dest = rdtsc();
-//-------------------------------------------------------------------------------
-# define INACTIVE    0
-# define ACTIVE      1
-# define NON_DURABLE 2
-# define first_2bits_zero 0x3fffffffffffffff
 
-# define UPDATE_TS_STATE(state){\
-  static __thread long _temp;\
-  READ_TIMESTAMP(_temp);\
-  _temp=_temp & first_2bits_zero;\
-  _temp = (((long) state)<<62)|_temp;\
-  ts_state[q_args.tid].value=_temp;\
-}\
-
-# define UPDATE_STATE(state){\
-  static __thread long _temp=state;\
-  _temp=_temp<<2;\
-  _temp=_temp>>2;\
-  _temp = (((long) state)<<62)|_temp;\
-  ts_state[q_args.tid].value=_temp;\
-}\
-
-//Previously (22/11/2023): _temp = (state<<62)|_temp;\
-
-# define check_state(temp)({\
-  (temp & (3l<<62))>>62;\
-})\
 
 # define atomicInc()   __atomic_add_fetch(&global_order_ts, 1, __ATOMIC_RELEASE) 
 
@@ -146,7 +119,7 @@
 	int num_threads = global_numThread; \
   for ( index = 0; index < num_threads; index++ ) \
   { \
-    while ( (check_state(ts_state[index].value)) != INACTIVE ) /*wait for active threads*/\
+    while ( (get_state(ts_state[index].value)) != INACTIVE ) /*wait for active threads*/\
     { cpu_relax(); } \
   } \
 };\
@@ -249,8 +222,8 @@
   { \
     if(index == q_args.tid) \
       continue; \
-    state = (ts_state[index].value & (3l<<62))>>62;\
-    while(state == NON_DURABLE && ts_state[index].value < ts_state[q_args.tid].value) \
+    state = get_state(dur_state[index].value);\
+    while(state == NON_DURABLE && get_ts_from_state(ts_state[index].value) < get_ts_from_state(ts_state[q_args.tid].value)) \
     { cpu_relax(); } \
 	} \
     READ_TIMESTAMP(end_wait2); \
@@ -281,8 +254,9 @@
   { \
     if(index == q_args.tid) \
       continue; \
-    state = (ts_state[index].value & (3l<<62))>>62;\
-    while(state == NON_DURABLE && ts_state[index].value < ts_state[q_args.tid].value) \
+    state = get_state(dur_state[index].value);\
+    state = get_state(dur_state[index].value);\
+    while(state == NON_DURABLE && get_ts_from_state(ts_state[index].value) < get_ts_from_state(ts_state[q_args.tid].value)) \
     { cpu_relax(); } \
 	} \
   READ_TIMESTAMP(end_wait2);\

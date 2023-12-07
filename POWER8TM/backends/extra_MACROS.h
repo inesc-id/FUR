@@ -150,6 +150,7 @@ extern __attribute__((aligned(CACHE_LINE_SIZE))) int single_global_lock;
 extern __thread unsigned long rs_counter;
 
 extern __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t ts_state[];
+extern __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t dur_state[];
 extern __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t order_ts[];
 
 extern __attribute__((aligned(CACHE_LINE_SIZE))) __thread long ts_snapshot[80];
@@ -192,27 +193,29 @@ my_tm_thread_enter();
 
 
 # define UPDATE_TS_STATE(state){\
-  register long temp; \
-  READ_TIMESTAMP(temp);\
-  temp = temp & first_2bits_zero;\
-  temp = (state<<62)|temp;\
-  ts_state[loc_var.tid].value=temp;\
+  static __thread long _temp;\
+  READ_TIMESTAMP(_temp);\
+  _temp=_temp & first_2bits_zero;\
+  _temp = (((long) state)<<62)|_temp;\
+  ts_state[q_args.tid].value=_temp;\
+  if (state == NON_DURABLE) \
+    dur_state[q_args.tid].value=_temp;\
 }\
 
-# define UPDATE_STATE(state) \
-{ \
-  long temp = state;\
-  temp = temp<<2;\
-  temp = temp>>2;\
-  temp = (((long)state)<<62) | temp;\
-  ts_state[loc_var.tid].value = temp;\
-}\
-// UPDATE_STATE
 
-# define check_state(temp)({\
-  (temp & (3l<<62))>>62;\
-})\
-// check_state
+# define UPDATE_STATE(state){\
+  static __thread long _temp=state;\
+  _temp=_temp<<2;\
+  _temp=_temp>>2;\
+  _temp = (((long) state)<<62)|_temp;\
+  ts_state[q_args.tid].value=_temp;\
+  if (dur_state[q_args.tid].value == NON_DURABLE) \
+    dur_state[q_args.tid].value=_temp;\
+}\
+
+# define get_state(state) ((state & (3l<<62))>>62)
+
+# define get_ts_from_state(state) (state & first_2bits_zero)
 
 #define flush_log_commit_marker(ptr,ts,start,end)\
   *(ptr)=bit63one | ts; \
@@ -259,7 +262,7 @@ my_tm_thread_enter();
 
 # ifndef delay_for_pm
 // # define delay_for_pm 25 // 25 number that gives a latency between 0.18 usec and 0.5 usec
-# define delay_for_pm 46 //emulates 210ns write latency (as in euroys'22)
+# define delay_for_pm 25 //emulates 210ns write latency (as in euroys'22)
 # define delay_per_cache_line 10
 # endif
 
@@ -376,7 +379,7 @@ else /* handles warp around case */ \
   for ( index=0; index < num_threads; index++ ) \
   { \
    /*wait for active threads*/  \
-    WAIT( (check_state(ts_state[index].value)) != INACTIVE ); \
+    WAIT( (get_state(ts_state[index].value)) != INACTIVE ); \
   } \
 };\
 // end QUIESCENCE_CALL_GL
@@ -430,7 +433,7 @@ else /* handles warp around case */ \
         stats_array[loc_var.tid].rot_nontrans_conflicts++; \
 			else \
         stats_array[loc_var.tid].rot_other_conflicts++; \
-			int state = check_state(ts_state[loc_var.tid].value); \
+			int state = get_state(ts_state[loc_var.tid].value); \
       if ( state == ACTIVE ) { \
         UPDATE_STATE(INACTIVE);\
         rmb(); \
