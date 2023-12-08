@@ -3,6 +3,7 @@
 from common import BenchmarkParameters, CollectData
 from parse_sol import Parser
 from plot import LinesPlot, BackendDataset
+# import numpy as np
 
 # Besides the parameters below, the PM latency in:
 # POWER8TM/backends/extra_MACROS.h (look up #define delay_for_pm)
@@ -51,6 +52,7 @@ if __name__ == "__main__":
     "psi" : "PSI",
     "pisces" : "Pisces",
     "htm-sgl" : "HTM",
+    "htm-sgl-sr" : "HTM+sus",
     "spht" : "SPHT",
     "si-htm" : "SI-TM"
   }
@@ -133,12 +135,19 @@ if __name__ == "__main__":
           })
 
           # Adds a bar plot for the profile information.
+          def normalize(e, attr):
+            attrs = ["total-wait-time", "total-flush-time", "total-wait2-time", "total-commit-time", "total-abort-time"]
+            do_sum = 0.00001
+            for s in attrs:
+              do_sum += (e[s]/e["-n"]) / (e["total-sum-time"])
+            return (e[attr] / e["-n"]) / (e["total-sum-time"]) / do_sum
+
           ds.add_stack("Profile information", "fraction of time", {
-            "wait1": lambda e: (e["total-wait-time"] / e["-n"]) / (e["total-sum-time"]),
-            "sus-res": lambda e: (e["total-flush-time"] / e["-n"]) / (e["total-sum-time"]),
-            "wait2": lambda e: (e["total-wait2-time"] / e["-n"]) / (e["total-sum-time"]),
-            "commitTX": lambda e: (e["total-commit-time"] / e["-n"]) / (e["total-sum-time"]),
-            "abortedTX": lambda e: (e["total-abort-time"] / e["-n"]) / (e["total-sum-time"])
+            "wait1": lambda e: normalize(e, "total-wait-time"),
+            "sus-res": lambda e: normalize(e, "total-flush-time"),
+            "wait2": lambda e: normalize(e, "total-wait2-time"),
+            "commitTX": lambda e: normalize(e, "total-commit-time"),
+            "abortedTX": lambda e: normalize(e, "total-abort-time")
           })
         datasets_thr[u][i] += [ds]
     

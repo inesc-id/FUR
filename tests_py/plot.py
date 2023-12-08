@@ -2,6 +2,21 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 
+markers = [
+  ",",
+  "o",
+  "s",
+  "*",
+  "+",
+  "x",
+  "d",
+  "v",
+  "^",
+  "h",
+  "."
+
+]
+
 class BackendDataset:
   def __init__(self, name, samples, x_fn, x_label, y_fn, y_label, selector):
     self.name = name
@@ -33,11 +48,11 @@ class LinesPlot:
 
   def plot(self, datasets:list[BackendDataset]):
     fig, ax = plt.subplots(figsize=self.figsize, nrows=1, ncols=1)
-    for d in datasets:
+    for i,d in enumerate(datasets):
       triple = [(np.average(x),np.average(y),np.std(y)) for x,y in zip(d.x_param.transpose(), d.y_param.transpose())]
       triple.sort(key=lambda elem : elem[0]) # sort by X
       x_array, y_array, y_error = zip(*triple)
-      ax.errorbar(x_array, y_array, yerr = y_error, label=d.name)
+      ax.errorbar(x_array, y_array, yerr = y_error, label=d.name, marker=markers[i])
       ax.set_xlabel(d.x_label)
       ax.set_ylabel(d.y_label)
       ax.set_title(self.title)
