@@ -86,8 +86,8 @@ __thread unsigned int local_thread_id;
 __thread unsigned int local_exec_mode;*/
 
 
-long              global_numThread    ;
-
+long              global_numThread;
+__thread unsigned int thread_id;
 
 #ifndef REDUCED_TM_API
 
@@ -118,7 +118,7 @@ threadWait (void* argPtr)
     THREAD_LOCAL_SET(global_threadId, (long)threadId);
 
     bindThread(threadId);
-
+    thread_id = threadId;
 
     while (1) {
         THREAD_BARRIER(global_barrierPtr, threadId); /* wait for start parallel */
@@ -264,5 +264,7 @@ thread_getNumThread()
 {
     return global_numThread;
 }
+
+#include "extra_threadc.h"
 
 #endif

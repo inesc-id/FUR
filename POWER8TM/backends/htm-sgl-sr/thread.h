@@ -76,53 +76,6 @@
 
 #include <pthread.h>
 
-
-typedef struct padded_scalar {
-    volatile long value;
-    char suffixPadding[CACHE_LINE_SIZE];
-} __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t;
-
-typedef struct spinlock {
-    pthread_spinlock_t lock;
-    char suffixPadding[CACHE_LINE_SIZE];
-} __attribute__((aligned(CACHE_LINE_SIZE))) spinlock_t;
-
-typedef struct padded_statistics {
-    unsigned long tle_commits;
-    unsigned long gl_commits;
-    unsigned long conflicts;
-    unsigned long self;
-    unsigned long trans;
-    unsigned long nontrans;
-    unsigned long capacity;
-    unsigned long other;
-    unsigned long user;
-    unsigned long persistent;
-    char suffixPadding[CACHE_LINE_SIZE];
-} __attribute__((aligned(CACHE_LINE_SIZE))) padded_statistics_t;
-
-extern __attribute__((aligned(CACHE_LINE_SIZE))) padded_statistics_t stats_array[];
-
-extern __attribute__((aligned(CACHE_LINE_SIZE))) pthread_spinlock_t single_global_lock;
-
-extern long              global_numThread    ;
-
-extern __thread unsigned long backoff;
-extern __thread unsigned long cm_seed;
-
-extern __thread unsigned int local_exec_mode;
-extern __thread unsigned int local_thread_id;
-
-extern __thread void* rot_readset[];
-extern __thread unsigned long rs_counter;
-
-extern __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t counters[];
-
-extern unsigned int htm_rot_enabled;
-extern unsigned int allow_rots_ros;
-extern unsigned int allow_htms;
-extern unsigned int allow_stms;
-
 # ifndef MIN_BACKOFF
 #  define MIN_BACKOFF                   (1UL << 2)
 # endif /* MIN_BACKOFF */
@@ -139,6 +92,22 @@ extern unsigned int allow_stms;
 extern "C" {
 #endif
 
+
+extern long              global_numThread    ;
+
+extern __thread unsigned long backoff;
+extern __thread unsigned long cm_seed;
+
+extern __thread unsigned int local_exec_mode;
+extern __thread unsigned int local_thread_id;
+
+extern __thread void* rot_readset[];
+extern __thread unsigned long rs_counter;
+
+extern unsigned int htm_rot_enabled;
+extern unsigned int allow_rots_ros;
+extern unsigned int allow_htms;
+extern unsigned int allow_stms;
 
 #define THREAD_T                            pthread_t
 #define THREAD_ATTR_T                       pthread_attr_t

@@ -58,105 +58,24 @@
 #    define SPECIAL_THREAD_ID()         thread_getId()
 #endif
 
-#define cpu_relax()     asm volatile ("" ::: "memory");
 
-//#  include <immintrin.h>
-//#  include <rtmintrin.h>
-#include <htmxlintrin.h>
+#include "POWER_common.h"
+#include "extra_MACROS.h"
 
-extern __inline long
-__attribute__ ((__gnu_inline__, __always_inline__, __artificial__))
-__TM_is_self_conflict(void* const TM_buff)
-{
-  texasr_t texasr = __builtin_get_texasr ();
-  return _TEXASR_SELF_INDUCED_CONFLICT (texasr);
-}
-
-extern __inline long
-__attribute__ ((__gnu_inline__, __always_inline__, __artificial__))
-__TM_is_trans_conflict(void* const TM_buff)
-{
-  texasr_t texasr = __builtin_get_texasr ();
-  return _TEXASR_TRANSACTION_CONFLICT (texasr);
-}
-
-extern __inline long
-__attribute__ ((__gnu_inline__, __always_inline__, __artificial__))
-__TM_is_nontrans_conflict(void* const TM_buff)
-{
-  texasr_t texasr = __builtin_get_texasr ();
-  return _TEXASR_NON_TRANSACTIONAL_CONFLICT (texasr);
-}
-
-extern __inline long
-__attribute__ ((__gnu_inline__, __always_inline__, __artificial__))
-__TM_is_persistent_abort(void* const TM_buff)
-{
-  texasr_t texasr = *_TEXASR_PTR (TM_buff);
-  return _TEXASR_FAILURE_PERSISTENT (texasr);
-}
-
-extern __inline long
-__attribute__ ((__gnu_inline__, __always_inline__, __artificial__))
-__TM_conflict(void* const TM_buff)
-{
-  texasr_t texasr = *_TEXASR_PTR (TM_buff);
-  /* Return TEXASR bits 11 (Self-Induced Conflict) through
-     14 (Translation Invalidation Conflict).  */
-  return (_TEXASR_EXTRACT_BITS (texasr, 14, 4)) ? 1 : 0;
-}
-
-extern __inline long
-__attribute__ ((__gnu_inline__, __always_inline__, __artificial__))
-__TM_user_abort (void* const TM_buff)
-{
-  texasr_t texasr = *_TEXASR_PTR (TM_buff);
-  return _TEXASR_ABORT (texasr);
-}
-
-extern __inline long
-__attribute__ ((__gnu_inline__, __always_inline__, __artificial__))
-__TM_capacity_abort (void* const TM_buff)
-{
-  texasr_t texasr = *_TEXASR_PTR (TM_buff);
-  return _TEXASR_FOOTPRINT_OVERFLOW (texasr);
-}
-
+# define READ_TIMESTAMP(dest) __asm__ volatile("0:                  \n\tmfspr   %0,268           \n": "=r"(dest));
 #  define TM_STARTUP(numThread, bId)
-#  define TM_SHUTDOWN() { \
-    unsigned long tle_commits = 0; \
-    unsigned long gl_commits = 0; \
-    unsigned long conflicts = 0; \
-    unsigned long self = 0; \
-    unsigned long trans = 0; \
-    unsigned long nontrans = 0; \
-    unsigned long capacity = 0; \
-    unsigned long user = 0; \
-    unsigned long persistent = 0; \
-    unsigned long other = 0; \
-    int i = 0; \
-    for (; i < 80; i++) { \
-       if (stats_array[i].tle_commits+stats_array[i].gl_commits == 0) { break; } \
-       	tle_commits += stats_array[i].tle_commits; \
-	gl_commits += stats_array[i].gl_commits; \
-	conflicts += stats_array[i].conflicts; \
-	self += stats_array[i].self; \
-	trans += stats_array[i].trans; \
-	nontrans += stats_array[i].nontrans; \
-	capacity += stats_array[i].capacity; \
-	user += stats_array[i].user; \
-	persistent += stats_array[i].persistent; \
-	other += stats_array[i].other; \
-    } \
-    printf("Total commits: %lu\n\tHTM commits: %lu\n\tGL commits: %lu\nTotal aborts: %lu\n\tHTM conflict aborts: %lu\n\t\tHTM trans conflicts: %lu\n\t\tHTM non-trans conflicts: %lu\n\t\tHTM self conflicts: %lu\n\tHTM capacity aborts: %lu\n\tHTM persistent aborts: %lu\n\tHTM user aborts: %lu\n\tHTM other aborts: %lu\n", tle_commits+gl_commits,tle_commits, gl_commits, conflicts+capacity+user+other,conflicts,trans,nontrans,self,capacity,persistent,user,other); \
-}
+#  define TM_SHUTDOWN() \
+{ \
+  FINAL_PRINT(start_ts, end_ts); \
+/*printf("first time: %d, second time: %d\n",total_first_time,total_second_time);*/ \
+} \
+//
 
 #  define TM_THREAD_ENTER()
 #  define TM_THREAD_EXIT()
 
 # define IS_LOCKED(lock)        *((volatile long*)(&lock)) != 0
-
-# define TM_BEGIN(b) TM_BEGIN_EXT(b,0)
+# define TM_BEGIN(b)            TM_BEGIN_EXT(b,0)
 # define SPEND_BUDGET(b)	if(RETRY_POLICY == 0) (*b)=0; else if (RETRY_POLICY == 2) (*b)=(*b)/2; else (*b)=--(*b);
 
 
@@ -164,7 +83,7 @@ __TM_capacity_abort (void* const TM_buff)
         int tle_budget = HTM_RETRIES; \
 	local_exec_mode = 0; \
 	/*backoff = MIN_BACKOFF;*/ \
-	local_thread_id = SPECIAL_THREAD_ID();\
+	loc_var.tid = SPECIAL_THREAD_ID();\
         while (1) { \
             while (IS_LOCKED(single_global_lock)) { \
 		cpu_relax(); \
@@ -180,13 +99,13 @@ __TM_capacity_abort (void* const TM_buff)
 	    else{ \
 		if(__TM_is_persistent_abort(&TM_buff)){ \
 			 SPEND_BUDGET(&tle_budget); \
-			 stats_array[local_thread_id].persistent++; \
+			 stats_array[local_thread_id].htm_persistent_aborts++; \
 		} \
 		if(__TM_conflict(&TM_buff)){ \
-                        stats_array[local_thread_id].conflicts++; \
-                        if(__TM_is_self_conflict(&TM_buff)) {stats_array[local_thread_id].self++; }\
-                        else if(__TM_is_trans_conflict(&TM_buff)) stats_array[local_thread_id].trans++; \
-                        else if(__TM_is_nontrans_conflict(&TM_buff)) stats_array[local_thread_id].nontrans++; \
+                        stats_array[local_thread_id].htm_conflict_aborts++; \
+                        if(__TM_is_self_conflict(&TM_buff)) {stats_array[local_thread_id].htm_self_conflicts++; }\
+                        else if(__TM_is_trans_conflict(&TM_buff)) stats_array[local_thread_id].htm_trans_conflicts++; \
+                        else if(__TM_is_nontrans_conflict(&TM_buff)) stats_array[local_thread_id].htm_nontrans_conflicts++; \
                         tle_budget--; \
                         /*unsigned long wait; \
                         volatile int j; \
@@ -199,21 +118,21 @@ __TM_capacity_abort (void* const TM_buff)
                                 backoff <<= 1;*/ \
                 } \
                 else if (__TM_user_abort(&TM_buff)) { \
-                        stats_array[local_thread_id].user++; \
+                        stats_array[local_thread_id].htm_user_aborts++; \
                         tle_budget--; \
                 } \
                 else if(__TM_capacity_abort(&TM_buff)){ \
-                        stats_array[local_thread_id].capacity++; \
+                        stats_array[local_thread_id].htm_capacity_aborts++; \
 			SPEND_BUDGET(&tle_budget); \
                 } \
                 else{ \
-                        stats_array[local_thread_id].other++; \
+                        stats_array[local_thread_id].htm_other_aborts++; \
                         tle_budget--; \
                 } \
             } \
             if (tle_budget <= 0) {   \
 		local_exec_mode = 2; \
-        	while (pthread_spin_trylock(&single_global_lock) != 0) { \
+        	while (! TRY_LOCK(single_global_lock)) { \
                     cpu_relax(); \
                 } \
                 break; \
@@ -224,14 +143,12 @@ __TM_capacity_abort (void* const TM_buff)
 
 # define TM_END(){ \
     if (!local_exec_mode) { \
-        int teste;\
-    	__TM_suspend(); \
-        teste=0;\
-	__TM_resume(); \
+        __TM_suspend(); \
+        __TM_resume(); \
 	__TM_end(); \
-	stats_array[SPECIAL_THREAD_ID()].tle_commits++; \
+	stats_array[SPECIAL_THREAD_ID()].htm_commits++; \
     } else {    \
-    	pthread_spin_unlock(&single_global_lock); \
+    	UNLOCK(single_global_lock); \
 	stats_array[SPECIAL_THREAD_ID()].gl_commits++; \
     } \
 };
