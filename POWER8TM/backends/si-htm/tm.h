@@ -264,51 +264,56 @@ extern uint64_t **SI_wait_duration;
 extern uint64_t *SI_wait_count;
 extern uint64_t *SI_wait_spins;
 
+#ifdef DETAILED_BREAKDOWN_PROFILING
+# define breakdown_profiline_in_wait() { \
+	int c = SI_wait_count[local_thread_id]; \
+	if (c < MAX_PROFILE_COUNT) { \
+		SI_wait_duration[local_thread_id][c] = end_wait_time - start_wait_time; \
+		SI_wait_count[local_thread_id]++; \
+	} \
+	SI_wait_spins[local_thread_id]+=spins; \
+}
+#else
+# define breakdown_profiline_in_wait() {}
+#endif \
+
 # define QUIESCENCE_CALL_ROT(){ \
 	long num_threads = global_numThread; \
 	long index;\
 	int state;\
 	volatile long temp; \
-	num_threads = (long)global_numThread; \
-	for(index=0; index < 80; index++){ \
-    if (index == num_threads) break; \
-		if (index == local_thread_id) continue; \
-		temp = ts_state[index].value; \
-		state = (temp & (3l<<62))>>62; \
-		switch(state){ \
-			case ACTIVE:\
-				state_snapshot[index] = temp; \
-				break;\
-			case INACTIVE:\
-			case NON_DURABLE:\
-			default:\
-				state_snapshot[index] = 0; \
-				break;\
-		} \
-  } \
-  long start_wait_time; \
-  int spins=0; \
+	for(q_args.index=0; q_args.index < q_args.num_threads; q_args.index++) \
+	{ \
+		if(q_args.index == q_args.tid) \
+			continue; \
+			q_args.temp = ts_state[q_args.index].value; \
+			q_args.state = get_state(q_args.temp); \
+			if (q_args.state == ACTIVE) \
+					state_snapshot[q_args.index] = q_args.temp; \
+			else \
+					state_snapshot[q_args.index] = 0; \
+	} \
+	long start_wait_time; \
 	READ_TIMESTAMP(start_wait_time); \
-	for (index = 0; index < num_threads; index++)\
-  { \
-		if (index == local_thread_id) continue; \
-		if (state_snapshot[index] != 0){ \
-			while(ts_state[index].value==state_snapshot[index] || ts_state[index].value > state_snapshot[index]){ \
-				cpu_relax(); \
-				spins ++; \
-			} \
+	long spins = 0; \
+	for ( q_args.index = 0; q_args.index < q_args.num_threads; q_args.index++ ) \
+	{ \
+		if ( q_args.index == q_args.tid ) \
+			continue; \
+		if ( state_snapshot[q_args.index] != 0 ) \
+		{ \
+			while ( ts_state[q_args.index].value == state_snapshot[q_args.index]) \
+				{ cpu_relax(); spins ++;} \
 		} \
 	} \
-  long end_wait_time; \
-  READ_TIMESTAMP(end_wait_time); \
-  stats_array[local_thread_id].wait_time += end_wait_time - start_wait_time; \
-  int c = SI_wait_count[local_thread_id]; \
-  if (c < MAX_PROFILE_COUNT) { \
-    SI_wait_duration[local_thread_id][c] = end_wait_time - start_wait_time; \
-    SI_wait_count[local_thread_id]++; \
-  } \
-  SI_wait_spins[local_thread_id]+=spins; \
+	long end_wait_time; \
+	READ_TIMESTAMP(end_wait_time); \
+	stats_array[local_thread_id].wait_time += end_wait_time - start_wait_time; \
+	breakdown_profiline_in_wait(); \
 };
+
+
+
 
 
 # define RELEASE_WRITE_LOCK(){ \
