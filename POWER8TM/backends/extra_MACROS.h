@@ -518,6 +518,8 @@ else /* handles warp around case */ \
   { \
 		RELEASE_WRITE_LOCK(); \
 	} \
+  assert(get_state(ts_state[q_args.tid].value)==INACTIVE); \
+  assert(get_state(dur_state[q_args.tid].value)==INACTIVE); \
 // end TM_END
 
 //-------------------------------TM_END------------------------------

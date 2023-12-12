@@ -137,7 +137,7 @@
 //todo retirar slowdowns do cmmit log (emulate_pm_slowdown)
 //cache line é calculada com um ++ em vez do emulate
 # define QUIESCENCE_CALL_ROT(){ \
-	/* READ_TIMESTAMP(q_args.start_wait_time); */ \
+	READ_TIMESTAMP(q_args.start_wait_time); \
 	for(q_args.index=0; q_args.index < q_args.num_threads; q_args.index++) \
   { \
 		if(q_args.index == q_args.tid) \
@@ -187,7 +187,7 @@
   { \
 	  __TM_suspend(); \
     READ_TIMESTAMP(start_sus);\
-    long myOldActiveState = ts_state[q_args.tid].value; \
+    __thread long myOldActiveState = ts_state[q_args.tid].value; \
     UPDATE_TS_STATE(NON_DURABLE); /* committing rot*/ \
     order_ts[q_args.tid].value = atomicInc();\
     QUIESCENCE_CALL_ROT();  \
@@ -230,6 +230,7 @@
 		UNLOCK(single_global_lock); \
 		stats_array[q_args.tid].gl_commits++; \
 	} \
+  assert(single_global_lock!=q_args.tid+1);\
 };
 
 # define RELEASE_READ_LOCK(){\
