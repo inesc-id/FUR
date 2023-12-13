@@ -199,6 +199,7 @@ my_tm_thread_enter();
 
 
 # define UPDATE_TS_STATE(state){\
+  assert(state == ACTIVE || state == NON_DURABLE); \
   static __thread long _temp;\
   READ_TIMESTAMP(_temp);\
   _temp=_temp & first_2bits_zero;\
@@ -210,6 +211,7 @@ my_tm_thread_enter();
 
 
 # define UPDATE_STATE(state){\
+  assert(state == INACTIVE); \
   static __thread long _temp=state;\
   _temp=_temp<<2;\
   _temp=_temp>>2;\
@@ -409,7 +411,7 @@ else /* handles warp around case */ \
 		CONTINUE_LOOP_IF( IS_LOCKED(single_global_lock), \
     { \
       READ_TIMESTAMP(loc_var.ts1); \
-			UPDATE_TS_STATE(INACTIVE); /* inactive rot*/ \
+			UPDATE_STATE(INACTIVE); /* inactive rot*/ \
 			rmb(); \
 			WAIT ( IS_LOCKED(single_global_lock) ); \
 		}); \
