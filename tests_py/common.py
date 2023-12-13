@@ -8,25 +8,63 @@ class RunnableBench:
 class BenchmarkParameters:
   def __init__(self, parameter_names:list[str]):
     self.params = {}
+    self.non_comb_params = {}
+    self.min_non_comb = float("+inf")
     for name in parameter_names:
       self.params[name] = []
 
-  def set_params(self, name:str, params:list):
+  def set_params(self, name:str, params:list, non_comb=False):
     if name not in self.params:
       raise Exception(f"Parameter {name} not found")
-    self.params[name] = params
+    if non_comb:
+      self.non_comb_params[name] = params
+      self.min_non_comb = min(self.min_non_comb, len(params))
+    else:
+      self.params[name] = params
 
-  def aux_exec(self, idx_name, exec_fn:RunnableBench, args):
+  def aux_exec(self, idx_name, exec_fn:RunnableBench, args, non_comb = 0):
     keys = list(self.params.keys())
     if idx_name >= len(keys):
-      exec_fn.run_benchmark(args)
+      non_comp_p = []
+      for name in self.non_comb_params:
+        for p in self.non_comb_params[name]:
+          non_comp_p += p[non_comb]
+      a = args
+      if len(non_comp_p) > 0:
+        a += non_comp_p
+      exec_fn.run_benchmark(a)
       return
     name = keys[idx_name]
     for p in self.params[name]:
       self.aux_exec(idx_name+1, exec_fn, args + f" {name} {p} ")
 
-  def exec_for_each_param(self, exec_fn:RunnableBench, args):
-    self.aux_exec(0, exec_fn, args)
+  def exec_for_each_param(self, exec_fn:RunnableBench, exec):
+    params = list(self.params.keys())
+    lst_p = self.list_for_each_param(params)
+
+    for l_p in lst_p:
+      args = exec
+      for n,p in zip(params, l_p):
+        args += f" {n} {p}"
+      print(args)
+      exec_fn.run_benchmark(args)
+
+  def aux_list(self, idx_name, lst_param:list[str], args, lst_resp, non_comb = 0):
+    if idx_name >= len(lst_param):
+      lst_resp += [[a for a in args]]
+      return
+    name = lst_param[idx_name]
+    if name in self.non_comb_params:
+      self.aux_list(idx_name+1, lst_param, args + [self.non_comb_params[name][non_comb]], lst_resp, non_comb)
+    else:
+      for p in self.params[name]:
+        self.aux_list(idx_name+1, lst_param, args + [p], lst_resp, non_comb)
+
+  def list_for_each_param(self, lst_param:list[str]):
+    res = []
+    for i in range(self.min_non_comb):
+      self.aux_list(0, lst_param, [], res, i)
+    return res
 
 class CollectData(RunnableBench):
   def __init__(self, benchmark_location, benchmark_exec, build_script, backend_name, sample_output_folder = "data"):

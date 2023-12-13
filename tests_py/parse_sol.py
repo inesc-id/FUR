@@ -8,8 +8,13 @@ class Parser:
 
   def parse_file(self, file): # must be implemented
     catch_param = {} # NOTE: the number must be the 2nd group
+    catch_param["tpcc-StockLevel"] = re.compile(r"\s*StockLevel\s*:\s*(\d+\.\d+) (\d+)")
+    catch_param["tpcc-Delivery"] = re.compile(r"\s*Delivery\s*:\s*(\d+\.\d+) (\d+)")
+    catch_param["tpcc-OrderStatus"] = re.compile(r"\s*OrderStatus\s*:\s*(\d+\.\d+) (\d+)")
+    catch_param["tpcc-Payment"] = re.compile(r"\s*Payment\s*:\s*(\d+\.\d+) (\d+)")
+    catch_param["tpcc-NewOrder"] = re.compile(r"\s*NewOrder\s*:\s*(\d+\.\d+) (\d+)")
     catch_param["time"] = re.compile(r"\s*(Time) = (\d+\.\d+)")
-    catch_param["txs-tpcc"] = re.compile(r"\s*(Txs): (\d)")
+    catch_param["txs-tpcc"] = re.compile(r"\s*(Txs): (\d+)")
     catch_param["time-tpcc"] = re.compile(r"\s*Total (time) \(secs\): (\d+\.\d+)")
     catch_param["pisces-aborts"] = re.compile(r"\s*Starts=(\d+) Aborts=(\d+)")
     catch_param["total-commits"] = re.compile(r"\s*Total (commits):\s+(\d+)")
