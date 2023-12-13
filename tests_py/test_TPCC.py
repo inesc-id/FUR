@@ -53,9 +53,9 @@ if __name__ == "__main__":
           backend,
           f"{data_folder}/{backend}-s{sample}"
         )
-      # data.run_sample(params) # TODO: not running samples
-      # parser = Parser(f"{data_folder}/{backend}-s{sample}")
-      # parser.parse_all(f"{data_folder}/{backend}-s{sample}.csv")
+      data.run_sample(params) # TODO: not running samples
+      parser = Parser(f"{data_folder}/{backend}-s{sample}")
+      parser.parse_all(f"{data_folder}/{backend}-s{sample}.csv")
     lst_each = params.list_for_each_param(["-s", "-d", "-o", "-p", "-r"])
     # print(lst_each)
     for s,d,o,p,r in lst_each:
@@ -87,8 +87,8 @@ if __name__ == "__main__":
       datasets_thr[(s,d,o,p,r)] += [ds]
     
   for u,v in datasets_thr.items():
-    print(u)
-    print(v)
+    # print(u)
+    # print(v)
     lines_plot = LinesPlot(f"[-s, -d, -o, -p, -r] = {u}", f"tpcc_{u}.pdf", figsize=(8, 4))
     lines_plot.plot(v)
     lines_plot.plot_stack(v)

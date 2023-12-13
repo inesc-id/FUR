@@ -14,7 +14,7 @@ class Parser:
     catch_param["tpcc-Payment"] = re.compile(r"\s*Payment\s*:\s*(\d+\.\d+) (\d+)")
     catch_param["tpcc-NewOrder"] = re.compile(r"\s*NewOrder\s*:\s*(\d+\.\d+) (\d+)")
     catch_param["time"] = re.compile(r"\s*(Time) = (\d+\.\d+)")
-    catch_param["txs-tpcc"] = re.compile(r"\s*(Txs): (\d)")
+    catch_param["txs-tpcc"] = re.compile(r"\s*(Txs): (\d+)")
     catch_param["time-tpcc"] = re.compile(r"\s*Total (time) \(secs\): (\d+\.\d+)")
     catch_param["pisces-aborts"] = re.compile(r"\s*Starts=(\d+) Aborts=(\d+)")
     catch_param["total-commits"] = re.compile(r"\s*Total (commits):\s+(\d+)")
