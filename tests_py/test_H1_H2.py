@@ -29,20 +29,20 @@ if __name__ == "__main__":
   # Set the location of the benchmark here. Each backend needs to be associated with
   # a benchmark (allows to compare with "exotic" implementations).
   locations = [
-    "../power8tm-pisces/benchmarks/datastructures",
-    "../POWER8TM/benchmarks/datastructures",
-    "../POWER8TM/benchmarks/datastructures",
-    "../POWER8TM/benchmarks/datastructures",
+    # "../power8tm-pisces/benchmarks/datastructures",
+    # "../POWER8TM/benchmarks/datastructures",
+    # "../POWER8TM/benchmarks/datastructures",
+    # "../POWER8TM/benchmarks/datastructures",
     "../POWER8TM/benchmarks/datastructures",
     "../POWER8TM/benchmarks/datastructures",
   ]
   # The backend name goes here (don't forget to match the position in the
   # "backends" list with the position in the "locations" list)
   backends = [
-    "pisces",
-    "spht",
-    "htm-sgl",
-    "htm-sgl-sr",
+    # "pisces",
+    # "spht",
+    # "htm-sgl",
+    # "htm-sgl-sr",
     "si-htm",
     "psi"
   ]

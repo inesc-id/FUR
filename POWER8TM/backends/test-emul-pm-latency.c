@@ -16,7 +16,7 @@ int main() {
 
     // printf("CLOCKS_PER_SEC=%d, n=%d, t2-t1=%d\n", CLOCKS_PER_SEC, n, ((int) (t2-t1)));
 
-        printf("n=%d, %d ns\n", n, ((t2-t1)/(CLOCKS_PER_SEC/1000000))/(REPETITIONS/1000));
+        printf("n=%d, %ld ns\n", n, ((t2-t1)/(CLOCKS_PER_SEC/1000000))/(REPETITIONS/1000));
     }
 }
 

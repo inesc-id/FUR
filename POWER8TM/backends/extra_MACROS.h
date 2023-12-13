@@ -263,11 +263,17 @@ my_tm_thread_enter();
   /* assert(ptr!=0 && "ptr is null"); */ \
   /* assert(ptr-end<=0 && "ptr is larger than end of the log"); */ \
 
+/* reference values for PM delay, measured in the P9 machine from Oregon State Univ 
+22 // emulates  94ns write latency, as measured in https://arxiv.org/pdf/1903.05714.pdf
+46 // emulates 210ns write latency (as in seq_clwb in strict persistency, page 9, https://dl.acm.org/doi/abs/10.1145/3492321.3519556, euroys'22)
++12 .. +24 //added latency to emulate PM on CXL2 (according to the TPP paper in ASPLOS'23)
+*/
 
 # ifndef delay_for_pm
 // # define delay_for_pm 25 // 25 number that gives a latency between 0.18 usec and 0.5 usec
-# define delay_for_pm 25 //emulates 210ns write latency (as in euroys'22)
-# define delay_per_cache_line 10
+//
+# define delay_for_pm 0 //emulates 210ns write latency (as in euroys'22)
+# define delay_per_cache_line 0
 # endif
 
 # define emulate_pm_slowdown() \
