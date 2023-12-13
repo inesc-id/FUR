@@ -1,3 +1,5 @@
+#!/bin/bash
+
 if [ $# -eq 0 ] ; then
     echo " === ERROR At the very least, we need the backend name in the first parameter. === "
     exit 1
