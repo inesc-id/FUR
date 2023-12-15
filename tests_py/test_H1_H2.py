@@ -18,8 +18,10 @@ if __name__ == "__main__":
   # Here set the possible values for each parameter (pass a list with valid values).
   # Note the experiment will run all possible combinations of arguments.
   params.set_params("-u", [0, 10, 50, 90])
-  params.set_params("-d", [200000])
-  params.set_params("-i", [50000, 200000, 1000000])
+  params.set_params("-d", [2000])
+  # params.set_params("-d", [200000])
+  # params.set_params("-i", [50000, 200000, 1000000])
+  params.set_params("-i", [1000])
   params.set_params("-r", [2000000])
   params.set_params("-n", [1, 2, 4, 8, 16, 32])
 
@@ -60,7 +62,7 @@ if __name__ == "__main__":
   # IMPORTANT: set the name of the dataset here, this folder needs to be
   # empty when taking new samples (else it can overwrite/append the stdout
   # of the new samples with the stdout of the old samples).
-  data_folder = "dataH1H2"
+  data_folder = "dataH1H2_test"
 
   datasets_thr = {}
   datasets_aborts = {}

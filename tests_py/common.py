@@ -22,22 +22,6 @@ class BenchmarkParameters:
     else:
       self.params[name] = params
 
-  def aux_exec(self, idx_name, exec_fn:RunnableBench, args, non_comb = 0):
-    keys = list(self.params.keys())
-    if idx_name >= len(keys):
-      non_comp_p = []
-      for name in self.non_comb_params:
-        for p in self.non_comb_params[name]:
-          non_comp_p += p[non_comb]
-      a = args
-      if len(non_comp_p) > 0:
-        a += non_comp_p
-      exec_fn.run_benchmark(a)
-      return
-    name = keys[idx_name]
-    for p in self.params[name]:
-      self.aux_exec(idx_name+1, exec_fn, args + f" {name} {p} ")
-
   def exec_for_each_param(self, exec_fn:RunnableBench, exec):
     params = list(self.params.keys())
     lst_p = self.list_for_each_param(params)
@@ -62,7 +46,10 @@ class BenchmarkParameters:
 
   def list_for_each_param(self, lst_param:list[str]):
     res = []
-    for i in range(self.min_non_comb):
+    loop = 1
+    if self.min_non_comb != float("+inf"):
+      loop = self.min_non_comb
+    for i in range(loop):
       self.aux_list(0, lst_param, [], res, i)
     return res
 
