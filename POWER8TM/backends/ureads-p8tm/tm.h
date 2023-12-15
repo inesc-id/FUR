@@ -83,8 +83,7 @@
 
 # define TM_BEGIN(ro) TM_BEGIN_EXT(0,ro)
 
-# define READ_TIMESTAMP(dest) {dest=0;}
-//__asm__ volatile("0:                  \n\tmfspr   %0,268           \n": "=r"(dest));
+# define READ_TIMESTAMP(dest) __asm__ volatile("0:                  \n\tmfspr   %0,268           \n": "=r"(dest));
 //-------------------------------------------------------------------------------
 # define INACTIVE    0
 # define ACTIVE      1
@@ -144,7 +143,6 @@
 	while(rot_budget > 0){ \
 		rot_status = 1; \
 		TM_buff_type TM_buff; \
-    /*UPDATE_TS_STATE(ACTIVE);*/\
 		rmb(); \
 		if(IS_LOCKED(single_global_lock)){ \
 			UPDATE_TS_STATE(INACTIVE); /* inactive rot*/ \
@@ -157,7 +155,6 @@
     \
     READ_TIMESTAMP(start_tx); \
 		unsigned char tx_status = __TM_begin(&TM_buff); \
-		/*unsigned char tx_status = __TM_begin_rot(&TM_buff); */\
 		if (tx_status == _HTM_TBEGIN_STARTED) { \
       break; \
     } \
@@ -177,6 +174,10 @@
       rot_status = 0; \
       rot_budget--; \
 			int state = check_state(ts_state[local_thread_id].value); \
+      if (state == ACTIVE) { \
+        UPDATE_STATE(INACTIVE); \
+        rmb(); \
+      } \
     } \
     else if (__TM_user_abort(&TM_buff)) { \
       READ_TIMESTAMP(end_tx); \
@@ -268,11 +269,10 @@ extern uint64_t *SI_wait_spins;
 }
 #else
 # define breakdown_profiline_in_wait() {}
-#endif
+#endif \
 
 # define QUIESCENCE_CALL_ROT(){ \
 	q_args.num_threads = global_numThread; \
-	volatile long temp; \
 	for(q_args.index=0; q_args.index < q_args.num_threads; q_args.index++) \
 	{ \
 		if(q_args.index == q_args.tid) \
@@ -312,10 +312,10 @@ extern uint64_t *SI_wait_spins;
   READ_TIMESTAMP(start_sus);\
 	  __TM_suspend(); \
       rmb(); \
+	  __TM_resume(); \
     READ_TIMESTAMP(end_sus);\
     stats_array[local_thread_id].sus_time+=end_sus-start_sus;\
 		QUIESCENCE_CALL_ROT();\
-			  __TM_resume(); \
 		__TM_end(); \
   \
   READ_TIMESTAMP(end_tx); \
