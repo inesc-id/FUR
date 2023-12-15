@@ -69,7 +69,6 @@ class Parser:
           m = r.match(s)
           if m:
             o[f"-{m.group(1)}"] = m.group(2)
-        breakpoint()
         lines += [{
           "params": o,
           "eval": self.parse_file(f"{root}/{f}")
@@ -78,13 +77,11 @@ class Parser:
     # breakpoint()
     # print(lines[0])
     header = list(lines[0]["params"].keys()) + list(lines[0]["eval"].keys())
-    breakpoint()
     # print(header)
     # header = set(header_l[0])
     with open(write_csv, "w+", newline='') as csvfile:
       csvwriter = csv.writer(csvfile, delimiter='\t', quotechar='"', quoting=csv.QUOTE_MINIMAL)
       csvwriter.writerow(header)
-      breakpoint()
       for l in lines:
         row = [l["params"][p] if p in l["params"] else l["eval"][p] for p in header]
         csvwriter.writerow(row)
