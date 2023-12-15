@@ -17,11 +17,11 @@ if __name__ == "__main__":
 
   # Here set the possible values for each parameter (pass a list with valid values).
   # Note the experiment will run all possible combinations of arguments.
-  params.set_params("-u", [0, 10, 50, 90])
-  params.set_params("-d", [2000])
-  # params.set_params("-d", [200000])
-  # params.set_params("-i", [50000, 200000, 1000000])
-  params.set_params("-i", [1000])
+  params.set_params("-u", [0, 10, 50])
+  # params.set_params("-d", [2000])
+  params.set_params("-d", [300000])
+  params.set_params("-i", [50000, 200000, 1000000])
+  # params.set_params("-i", [1000])
   params.set_params("-r", [2000000])
   params.set_params("-n", [1, 2, 4, 8, 16, 32])
 
@@ -31,32 +31,40 @@ if __name__ == "__main__":
   # Set the location of the benchmark here. Each backend needs to be associated with
   # a benchmark (allows to compare with "exotic" implementations).
   locations = [
-    # "../power8tm-pisces/benchmarks/datastructures",
+    "../power8tm-pisces/benchmarks/datastructures",
+    "../POWER8TM/benchmarks/datastructures",
+    "../POWER8TM/benchmarks/datastructures",
     # "../POWER8TM/benchmarks/datastructures",
     # "../POWER8TM/benchmarks/datastructures",
-    # "../POWER8TM/benchmarks/datastructures",
+    "../POWER8TM/benchmarks/datastructures",
     "../POWER8TM/benchmarks/datastructures",
     "../POWER8TM/benchmarks/datastructures",
   ]
   # The backend name goes here (don't forget to match the position in the
   # "backends" list with the position in the "locations" list)
   backends = [
-    # "pisces",
-    # "spht",
-    # "htm-sgl",
+    "pisces",
+    "spht",
+    "htm-sgl",
     # "htm-sgl-sr",
     "si-htm",
-    "psi"
+    "psi",
+    "psi-strong",
+    # "ureads-strong",
+    # "ureads-p8tm"
   ]
 
   # Label names in the plots
   name_map = {
     "psi" : "PSI",
+    "psi-strong" : "psi-strong",
     "pisces" : "Pisces",
     "htm-sgl" : "HTM",
     "htm-sgl-sr" : "HTM+sus",
     "spht" : "SPHT",
-    "si-htm" : "SI-TM"
+    "si-htm" : "SI-TM",
+    "ureads-strong": "ureads-strong", 
+    "ureads-p8tm": "ureads-p8tm"
   }
 
   # IMPORTANT: set the name of the dataset here, this folder needs to be
@@ -162,4 +170,4 @@ if __name__ == "__main__":
       lines_plot.plot(w)
 
       # abort+profiling plot
-      lines_plot.plot_stack(w)
+      # lines_plot.plot_stack(w)

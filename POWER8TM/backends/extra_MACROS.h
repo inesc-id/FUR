@@ -403,6 +403,14 @@ else /* handles warp around case */ \
 };\
 // end ACQUIRE_GLOBAL_LOCK
 
+#ifdef USE_FULL_HTM
+#define BEGIN_HW_TX __TM_begin
+#define HTM_BEGIN_INST "__TM_begin"
+#else
+#define BEGIN_HW_TX __TM_begin_rot
+#define HTM_BEGIN_INST "__TM_begin_rot"
+#endif
+
 //Begin ROT
 # define USE_ROT() \
 { \
@@ -423,7 +431,7 @@ else /* handles warp around case */ \
 		}); \
 		/*BEGIN_ROT ------------------------------------------------*/ \
     READ_TIMESTAMP(start_tx); \
-    loc_var.tx_status = __TM_begin_rot(&(loc_var.TM_buff)); \
+    loc_var.tx_status = BEGIN_HW_TX(&(loc_var.TM_buff)); \
 		BREAK_LOOP_IF ( loc_var.tx_status == _HTM_TBEGIN_STARTED ); \
     /* ABORT HAPPENS !!!! */ \
     if ( place_abort_marker ) \
@@ -462,6 +470,7 @@ else /* handles warp around case */ \
     { stats_array[loc_var.tid].rot_other_aborts ++; } \
 	} \
 };\
+
 
 //Begin WRITE
 # define ACQUIRE_WRITE_LOCK() \

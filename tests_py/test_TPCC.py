@@ -22,23 +22,25 @@ if __name__ == "__main__":
   params.set_params("-n", [1, 2, 4, 8, 12, 16])
   nb_samples = 1
   locations = [
-    # "/home/ubuntu/PersistentSiHTM/power8tm-pisces/benchmarks/tpcc",
-    "/home/ubuntu/PersistentSiHTM/POWER8TM/benchmarks/tpcc",
-    "/home/ubuntu/PersistentSiHTM/POWER8TM/benchmarks/tpcc",
-    "/home/ubuntu/PersistentSiHTM/POWER8TM/benchmarks/tpcc",
-    "/home/ubuntu/PersistentSiHTM/POWER8TM/benchmarks/tpcc",
-    "/home/ubuntu/PersistentSiHTM/POWER8TM/benchmarks/tpcc",
-    "/home/ubuntu/PersistentSiHTM/POWER8TM/benchmarks/tpcc"
+    "../power8tm-pisces/benchmarks/tpcc",
+    "../POWER8TM/benchmarks/tpcc",
+    "../POWER8TM/benchmarks/tpcc",
+    # "../POWER8TM/benchmarks/tpcc",
+    # "../POWER8TM/benchmarks/tpcc",
+    "../POWER8TM/benchmarks/tpcc",
+    "../POWER8TM/benchmarks/tpcc",
+    "../POWER8TM/benchmarks/tpcc",
   ]
   backends = [
-    # "pisces",
+    "pisces",
     "spht",
-    "psi",
+    "htm-sgl",
+    # "htm-sgl-sr",
     "si-htm",
-    # "p8tm-psi-v2-ci",
-    # "p8tm-psi-v2-co",
-    # "p8tm-psi-v2-fi",
-    "htm-sgl"
+    "psi",
+    "psi-strong",
+    # "ureads-strong",
+    # "ureads-p8tm"
   ]
   data_folder = "dataTPCC"
 
