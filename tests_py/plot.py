@@ -104,6 +104,10 @@ class LinesPlot:
           # breakpoint()
           xs = np.array([k for k in range(len(x_array))]) + i*width
           ys = np.array(y_array)
+          # print("X:", xs)
+          # print("Y:", ys)
+          # print("error:", y_error)
+          # breakpoint() # TODO: there is some division by 0
           if i == 0: # print label
             axs[j].bar(xs, ys, width, yerr = y_error, label=sn, bottom=bottom, color=stacked_bar_idx[sn]["color"])
             axs[j].legend()

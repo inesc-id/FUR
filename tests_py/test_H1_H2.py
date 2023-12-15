@@ -137,20 +137,19 @@ if __name__ == "__main__":
           })
 
           # Adds a bar plot for the profile information.
-          def normalize(e, attr):
-            attrs = ["total-wait-time", "total-flush-time", "total-wait2-time", "total-commit-time", "total-abort-time"]
-            do_sum = 0.00001
-            for s in attrs:
-              do_sum += (e[s]/e["-n"]) / (e["total-sum-time"])
-            return (e[attr] / e["-n"]) / (e["total-sum-time"]) / do_sum
-
-          ds.add_stack("Profile information", "fraction of time", {
-            "wait1": lambda e: normalize(e, "total-wait-time"),
-            "sus-res": lambda e: normalize(e, "total-flush-time"),
-            "wait2": lambda e: normalize(e, "total-wait2-time"),
-            "commitTX": lambda e: normalize(e, "total-commit-time"),
-            "abortedTX": lambda e: normalize(e, "total-abort-time")
-          })
+          # def normalize(e, attr):
+          #   attrs = ["total-wait-time", "total-flush-time", "total-wait2-time", "total-commit-time", "total-abort-time"]
+          #   do_sum = 0.00001
+          #   for s in attrs:
+          #     do_sum += (e[s]/e["-n"]) / (e["total-sum-time"])
+          #   return (e[attr] / e["-n"]) / (e["total-sum-time"]) / do_sum
+          # ds.add_stack("Profile information", "fraction of time", {
+          #   "wait1": lambda e: normalize(e, "total-wait-time"),
+          #   "sus-res": lambda e: normalize(e, "total-flush-time"),
+          #   "wait2": lambda e: normalize(e, "total-wait2-time"),
+          #   "commitTX": lambda e: normalize(e, "total-commit-time"),
+          #   "abortedTX": lambda e: normalize(e, "total-abort-time")
+          # })
         datasets_thr[u][i] += [ds]
     
   # this for-loop does the actual plotting (in the previous ones we are just
