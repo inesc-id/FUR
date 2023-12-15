@@ -81,12 +81,10 @@
 #  define TM_THREAD_ENTER() 
 #  define TM_THREAD_EXIT()
 
-# define IS_LOCKED(lock)               *((volatile int*)(&lock)) != 0
-# define IS_GLOBAL_LOCKED(lock)        *((volatile int*)(&lock)) == 2
-
 # define TM_BEGIN(ro) TM_BEGIN_EXT(0,ro)
 
-# define READ_TIMESTAMP(dest) __asm__ volatile("0:                  \n\tmfspr   %0,268           \n": "=r"(dest));
+# define READ_TIMESTAMP(dest) {dest=0;}
+//__asm__ volatile("0:                  \n\tmfspr   %0,268           \n": "=r"(dest));
 //-------------------------------------------------------------------------------
 # define INACTIVE    0
 # define ACTIVE      1
@@ -275,12 +273,10 @@ extern uint64_t *SI_wait_spins;
 }
 #else
 # define breakdown_profiline_in_wait() {}
-#endif \
+#endif
 
 # define QUIESCENCE_CALL_ROT(){ \
-	long num_threads = global_numThread; \
-	long index;\
-	int state;\
+	q_args.num_threads = global_numThread; \
 	volatile long temp; \
 	for(q_args.index=0; q_args.index < q_args.num_threads; q_args.index++) \
 	{ \
@@ -322,10 +318,10 @@ extern uint64_t *SI_wait_spins;
 	  __TM_suspend(); \
 	    UPDATE_TS_STATE(NON_DURABLE); /* committing rot*/ \
       rmb(); \
-	  __TM_resume(); \
     READ_TIMESTAMP(end_sus);\
     stats_array[local_thread_id].sus_time+=end_sus-start_sus;\
 		QUIESCENCE_CALL_ROT();\
+			  __TM_resume(); \
 		__TM_end(); \
   \
   READ_TIMESTAMP(end_tx); \
