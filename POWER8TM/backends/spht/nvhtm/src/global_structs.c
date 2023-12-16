@@ -235,6 +235,8 @@ static const int EPOCH_TIMOUT = 32;
 /* extern */volatile __thread void(*onBeforeHtmCommit)(int); /* = on_before_htm_commit */
 /* extern */volatile __thread uint64_t *write_log_thread; /* = &(P_write_log[threadId][0]); */
 
+/* extern */int *is_tx_ro;
+
 static void *alocateInNVRAM(const char *memRegion, const char *file, size_t bytes, long mapFlag, void *addr)
 {
   char fileNameBuffer[1024];
@@ -603,6 +605,9 @@ void global_structs_init(
   } else {
     EASY_MALLOC(gs_appInfo, 1);
   }
+
+  if (is_tx_ro) { free(is_tx_ro); }
+  EASY_MALLOC(is_tx_ro, nbThreads);
 
   gs_appInfo->info.isExit          = 0;
   gs_appInfo->info.nbThreads       = nbThreads;

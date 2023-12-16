@@ -13,6 +13,9 @@
 extern "C" {
 #endif /* __cplusplus */
 
+// TODO: we may need to cache align this
+extern int *is_tx_ro;
+
 // #ifdef NPROFILE
 // #define MEASURE_TS(ts_var) /* empty */
 // #define MEASURE_INC(counter) /* empty */

@@ -91,7 +91,8 @@
 
 # define TM_STARTUP(numThread,dummy) \
   HTM_init(numThread); \
-  for (int i = 0; i < 80; i++) memset(&(stats_array[i]), 0, sizeof(stats_array[i])); \
+  for (int i = 0; i < 80; i++) \
+    memset(&(stats_array[i]), 0, sizeof(stats_array[i])); \
   input_parse_file("nvhtm_params.txt"); \
   learn_spin_nops(CPU_FREQ, FLUSH_LAT, /* FORCE_LEARN */1); \
   input_handler(); \
@@ -183,13 +184,17 @@
 # define IS_LOCKED(lock)        *((volatile int*)(&lock)) != 0
 
 extern int isCraftySet; // need flag for crafty
-#define TM_BEGIN_EXT(id,ro) TM_BEGIN()
+#define TM_BEGIN_EXT(id,ro) \
+  TM_BEGIN(ro) \
+// end TM_BEGIN_EXT
 # define TM_BEGIN(ro) \
+  __atomic_store_n(&(is_tx_ro[HTM_SGL_tid]), ro, __ATOMIC_RELEASE); \
   NV_HTM_BEGIN(HTM_SGL_tid) \
-//
+// end TM_BEGIN
 
 # define TM_END() \
   NV_HTM_END(HTM_SGL_tid) \
+  __atomic_store_n(&(is_tx_ro[HTM_SGL_tid]), 0, __ATOMIC_RELEASE); \
   /* extern volatile __thread uint64_t timeScanning; \
   stats_array[local_thread_id].wait_time += timeScanning; */ \
 //
