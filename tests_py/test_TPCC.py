@@ -19,29 +19,46 @@ if __name__ == "__main__":
   # params.set_params("-o", [4, 4], True)
   # params.set_params("-p", [43, 39], True)
   # params.set_params("-r", [45, 45], True)
-  params.set_params("-n", [1, 2, 4, 8, 12, 16])
+  # params.set_params("-n", [1, 2, 4, 8, 12, 16])
+  params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32])
   nb_samples = 1
   locations = [
+    "../POWER8TM/benchmarks/tpcc",
+    "../POWER8TM/benchmarks/tpcc",
+    "../POWER8TM/benchmarks/tpcc",
     "../power8tm-pisces/benchmarks/tpcc",
-    "../POWER8TM/benchmarks/tpcc",
-    "../POWER8TM/benchmarks/tpcc",
-    # "../POWER8TM/benchmarks/tpcc",
     # "../POWER8TM/benchmarks/tpcc",
     "../POWER8TM/benchmarks/tpcc",
     "../POWER8TM/benchmarks/tpcc",
-    "../POWER8TM/benchmarks/tpcc",
+    # "../POWER8TM/benchmarks/tpcc",
   ]
+  # The backend name goes here (don't forget to match the position in the
+  # "backends" list with the position in the "locations" list)
   backends = [
-    "pisces",
+    "psi",
+    "psi-strong",
     "spht",
+    "pisces",
     "htm-sgl",
     # "htm-sgl-sr",
     "si-htm",
-    "psi",
-    "psi-strong",
     # "ureads-strong",
     # "ureads-p8tm"
   ]
+
+  # Label names in the plots
+  name_map = {
+    "psi" : "DUMBO-SI",
+    "psi-strong" : "DUMBO-Ser",
+    "pisces" : "Pisces",
+    "htm-sgl" : "HTM",
+    "htm-sgl-sr" : "HTM+sus",
+    "spht" : "SPHT",
+    "si-htm" : "SI-TM",
+    "ureads-strong": "ureads-strong", 
+    "ureads-p8tm": "ureads-p8tm"
+  }
+  
   data_folder = "dataTPCC"
 
   datasets_thr = {}
