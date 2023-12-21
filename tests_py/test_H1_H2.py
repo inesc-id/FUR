@@ -19,11 +19,12 @@ if __name__ == "__main__":
   # Note the experiment will run all possible combinations of arguments.
   params.set_params("-u", [0, 10, 50])
   # params.set_params("-d", [2000])
-  params.set_params("-d", [300000])
+  params.set_params("-d", [600000])
   params.set_params("-i", [50000, 200000, 1000000])
   # params.set_params("-i", [1000])
   params.set_params("-r", [2000000])
-  params.set_params("-n", [1, 2, 4, 8, 16, 32])
+  params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32])
+  # params.set_params("-n", [1, 2, 4, 8, 16, 32])
 
   # Set the number of times each run is repeated (for average/stardard deviation computation).
   nb_samples = 1
@@ -31,33 +32,33 @@ if __name__ == "__main__":
   # Set the location of the benchmark here. Each backend needs to be associated with
   # a benchmark (allows to compare with "exotic" implementations).
   locations = [
+    "../POWER8TM/benchmarks/datastructures",
+    "../POWER8TM/benchmarks/datastructures",
+    "../POWER8TM/benchmarks/datastructures",
     "../power8tm-pisces/benchmarks/datastructures",
-    "../POWER8TM/benchmarks/datastructures",
-    "../POWER8TM/benchmarks/datastructures",
-    # "../POWER8TM/benchmarks/datastructures",
     # "../POWER8TM/benchmarks/datastructures",
     "../POWER8TM/benchmarks/datastructures",
     "../POWER8TM/benchmarks/datastructures",
-    "../POWER8TM/benchmarks/datastructures",
+    # "../POWER8TM/benchmarks/datastructures",
   ]
   # The backend name goes here (don't forget to match the position in the
   # "backends" list with the position in the "locations" list)
   backends = [
-    "pisces",
+    "psi",
+    "psi-strong",
     "spht",
+    "pisces",
     "htm-sgl",
     # "htm-sgl-sr",
     "si-htm",
-    "psi",
-    "psi-strong",
     # "ureads-strong",
     # "ureads-p8tm"
   ]
 
   # Label names in the plots
   name_map = {
-    "psi" : "PSI",
-    "psi-strong" : "psi-strong",
+    "psi" : "DUMBO-SI",
+    "psi-strong" : "DUMBO-Ser",
     "pisces" : "Pisces",
     "htm-sgl" : "HTM",
     "htm-sgl-sr" : "HTM+sus",
@@ -170,4 +171,4 @@ if __name__ == "__main__":
       lines_plot.plot(w)
 
       # abort+profiling plot
-      # lines_plot.plot_stack(w)
+      lines_plot.plot_stack(w)
