@@ -46,8 +46,6 @@ static volatile uint64_t incWaiting = 0;
 static volatile uint64_t incFlushing = 0;
 static volatile uint64_t incTX = 0;
 
-
-
 #ifdef DETAILED_BREAKDOWN_PROFILING
 /* Breakdown of the main stages (JOAO) */
 #define MAX_PROFILE_COUNT 10000
@@ -169,7 +167,6 @@ static inline void fetch_log(int threadId)
 
 void on_before_htm_begin_pcwm(int threadId)
 {
-  // copy the callbacks to local memory to avoid read conflicts
   onBeforeWrite = on_before_htm_write;
   onBeforeHtmCommit = on_before_htm_commit;
   write_log_thread = &(P_write_log[threadId][0]);
@@ -413,7 +410,7 @@ void RO_wait_for_durable_reads(int threadId, uint64_t myPreCommitTS)
   MEASURE_TS(ts1);
   
   for (int i = 0; i < gs_appInfo->info.nbThreads; i++) {
-    if (i != threadId && !__atomic_load_n(&(is_tx_ro[i]), __ATOMIC_ACQUIRE)) {
+    if (i!=threadId) {
       do {
         otherTS = __atomic_load_n(&(gs_ts_array[i].pcwm.ts), __ATOMIC_ACQUIRE);
       }
