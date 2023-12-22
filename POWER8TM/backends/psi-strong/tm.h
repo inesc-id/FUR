@@ -221,7 +221,7 @@
     READ_TIMESTAMP(end_wait2); \
     stats_array[q_args.tid].wait2_time += end_wait2 - start_wait2; \
 		UPDATE_STATE(INACTIVE); /* inactive rot*/ \
-		stats_array[q_args.tid].rot_commits++; \
+		stats_array[q_args.tid].htm_commits++; \
 	} \
 	else \
   { \
