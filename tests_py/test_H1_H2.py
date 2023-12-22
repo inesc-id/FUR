@@ -23,7 +23,8 @@ if __name__ == "__main__":
   params.set_params("-i", [50000, 200000, 1000000])
   # params.set_params("-i", [1000])
   params.set_params("-r", [2000000])
-  params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32])
+  # params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32])
+  params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60, 62, 64])
   # params.set_params("-n", [1, 2, 4, 8, 16, 32])
 
   # Set the number of times each run is repeated (for average/stardard deviation computation).
