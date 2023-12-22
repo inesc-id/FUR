@@ -14,11 +14,11 @@ htm_retries=10
 rot_retries=10
 batch_ratio=1
 
-if [ $# -eq 4 ] ; then
-    htm_retries=$2 # e.g.: 5
-    rot_retries=$3 # e.g.: 2, this can also be retry policy for tle
-    batch_ratio=$4  # between 1 and 10
-fi
+# if [ $# -eq 4 ] ; then
+#     htm_retries=$2 # e.g.: 5
+#     rot_retries=$3 # e.g.: 2, this can also be retry policy for tle
+#     batch_ratio=$4  # between 1 and 10
+# fi
 
 rm lib/*.o || true
 

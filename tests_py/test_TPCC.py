@@ -9,39 +9,48 @@ if __name__ == "__main__":
   params.set_params("-w", [32]) # nb warehouses
   params.set_params("-m", [32]) # max nb warehouses (put the same as -w)
   params.set_params("-t", [1])
+  #First scenario that we tried:
   params.set_params("-s", [4], True)
   params.set_params("-d", [4], True)
   params.set_params("-o", [4], True)
   params.set_params("-p", [43], True)
   params.set_params("-r", [45], True)
+  
+  # From SPHT paper
+  # params.set_params("-s", [0], True)
+  # params.set_params("-o", [0], True)
+  # params.set_params("-p", [95], True)
+  # params.set_params("-r", [2], True)
+  # params.set_params("-d", [3], True)
+
   # params.set_params("-s", [4, 8], True) # to pass more than 1 combination of values
   # params.set_params("-d", [4, 4], True)
   # params.set_params("-o", [4, 4], True)
   # params.set_params("-p", [43, 39], True)
   # params.set_params("-r", [45, 45], True)
-  # params.set_params("-n", [1, 2, 4, 8, 12, 16])
-  params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32])
+  params.set_params("-n", [1, 2, 4, 8, 16, 32])
+  # params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32])
   nb_samples = 1
   locations = [
     "../POWER8TM/benchmarks/tpcc",
-    "../POWER8TM/benchmarks/tpcc",
-    "../POWER8TM/benchmarks/tpcc",
-    "../power8tm-pisces/benchmarks/tpcc",
     # "../POWER8TM/benchmarks/tpcc",
-    "../POWER8TM/benchmarks/tpcc",
-    "../POWER8TM/benchmarks/tpcc",
+    # "../POWER8TM/benchmarks/tpcc",
+    # "../power8tm-pisces/benchmarks/tpcc",
+    # # "../POWER8TM/benchmarks/tpcc",
+    # "../POWER8TM/benchmarks/tpcc",
+    # "../POWER8TM/benchmarks/tpcc",
     # "../POWER8TM/benchmarks/tpcc",
   ]
   # The backend name goes here (don't forget to match the position in the
   # "backends" list with the position in the "locations" list)
   backends = [
-    "psi",
-    "psi-strong",
+    # "psi",
+    # "psi-strong",
     "spht",
-    "pisces",
-    "htm-sgl",
+    # "pisces",
+    # "htm-sgl",
     # "htm-sgl-sr",
-    "si-htm",
+    # "si-htm",
     # "ureads-strong",
     # "ureads-p8tm"
   ]
@@ -81,7 +90,7 @@ if __name__ == "__main__":
       if (s,d,o,p,r) not in datasets_thr:
         datasets_thr[(s,d,o,p,r)] = []
       ds = BackendDataset(
-        backend,
+        name_map[backend],
         [f"{data_folder}/{backend}-s{sample}.csv" for sample in range(nb_samples)],
         lambda e: e["-n"], "Nb. Threads",
         lambda e: e["txs-tpcc"]/e["time-tpcc"], "Throughput (T/s)",

@@ -1,6 +1,7 @@
 #ifndef TM_H
 #define TM_H 1
 
+#include <time.h>
 #  include <stdio.h>
 
 #ifndef REDUCED_TM_API
@@ -84,6 +85,7 @@
 	local_exec_mode = 0; \
 	/*backoff = MIN_BACKOFF;*/ \
 	loc_var.tid = SPECIAL_THREAD_ID();\
+        local_thread_id = loc_var.tid;\
         while (1) { \
             while (IS_LOCKED(single_global_lock)) { \
 		cpu_relax(); \
@@ -135,6 +137,9 @@
         	while (! TRY_LOCK(single_global_lock)) { \
                     cpu_relax(); \
                 } \
+                printf("thread %d (%d) acquired SGL\n", local_thread_id, SPECIAL_THREAD_ID()); \
+                struct timespec sleepTime = {.tv_sec = 0, .tv_nsec = 1000000};\
+                nanosleep(&sleepTime, NULL);\
                 break; \
 	    } \
         } \
@@ -146,6 +151,9 @@
 	__TM_end(); \
 	stats_array[SPECIAL_THREAD_ID()].htm_commits++; \
     } else {    \
+        printf("thread %d releasing SGL\n", SPECIAL_THREAD_ID()); \
+        struct timespec sleepTime = {.tv_sec = 0, .tv_nsec = 1000000};\
+        nanosleep(&sleepTime, NULL);\
     	UNLOCK(single_global_lock); \
 	stats_array[SPECIAL_THREAD_ID()].gl_commits++; \
     } \

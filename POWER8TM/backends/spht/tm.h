@@ -166,8 +166,10 @@
   stats_array[i].htm_trans_conflicts = HTM_get_status_count(HTM_TRANS, NULL); \
   stats_array[i].htm_nontrans_conflicts = HTM_get_status_count(HTM_NON_TRANS, NULL); \
   stats_array[i].htm_persistent_aborts = HTM_get_status_count(HTM_PERSISTENT, NULL); \
-  stats_array[i].rot_capacity_aborts = HTM_get_status_count(HTM_CAPACITY, NULL); \
-  stats_array[i].rot_other_aborts = HTM_get_status_count(HTM_OTHER, NULL); \
+  stats_array[i].htm_capacity_aborts = HTM_get_status_count(HTM_CAPACITY, NULL); \
+  stats_array[i].htm_other_aborts = HTM_get_status_count(HTM_OTHER, NULL); \
+  stats_array[i].htm_user_aborts = HTM_get_status_count(HTM_EXPLICIT, NULL); \
+  stats_array[i].gl_commits = HTM_get_status_count(HTM_EXPLICIT, NULL); \
   __atomic_fetch_add(&stats_nbSuccess,  HTM_get_status_count(HTM_SUCCESS, NULL),  __ATOMIC_SEQ_CST); \
   __atomic_fetch_add(&stats_nbAbort,    HTM_get_status_count(HTM_ABORT, NULL),    __ATOMIC_SEQ_CST); \
   __atomic_fetch_add(&stats_nbConfl,    HTM_get_status_count(HTM_CONFLICT, NULL), __ATOMIC_SEQ_CST); \
@@ -179,6 +181,10 @@
   __atomic_fetch_add(&stats_nbFallback, HTM_get_status_count(HTM_FALLBACK, NULL), __ATOMIC_SEQ_CST); \
   HTM_thr_exit(); \
 //
+
+
+
+    
 
 # define IS_LOCKED(lock)        *((volatile int*)(&lock)) != 0
 

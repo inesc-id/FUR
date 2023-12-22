@@ -8,18 +8,18 @@ fi
 backend=$1 # e.g: herwl
 
 htm_retries=10
-rot_retries=5
+rot_retries=10
 retry_policy=1
 
-if [ $# -ge 2 ] ; then
-    htm_retries=$2 # e.g.: 5
-fi
-if [ $# -ge 3 ] ; then
-    rot_retries=$3 # e.g.: 2, this can also be retry policy for tle
-fi
-if [ $# -ge 4 ] ; then
-    retry_policy=$4
-fi
+# if [ $# -ge 2 ] ; then
+#     htm_retries=$2 # e.g.: 5
+# fi
+# if [ $# -ge 3 ] ; then
+#     rot_retries=$3 # e.g.: 2, this can also be retry policy for tle
+# fi
+# if [ $# -ge 4 ] ; then
+#     retry_policy=$4
+# fi
 
 # cp ../../backends/extra_MACROS.h lib/
 # cp ../../backends/POWER_common.h lib/
