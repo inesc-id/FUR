@@ -38,7 +38,7 @@ extern int isCraftySet;
 extern volatile __thread int crafty_isValidate;
 extern __thread long nbTransactions;
 
-#define NV_HTM_BEGIN(_threadId) \
+#define NV_HTM_BEGIN(_threadId, ro) \
   nbTransactions++;\
   crafty_isValidate = 0; \
   while (1) { /* TODO: this needs to be in the same function (else screws the stack) */ \
@@ -55,7 +55,7 @@ extern __thread long nbTransactions;
       } \
     } \
     MEASURE_TS(timeTotalTS1); \
-    on_before_htm_begin(_threadId); \
+    on_before_htm_begin(_threadId, (int) ro); \
     HTM_SGL_begin(); \
 //
 
@@ -245,7 +245,7 @@ void replay_log_apply(); // run all
 //void on_before_htm_begin_pc(int threadId);
 //void on_before_htm_begin_pcwc(int threadId);
 //void on_before_htm_begin_pcwc2(int threadId);
-void on_before_htm_begin_pcwm(int threadId);
+void on_before_htm_begin_pcwm(int threadId, int ro);
 //void on_before_htm_begin_pcwm2(int threadId);
 //void on_before_htm_begin_pcwm3(int threadId);
 void on_before_htm_begin_crafty(int threadId);

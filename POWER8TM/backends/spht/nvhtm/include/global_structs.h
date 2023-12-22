@@ -182,7 +182,7 @@ extern prune_log_fn_t try_prune_log_fn, prune_log_fn;
 // -----------------------------------------------------------------------------
 // ### Functions to install the current NV-HTM implementation
 extern void(*on_htm_abort)(int threadId);
-extern void(*on_before_htm_begin)(int threadId);
+extern void(*on_before_htm_begin)(int threadId,int ro);
 extern void(*on_before_htm_write)(int threadId, void *addr, uint64_t val);
 extern void(*on_before_htm_commit)(int threadId);
 extern void(*on_after_htm_commit)(int threadId);

@@ -35,6 +35,7 @@ static volatile __thread uint64_t timeWaiting = 0;
 static volatile __thread uint64_t timeFlushing = 0;
 static volatile __thread uint64_t timeTX = 0;
 
+static __thread int readonly_tx;
 
 static volatile __thread uint64_t countCommitPhases = 0;
 
@@ -165,7 +166,7 @@ static inline void fetch_log(int threadId)
   write_log_thread[(writeLogEnd + 8) & (gs_appInfo->info.allocLogSize - 1)] = 0;
 }
 
-void on_before_htm_begin_pcwm(int threadId)
+void on_before_htm_begin_pcwm(int threadId, int ro)
 {
   onBeforeWrite = on_before_htm_write;
   onBeforeHtmCommit = on_before_htm_commit;
@@ -196,13 +197,17 @@ void on_before_htm_begin_pcwm(int threadId)
     }
   }
 
-  __atomic_store_n(&gs_ts_array[threadId].pcwm.isUpdate, 0, __ATOMIC_RELEASE);
-  __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, rdtsc(), __ATOMIC_RELEASE);
+  if (gs_ts_array[threadId].pcwm.isUpdate != 0)
+    __atomic_store_n(&gs_ts_array[threadId].pcwm.isUpdate, 0, __ATOMIC_RELEASE);
+  readonly_tx = ro;
+  if (!readonly_tx)
+    __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, rdtsc(), __ATOMIC_RELEASE);
 }
 
 void on_htm_abort_pcwm(int threadId)
 {
-  __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, rdtsc(), __ATOMIC_RELEASE);
+  if (!readonly_tx)
+    __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, rdtsc(), __ATOMIC_RELEASE);
 }
 
 void on_before_htm_write_8B_pcwm(int threadId, void *addr, uint64_t val)
@@ -252,17 +257,17 @@ void on_after_htm_commit_pcwm(int threadId)
   // gs_ts_array[threadId].pcwm.ts = readClockVal; // currently has the TS of begin
   // tells the others my TS taken within the TX
   // TODO: remove the atomic
-  __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, readClockVal, __ATOMIC_RELEASE);
+  if (!readonly_tx) 
+    __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, readClockVal, __ATOMIC_RELEASE);
 
   // printf("[%i] did TX=%lx\n", threadId, readClockVal);
 
-  int is_readonly_tx = (writeLogStart == writeLogEnd);
-
-  if (is_readonly_tx) {
+  if (writeLogStart == writeLogEnd) {
     /* Read-only transaction is about to return */
 
+    if (!readonly_tx)
     // tells the others to move on
-    __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, onesBit63(readClockVal), __ATOMIC_RELEASE);
+      __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, onesBit63(readClockVal), __ATOMIC_RELEASE);
 
     /* RO durability wait (bug fix by Joao)*/
     RO_wait_for_durable_reads(threadId, readClockVal);
@@ -405,22 +410,24 @@ ret:
 void RO_wait_for_durable_reads(int threadId, uint64_t myPreCommitTS)
 {
   uint64_t ts1, ts2;
-  volatile uint64_t otherTS;
+  uint64_t otherTS;
 
+#ifdef DETAILED_BREAKDOWN_PROFILING
   MEASURE_TS(ts1);
+#endif
   
   for (int i = 0; i < gs_appInfo->info.nbThreads; i++) {
     if (i!=threadId) {
       do {
         otherTS = __atomic_load_n(&(gs_ts_array[i].pcwm.ts), __ATOMIC_ACQUIRE);
       }
-      while (otherTS < myPreCommitTS);
+      while (otherTS > 0 && otherTS < myPreCommitTS); 
+      //TO DO Joao: The first condition above is just a quick fix since I didn't know how to init pcwm.ts to +infinite
     }
   }
 
-  MEASURE_TS(ts2);
-
 #ifdef DETAILED_BREAKDOWN_PROFILING
+  MEASURE_TS(ts2);
   int c = ro_durability_wait_count[threadId];
   if (c < MAX_PROFILE_COUNT) {
     ro_durability_wait_duration[threadId][c] = ts2 - ts1;
