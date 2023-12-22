@@ -81,7 +81,7 @@ if __name__ == "__main__":
       if (s,d,o,p,r) not in datasets_thr:
         datasets_thr[(s,d,o,p,r)] = []
       ds = BackendDataset(
-        backend,
+        name_map[backend],
         [f"{data_folder}/{backend}-s{sample}.csv" for sample in range(nb_samples)],
         lambda e: e["-n"], "Nb. Threads",
         lambda e: e["txs-tpcc"]/e["time-tpcc"], "Throughput (T/s)",
