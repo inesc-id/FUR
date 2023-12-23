@@ -169,13 +169,6 @@
     loc_var.mylogstart, \
     loc_var.mylogend \
   );\
-  if (((q_args.end_wait_time - q_args.start_wait_time)/delay_per_cache_line) < max_cache_line[q_args.tid].value) \
-  {\
-    emulate_pm_slowdown_foreach_line(  /* 0); */ \
-    max_cache_line[q_args.tid].value /* computed number of cache-lines to flush*/ \
-    - ((q_args.end_wait_time - q_args.start_wait_time)/delay_per_cache_line) /* discount of the wait phase */ );\
-  }\
-  READ_TIMESTAMP(q_args.start_wait_time); \
   stats_array[q_args.tid].flush_time += q_args.start_wait_time - q_args.end_wait_time; \
 };
 
@@ -205,6 +198,12 @@
       loc_var.mylogstart, \
       loc_var.mylogend \
     ); */ \
+    if (((start_flush - q_args.start_wait_time)/delay_per_cache_line) < max_cache_line[q_args.tid].value) \
+  {\
+    emulate_pm_slowdown_foreach_line(  /* 0); */ \
+    max_cache_line[q_args.tid].value /* computed number of cache-lines to flush*/ \
+    - ((q_args.end_wait_time - q_args.start_wait_time)/delay_per_cache_line) /* discount of the wait phase */ );\
+  }\
     SEQL_START(order_ts[q_args.tid].value, q_args.tid, ((uint64_t)(loc_var.mylogpointer_snapshot - loc_var.mylogstart))); \
     SEQL_COMMIT(order_ts[q_args.tid].value, (loc_var.mylogpointer - loc_var.mylogstart)); \
     READ_TIMESTAMP(end_flush);\

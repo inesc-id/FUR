@@ -27,7 +27,7 @@
 // __INLINE__ long ReadSetCoherent (Thread*);
 
 
-# define delay_for_pm 22
+# define delay_for_pm 70
 # define emulate_pm_slowdown(){\
     for(volatile int i=0;i<delay_for_pm;i++);\
 }\

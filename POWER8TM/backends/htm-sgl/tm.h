@@ -100,10 +100,11 @@
             } \
 	    else{ \
 		if(__TM_is_persistent_abort(&TM_buff)){ \
-			 SPEND_BUDGET(&tle_budget); \
+			 tle_budget--; \
+                         /*SPEND_BUDGET(&tle_budget); */\
 			 stats_array[local_thread_id].htm_persistent_aborts++; \
 		} \
-		if(__TM_conflict(&TM_buff)){ \
+		else if(__TM_conflict(&TM_buff)){ \
                         stats_array[local_thread_id].htm_conflict_aborts++; \
                         if(__TM_is_self_conflict(&TM_buff)) {stats_array[local_thread_id].htm_self_conflicts++; }\
                         else if(__TM_is_trans_conflict(&TM_buff)) stats_array[local_thread_id].htm_trans_conflicts++; \
@@ -125,7 +126,8 @@
                 } \
                 else if(__TM_capacity_abort(&TM_buff)){ \
                         stats_array[local_thread_id].htm_capacity_aborts++; \
-			SPEND_BUDGET(&tle_budget); \
+                        tle_budget--; \
+			/*SPEND_BUDGET(&tle_budget); */\
                 } \
                 else{ \
                         stats_array[local_thread_id].htm_other_aborts++; \
