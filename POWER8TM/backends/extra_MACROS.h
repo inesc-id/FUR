@@ -22,7 +22,7 @@ extern "C" {
 #define MIN_SPACE_LOG 200000
 
 #define bit63one              0x8000000000000000lu
-#define bit62one              (1l<<62)
+#define bit62one              0x4000000000000000lu
 #define isbit63one(ts)        ((ts & bit63one)==bit63one)
 #define isbit62one(ts)        ((ts & bit62one)==bit62one)
 #define zeroBit63(ts)         (ts & ~bit63one)
