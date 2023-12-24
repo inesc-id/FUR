@@ -53,7 +53,15 @@ int main(int argc, char** argv)
   rep::setup_naive(a);
   test("naive");
   rep::destroy();
-
+  
+  printf(
+    "-------------------------------------------\n" 
+    "Forward linking log replayer implementation\n"
+    "-------------------------------------------\n"
+  );
+  rep::setup_forward_link(a);
+  test("forward_link");
+  rep::destroy();
 
   printf(
     "--------------------------------------\n" 

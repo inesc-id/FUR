@@ -8,7 +8,7 @@ static rep::log_entry_t * thread_logs;
 static uint64_t * heap;
 static rep::args_t g_args;
 
-int rep::naive::init(rep::args_t &a)
+int rep::forward_link::init(rep::args_t &a)
 {
   EASY_MALLOC(thread_logs, a.size_thread_log * a.nb_threads);
   memset(thread_logs, 0, a.size_metadata * sizeof(rep::log_entry_t));
@@ -17,19 +17,20 @@ int rep::naive::init(rep::args_t &a)
   return 0;
 }
 
-int rep::naive::destroy()
+int rep::forward_link::destroy()
 {
   free(thread_logs);
   free(heap);
   return 0;
 }
 
-int rep::naive::generate_log()
+int rep::forward_link::generate_log()
 {
   long ts = 1; // for simplicity it uses a sequential clock, but the algorithm assumes physical TS
   
   rep::log_entry_t** ptr_l = new rep::log_entry_t*[g_args.nb_threads];
   rep::log_entry_t** ptr_l_end = new rep::log_entry_t*[g_args.nb_threads];
+  rep::log_entry_t* link_pos = nullptr;
   int nbWrTxs = 0;
 
   for (int i = 0; i < g_args.nb_threads; ++i)
@@ -47,8 +48,11 @@ int rep::naive::generate_log()
     if (ptr_l[t] + w >= ptr_l_end[t])
       break; // thread t is full: stop
 
-    ptr_l[t][w].is_commit = onesBit63(ts);
-    ptr_l[t][w].ts = ts; // TODO: we are wasting 64 bits
+    if (link_pos) // this needs to come after the break
+      link_pos->link_next = ptr_l[t];
+
+    link_pos = &(ptr_l[t][w]); // next TX needs to write its position here
+    ptr_l[t][w].commit_ts = onesBit63(ts);
     ts++;
 
     // adds each memory position (starts from the end of the log)
@@ -72,80 +76,68 @@ int rep::naive::generate_log()
 }
 
 
-int rep::naive::replay()
+int rep::forward_link::replay()
 {
   int nbReps = 0;
 
   rep::log_entry_t** ptr_l = new rep::log_entry_t*[g_args.nb_threads];
   rep::log_entry_t** ptr_l_end = new rep::log_entry_t*[g_args.nb_threads];
-  uint64_t* sort_ts = new uint64_t[g_args.nb_threads];
+  rep::log_entry_t *log_start;
+  rep::log_entry_t *log_end;
+  rep::log_entry_t link_start;
+  rep::log_entry_t* link_pos = &link_start; // first position out of the log
   uint64_t tsToRep = (uint64_t)-1; // initiates tsToRep with the biggest number (unsigned)
+
+  link_start.commit_ts = 0;
+  link_start.link_next = nullptr;
 
   for (int i = 0; i < g_args.nb_threads; ++i)
   {
     ptr_l[i] = thread_logs + i * g_args.size_thread_log;
     ptr_l_end[i] = thread_logs + (i+1) * g_args.size_thread_log;
-    sort_ts[i] = 0;
+  }
+
+  // find the first TX and follow the linkgs afterwards
+  for ( int i = 0; i < g_args.nb_threads; ++i )
+  {
+    log_start = ptr_l[i];
+    log_end = ptr_l_end[i];
+    
+    if (log_start >= log_end || log_start->addr == 0)
+      continue;
+
+    rep::log_entry_t *start = log_start;
+
+    if (!link_start.link_next)
+      link_start.link_next = start;
+    else // check if this thread has a smaller TS than threadToRep
+    {
+      while ( !isbit63one(start->commit_ts) ) // assumes well formed log
+      {
+        assert(start <= log_end && start->addr != 0 && "Log is not well formed");
+        start++; // Jumps addr+val to the addr in the next position
+        // TODO: no wrap-arounds implemented
+      }
+
+      uint64_t ts = zeroBit63(start->commit_ts);
+      if ( ts < tsToRep )
+      {
+        tsToRep = ts;
+        link_start.link_next = start;
+      }
+    }
   }
 
   while (1)
   {
-    int threadToRep = -1;
-    rep::log_entry_t *log_start;
-    rep::log_entry_t *log_end;
-
-    // find the next thread to replay
-    for ( int i = 0; i < g_args.nb_threads; ++i )
-    {
-      log_start = ptr_l[i];
-      log_end = ptr_l_end[i];
-      
-      if (ptr_l[i] >= ptr_l_end[i] || ptr_l[i]->addr == 0)
-        continue;
-
-      if (sort_ts[i] != 0 && sort_ts[i] < tsToRep)
-      {
-        // use cached TS instead of sweep the log again
-        tsToRep = sort_ts[i];
-        threadToRep = i;
-        continue;
-      }
-
-      rep::log_entry_t *start = ptr_l[i];
-
-      if (threadToRep == -1)
-        threadToRep = i;
-      else // check if this thread has a smaller TS than threadToRep
-      {
-        while ( !isbit63one(start->is_commit) ) // assumes well formed log
-        {
-          assert(start <= log_end && start->addr != 0 && "Log is not well formed");
-          start++; // Jumps addr+val to the addr in the next position
-          // TODO: no wrap-arounds implemented
-        }
-
-        uint64_t ts = zeroBit63(start->is_commit); // TODO: start->ts is wasted
-        if ( ts < tsToRep )
-        {
-          tsToRep = ts;
-          sort_ts[i] = ts;
-          threadToRep = i;
-        }
-      }
-    }
-
-    if (threadToRep == -1)
-      break; // there is nothing else left to replay
-
-    sort_ts[threadToRep] = 0; // needs to sweep again in the next look up
-
     // replay the next thread
-    log_start = ptr_l[threadToRep];
-    log_end = ptr_l_end[threadToRep];
-    while (!isbit63one(log_start->is_commit))
+    log_start = link_pos->link_next;
+
+    if (!log_start)
+      break; // there is nothing else left to replay
+    
+    while (!isbit63one(log_start->commit_ts))
     {
-      ptr_l[threadToRep]++; // jumps addr+val (type of ptr_l is a log_entry not uint64_t)
-      
       // checks if the address is valid
       assert(log_start->addr - (uint64_t)heap >= 0 && log_start->addr - (uint64_t)heap < sizeof(uint64_t) * g_args.heap_size && "Wrong Addr");
       
@@ -155,14 +147,13 @@ int rep::naive::replay()
       log_start++; // jumps addr+val
       // TODO: no wrap-arounds implemented
     }
-    ptr_l[threadToRep]++; // jumps the TS
+    link_pos = log_start; // next tx
     nbReps++;
     // TODO: the replayer may want to truncate log space to unblock workers doing write transactions
   }
 
   delete [] ptr_l;
   delete [] ptr_l_end;
-  delete [] sort_ts;
   return nbReps;
 }
 

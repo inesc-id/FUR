@@ -41,6 +41,15 @@ void rep::setup_seq_log(rep::args_t& a)
   setup(a);
 }
 
+void rep::setup_forward_link(rep::args_t& a)
+{
+  rep::init = rep::forward_link::init;
+  rep::generate_log = rep::forward_link::generate_log;
+  rep::replay = rep::forward_link::replay;
+  rep::destroy = rep::forward_link::destroy;
+  setup(a);
+}
+
 long rep::random(long a, long b)
 {
   std::uniform_int_distribution<long> distrib(a, b);

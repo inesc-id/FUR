@@ -17,6 +17,7 @@ struct args_t
 // setups the callbacks below (select one in the begining of the program)
 // it also calls init(args_t)
 void setup_naive(args_t&);
+void setup_forward_link(args_t&);
 void setup_seq_log(args_t&);
 
 // to be setup by the calls above

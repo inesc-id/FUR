@@ -3,13 +3,14 @@ SRC := ./src
 INC := -I ./include
 LIB := rep
 LDFLAGS += -L . -l $(LIB)
-CXXFLAGS += -std=c++2b -g -Wall
+CXXFLAGS += -std=c++2b -O2 -Wall
 LD := $(CXX)
 AR := ar cru
 
 REP_SRCS := \
 	$(SRC)/replayer.cpp \
 	$(SRC)/naive_repl_impl.cpp \
+	$(SRC)/forward_link_repl_impl.cpp \
 	$(SRC)/seq_log_repl_impl.cpp \
 #
 REP_OBJS := ${REP_SRCS:.cpp=.o}

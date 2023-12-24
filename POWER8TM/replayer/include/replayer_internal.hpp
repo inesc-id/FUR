@@ -39,10 +39,24 @@ struct log_entry_t
       uint64_t is_commit; // bit in position 63 to one
       uint64_t ts; // TODO: not used
     };
+    struct {
+      uint64_t commit_ts; // bit in position 63 to one
+      log_entry_t* link_next;
+    };
   };
 } __attribute__((packed));
 
 namespace naive
+{
+
+int init(args_t&);
+int generate_log();
+int replay();
+int destroy();
+
+}
+
+namespace forward_link
 {
 
 int init(args_t&);
