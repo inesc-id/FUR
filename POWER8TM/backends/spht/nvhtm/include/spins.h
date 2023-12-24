@@ -1,6 +1,8 @@
 #ifndef SPINS_H_GUARD
 #define SPINS_H_GUARD
 
+#include "extra_MACROS.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
@@ -35,7 +37,7 @@ void learn_spin_nops(double latencyInNanoSec, double cpuFreqInKiloHertz, int isF
 // spin_nb_flushes++;
 #define ARCH_CACHE_LINE_SIZE 128
 #define FLUSH_CL(base)    \
-  __asm__ ("dcbst %0, %1" : /*no result*/ : "b%" (0), "r" (base) : "memory")
+  emulate_pm_slowdown()
 
 
 #define FENCE_PREV_FLUSHES() \

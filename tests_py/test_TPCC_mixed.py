@@ -10,19 +10,19 @@ if __name__ == "__main__":
   params.set_params("-m", [32]) # max nb warehouses (put the same as -w)
   params.set_params("-t", [5])
   
-#   # From SI-HTM paper: mixed scenario
-#   params.set_params("-s", [4], True)
-#   params.set_params("-d", [4], True)
-#   params.set_params("-o", [4], True)
-#   params.set_params("-p", [43], True)
-#   params.set_params("-r", [45], True)
-
-#   From SI-HTM paper: read-dominated scenario
+  # From SI-HTM paper: mixed scenario
   params.set_params("-s", [4], True)
   params.set_params("-d", [4], True)
-  params.set_params("-o", [80], True)
-  params.set_params("-p", [4], True)
-  params.set_params("-r", [8], True)
+  params.set_params("-o", [4], True)
+  params.set_params("-p", [43], True)
+  params.set_params("-r", [45], True)
+
+# #   From SI-HTM paper: read-dominated scenario
+#   params.set_params("-s", [4], True)
+#   params.set_params("-d", [4], True)
+#   params.set_params("-o", [80], True)
+#   params.set_params("-p", [4], True)
+#   params.set_params("-r", [8], True)
   
   # # From SPHT paper
   # params.set_params("-s", [0], True)
