@@ -3,7 +3,7 @@ SRC := ./src
 INC := -I ./include
 LIB := rep
 LDFLAGS += -L . -l $(LIB)
-CXXFLAGS += -std=c++2b -O2 -Wall
+CXXFLAGS += -std=c++2b -O2 -Wall $(BENCH_TYPE)
 LD := $(CXX)
 AR := ar cru
 
