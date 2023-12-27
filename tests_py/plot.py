@@ -71,21 +71,16 @@ class LinesPlot:
 
   def plot_stack(self, datasets:list[BackendDataset]):
     nb_stacks = 0
-    len_ds = 1
     fix_dataset = []
     for d in datasets:
       l = len(d.y_stack)
-      l2 = len(d.x_param.transpose())
       if l > nb_stacks:
         nb_stacks = l
       if l > 0:
         fix_dataset += [d]
-      if l2 > len_ds:
-        len_ds = l2
 
     f = self.figsize
-    print("len_ds =", len_ds)
-    fig, axs = plt.subplots(figsize=(f[0]*nb_stacks*(len_ds*0.1), f[1]), nrows=1, ncols=nb_stacks)
+    fig, axs = plt.subplots(figsize=(f[0]*nb_stacks, f[1]), nrows=1, ncols=nb_stacks)
     datasets_idx = {}
     plots_idx = {}
     stacked_bar_idx = {}
