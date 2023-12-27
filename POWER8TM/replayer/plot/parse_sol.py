@@ -25,7 +25,7 @@ class Parser:
             # breakpoint()
             o["tx"] = float(m.group(1))
             o["time"] = float(m.group(2))
-            o["throughput"] = float(m.group(3))
+            o["latency"] = float(m.group(3))
             break
     return o
 

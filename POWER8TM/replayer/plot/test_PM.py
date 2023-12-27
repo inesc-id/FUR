@@ -70,7 +70,7 @@ if __name__ == "__main__":
         )
       
       # This line starts the benchmark and tests all combinations parameters.
-      # data.run_sample(params) # NOTE: comment if you already have the data and just want to refresh the plots.
+      data.run_sample(params) # NOTE: comment if you already have the data and just want to refresh the plots.
 
       # Parses the stdout into a .csv that can be used for the plots.
       # Check the tests_py/parse_sol.py for the regular expressions that are catched in the stdout.
@@ -93,7 +93,7 @@ if __name__ == "__main__":
         name_map[backend],
         [f"{data_folder}/{backend}-s{s}.csv" for s in range(nb_samples)],
         lambda e: e["-d"] * 4.5, "Delay PM (ns)",
-        lambda e: e["throughput"], "Throughput (Replayed TXs/ns)",
+        lambda e: e["latency"], "Replay duration (ns/TX)",
         {"-n": n}
       )
       datasets_thr[n] += [ds]

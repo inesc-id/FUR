@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
+from typing import Callable, Optional, Tuple
 
 markers = [
   ",",
@@ -19,6 +20,7 @@ markers = [
 class BackendDataset:
   def __init__(self, name, samples, x_fn, x_label, y_fn, y_label, selector):
     self.name = name
+    self.filter_x_fn = None
     read_all = [pd.read_csv(s, sep="\t") for s in samples]
     self.samples = []
     for df in read_all:
@@ -32,7 +34,12 @@ class BackendDataset:
     self.y_label = y_label
     self.y_stack = {}
 
-  def add_stack(self, title, y_label, y_fns:dict[str,callable]):
+  def add_stack(self, title, y_label, y_fns:dict[str,Callable], filter_x_fn:Optional[Callable[[Tuple[float,float,float]],bool]] = None):
+    """
+    Adds a stack to the stack plot.
+    You can add an optional function fn((x,y,std_dev))->bool to discard points (when returning False).
+    """
+    self.filter_x_fn = filter_x_fn
     y_stack = {}
     for lbl,fn in y_fns.items():
       y_stack[lbl] = np.array([[fn(s)] for s in self.samples])
@@ -48,7 +55,8 @@ class LinesPlot:
   def plot(self, datasets:list[BackendDataset]):
     fig, ax = plt.subplots(figsize=self.figsize, nrows=1, ncols=1)
     for i,d in enumerate(datasets):
-      triple = [(np.average(x),np.average(y),np.std(y)) for x,y in zip(d.x_param.transpose(), d.y_param.transpose())]
+      z = zip(d.x_param.transpose(), d.y_param.transpose())
+      triple = [(np.average(x),np.average(y),np.std(y)) for x,y in z]
       triple.sort(key=lambda elem : elem[0]) # sort by X
       x_array, y_array, y_error = zip(*triple)
       ax.errorbar(x_array, y_array, yerr = y_error, label=d.name, marker=markers[i])
@@ -96,7 +104,7 @@ class LinesPlot:
           k += 1
 
     width = 0.83 / len(fix_dataset)
-    offset = 0.02
+    offset = 0.005
     for d in fix_dataset:
       for s_title, ss in d.y_stack.items():
         bottom = np.array([0 for _ in d.x_param.transpose()])
@@ -104,20 +112,26 @@ class LinesPlot:
           i = datasets_idx[d.name]
           j = plots_idx[s_title[0]]
           triple = [(np.average(x),np.average(y),np.std(y)) for x,y in zip(d.x_param.transpose(), sy.transpose())]
-          triple.sort(key=lambda elem : elem[0]) # sort by X
-          x_array, y_array, y_error = zip(*triple)
-          # breakpoint()
+          tripleF = triple
+          if not d.filter_x_fn is None:
+            tripleF = list(filter(d.filter_x_fn, triple))
+          tripleF.sort(key=lambda elem : elem[0]) # sort by X
+          x_array, y_array, y_error = zip(*tripleF)
           xs = np.array([k for k in range(len(x_array))]) + i*width + i*offset
           ys = np.array(y_array)
+          y_err = np.array(y_error)
+          if len(bottom) > len(xs):
+            bottom = np.array([0 for _ in xs])
           # print("X:", xs)
           # print("Y:", ys)
           # print("error:", y_error)
           # breakpoint() # TODO: there is some division by 0
           if i == 0: # print label
-            axs[j].bar(xs, ys, width, yerr = y_error, label=sn, bottom=bottom, color=stacked_bar_idx[sn]["color"])
+            # breakpoint()
+            axs[j].bar(xs, ys, width, yerr = y_err, label=sn, bottom=bottom, color=stacked_bar_idx[sn]["color"])
             axs[j].legend()
           else:
-            axs[j].bar(xs, ys, width, yerr = y_error, bottom=bottom, color=stacked_bar_idx[sn]["color"])
+            axs[j].bar(xs, ys, width, yerr = y_err, bottom=bottom, color=stacked_bar_idx[sn]["color"])
           bottom = bottom + ys
         for x,y in zip(xs,bottom):
           axs[j].annotate(d.name, (x, y), textcoords="offset points", xytext=(0,10), ha='center', rotation=90)

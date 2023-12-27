@@ -104,12 +104,18 @@ if __name__ == "__main__":
         lambda e: e["txs-tpcc"]/e["time-tpcc"], "Throughput (T/s)",
         {"-s": s, "-d": d, "-o": o, "-p": p, "-r": r}
       )
+
+      def filter_threads(t) -> bool:
+        x, y, sd = t
+        # breakpoint()
+        return True if x in [2, 8, 16, 24, 32, 64] else False
+          
       ds.add_stack("Commits vs Aborts", "Count", {
         "ROT-commits": lambda e: e["rot-commits"] if "rot-commits" in e else 0,
         "HTM-commits": lambda e: e["htm-commits"],
         "SGL-commits": lambda e: e["gl-commits"],
         "aborts": lambda e: e["total-aborts"]
-      })
+      }, filter_x_fn = filter_threads)
       ds.add_stack("Abort types", "Nb. aborts", {
         "conflict-transactional": lambda e: e["confl-trans"],
         "conflict-non-transactional": lambda e: e["confl-non-trans"],
@@ -118,7 +124,7 @@ if __name__ == "__main__":
         "persistent": lambda e: e["persis-aborts"],
         "user": lambda e: e["user-aborts"],
         "other": lambda e: e["other-aborts"]
-      })
+      }, filter_x_fn = filter_threads)
       datasets_thr[(s,d,o,p,r)] += [ds]
     
   for u,v in datasets_thr.items():

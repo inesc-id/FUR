@@ -152,6 +152,7 @@ int rep::naive::replay()
       
       // writes back to PM
       *((uint64_t*)log_start->addr) = log_start->val;
+      flush((uint64_t*)log_start->addr);
 
       log_start++; // jumps addr+val
       // nbWrites++;
@@ -160,6 +161,9 @@ int rep::naive::replay()
     ptr_l[threadToRep]++; // jumps the TS
     nbReps++;
     // TODO: the replayer may want to truncate log space to unblock workers doing write transactions
+    // emulates flush of metadata that flags the workers that there is more log space
+    flush((uint64_t*)log_start);
+    flush_barrier();
   }
 
   // printf("nbWrites = %li\n", nbWrites);
