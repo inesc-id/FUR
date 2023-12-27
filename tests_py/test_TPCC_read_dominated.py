@@ -17,19 +17,19 @@ if __name__ == "__main__":
 #   params.set_params("-p", [43], True)
 #   params.set_params("-r", [45], True)
 
-# #   From SI-HTM paper: read-dominated scenario
-#   params.set_params("-s", [4], True)
-#   params.set_params("-d", [4], True)
-#   params.set_params("-o", [80], True)
-#   params.set_params("-p", [4], True)
-#   params.set_params("-r", [8], True)
+#   From SI-HTM paper: read-dominated scenario
+  params.set_params("-s", [4], True)
+  params.set_params("-d", [4], True)
+  params.set_params("-o", [80], True)
+  params.set_params("-p", [4], True)
+  params.set_params("-r", [8], True)
   
-  # From SPHT paper
-  params.set_params("-s", [0], True)
-  params.set_params("-o", [0], True)
-  params.set_params("-p", [95], True)
-  params.set_params("-r", [2], True)
-  params.set_params("-d", [3], True)
+  # # From SPHT paper
+  # params.set_params("-s", [0], True)
+  # params.set_params("-o", [0], True)
+  # params.set_params("-p", [95], True)
+  # params.set_params("-r", [2], True)
+  # params.set_params("-d", [3], True)
 
   # params.set_params("-s", [4, 8], True) # to pass more than 1 combination of values
   # params.set_params("-d", [4, 4], True)
