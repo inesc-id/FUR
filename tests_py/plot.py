@@ -14,7 +14,6 @@ markers = [
   "^",
   "h",
   "."
-
 ]
 
 class BackendDataset:
@@ -64,16 +63,21 @@ class LinesPlot:
 
   def plot_stack(self, datasets:list[BackendDataset]):
     nb_stacks = 0
+    len_ds = 1
     fix_dataset = []
     for d in datasets:
       l = len(d.y_stack)
+      l2 = len(d.x_param.transpose())
       if l > nb_stacks:
         nb_stacks = l
       if l > 0:
         fix_dataset += [d]
+      if l2 > len_ds:
+        len_ds = l2
 
     f = self.figsize
-    fig, axs = plt.subplots(figsize=(f[0]*nb_stacks, f[1]), nrows=1, ncols=nb_stacks)
+    print("len_ds =", len_ds)
+    fig, axs = plt.subplots(figsize=(f[0]*nb_stacks*(len_ds*0.1), f[1]), nrows=1, ncols=nb_stacks)
     datasets_idx = {}
     plots_idx = {}
     stacked_bar_idx = {}
@@ -91,7 +95,8 @@ class LinesPlot:
           stacked_bar_idx[sn] = {"idx": k, "color": cmap(k)}
           k += 1
 
-    width = 0.9 / len(fix_dataset)
+    width = 0.83 / len(fix_dataset)
+    offset = 0.02
     for d in fix_dataset:
       for s_title, ss in d.y_stack.items():
         bottom = np.array([0 for _ in d.x_param.transpose()])
@@ -102,7 +107,7 @@ class LinesPlot:
           triple.sort(key=lambda elem : elem[0]) # sort by X
           x_array, y_array, y_error = zip(*triple)
           # breakpoint()
-          xs = np.array([k for k in range(len(x_array))]) + i*width
+          xs = np.array([k for k in range(len(x_array))]) + i*width + i*offset
           ys = np.array(y_array)
           # print("X:", xs)
           # print("Y:", ys)
@@ -119,7 +124,8 @@ class LinesPlot:
           break
         if i == 0:
           axs[j].set_title(f"{self.title}\n{s_title[0]}")
-          axs[j].set_xticks(xs)
+          axs[j].set_xticks(np.array([k for k in range(len(x_array))]))
+          axs[j].margins(x=0)
           axs[j].set_xticklabels([int(x) for x in x_array])
           axs[j].set_xlabel(d.x_label)
           axs[j].set_ylabel(s_title[1])
