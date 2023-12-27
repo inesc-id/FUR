@@ -61,8 +61,8 @@ __INLINE__ intptr_t cas(intptr_t newv, intptr_t old, intptr_t* ptr) {
  * =============================================================================
  */
 #define MEMBARLDLD()                    __asm__ __volatile__ ("sync" : : :"memory") 
-#define MEMBARSTST()                    /* __asm__ __volatile__ ("sync" : : :"memory") */
-#define MEMBARSTLD()                    /* __asm__ __volatile__ ("sync" : : :"memory") */
+#define MEMBARSTST()                    __asm__ __volatile__ ("sync" : : :"memory")
+#define MEMBARSTLD()                    __asm__ __volatile__ ("sync" : : :"memory")
 
 
 /* =============================================================================

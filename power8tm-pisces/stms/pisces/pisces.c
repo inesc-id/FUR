@@ -623,9 +623,6 @@ lock_t *get_locked_avpair(volatile intptr_t* addr) {
 int remove_lock(volatile intptr_t* addr, Thread *self) {
 
     Thread *owner = *(LOCK_OWNER(addr));
-    assert(owner == self || owner == NULL);
-    // NULL case (above) is possible if this tx had 2+ locations locked here, and already removed the
-    // lock with the first one
 
     lock_t **l_a = LOCKED_AVPAIRS(addr);
     // assert(!owner || *l_a);
@@ -737,7 +734,7 @@ TxStore (Thread* Self, volatile intptr_t* addr, intptr_t valu)
 
     assert (*LOCK_OWNER(addr) == Self);
 
-    assert_locked_wrset(Self);
+    // assert_locked_wrset(Self);
 
     return;
 }

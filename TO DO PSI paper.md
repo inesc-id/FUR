@@ -12,6 +12,7 @@ hashmap, small hashmap (50K), u=10 e u=100
 
 - implementar variantes psi para breakdown
 
+- Pisces: random relay after abort; ver se melhora no tpcc-spht
 
 LATER:
 - ver misterios nos resultados hashmap (msg no skype)
