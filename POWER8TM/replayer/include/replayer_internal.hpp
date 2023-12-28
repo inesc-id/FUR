@@ -2,13 +2,16 @@
 #include "replayer.hpp"
 #include <cstdint>
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <errno.h>
 
 #ifndef EASY_MALLOC
 #define ARCH_CACHE_LINE_SIZE 128
 #define MALLOC_FN(size) aligned_alloc(ARCH_CACHE_LINE_SIZE, (size))
 #define EASY_MALLOC(var, nb) \
   if ((var = (__typeof__(var))MALLOC_FN(sizeof(__typeof__(*(var)))*(nb))) == NULL) \
-    perror("malloc");
+    fprintf(stderr, "malloc(%zu): %s\n", sizeof(__typeof__(*(var)))*(nb), strerror(errno));
 #endif /* EASY_MALLOC */
 
 #define bit63one              0x8000000000000000lu

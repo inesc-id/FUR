@@ -55,6 +55,7 @@ OBJS     :=                 \
 	$(SRC)/log_checker.o      \
 	$(SRC)/impl_log_replayer.o \
 	$(SRC)/impl_pcwm.o        \
+	$(SRC)/impl_pcwm2.o        \
 	bench/bench.o             \
 #
 

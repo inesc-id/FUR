@@ -89,18 +89,18 @@ static void parse_argv(int argc, char** argv, rep::args_t& a)
 int main(int argc, char** argv)
 {
   rep::args_t a = { // Default values
-    .nb_threads = 32,
-    .size_thread_log = 2097152, // 2MB
-    .size_metadata = 32 * 2097152 / 5,
-    .heap_size = 2097152,
+    .nb_threads = 8,
+    .size_thread_log = 134217728ul, // 128MB
+    .size_metadata = 16ul * 8388608ul / 20ul,
+    .heap_size = 134217728ul,
     .min_writes = 1,
-    .max_writes = 5,
+    .max_writes = 20,
     .pm_delay = 46,
     .seed = 1234
   };
 
   parse_argv(argc, argv, a);
-  
+  a.size_thread_log /= a.nb_threads;
 
 #ifdef NAIVE
   printf(

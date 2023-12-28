@@ -13,10 +13,10 @@ if __name__ == "__main__":
   # Here set the possible values for each parameter (pass a list with valid values).
   # Note the experiment will run all possible combinations of arguments.
   params.set_params("-d", [0, 10, 46, 66])
-  params.set_params("-n", [1, 2, 8, 32, 64])
+  params.set_params("-n", [1, 2, 8, 16])
 
   # Set the number of times each run is repeated (for average/stardard deviation computation).
-  nb_samples = 1
+  nb_samples = 10
 
   # Set the location of the benchmark here. Each backend needs to be associated with
   # a benchmark (allows to compare with "exotic" implementations).
@@ -42,7 +42,7 @@ if __name__ == "__main__":
 
   map_nops_to_ns = {
     0 : 0,
-    10 : 45, # NB_NOPS * 4.5
+    10 : 45, # assumes NB_NOPS * 4.5
     46 : 200,
     66 : 295,
     100 : 435

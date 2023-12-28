@@ -363,12 +363,12 @@ static void input_handler()
     log_replay_flags |= LOG_REPLAY_PHYSICAL_CLOCKS;
   } else if (input_exists("usePCWM2")) {
     printf("usePCWM2 is set\n");
-    //usePhysicalClocks = 0;
-    //install_bindings_pcwm2();
-    //wait_commit_fn = wait_commit_pcwm2;
-    //state_profile = state_gather_profiling_info_pcwm2;
-    //state_print_profile = state_fprintf_profiling_info_pcwm2;
-    //log_replay_flags |= LOG_REPLAY_PHYSICAL_CLOCKS_SORTED;
+    usePhysicalClocks = 0;
+    install_bindings_pcwm2();
+    wait_commit_fn = wait_commit_pcwm2;
+    state_profile = state_gather_profiling_info_pcwm2;
+    state_print_profile = state_fprintf_profiling_info_pcwm2;
+    log_replay_flags |= LOG_REPLAY_PHYSICAL_CLOCKS_SORTED;
   } else if (input_exists("usePCWM3")) {
     printf("usePCWM3 is set\n");
     //usePhysicalClocks = 0;
