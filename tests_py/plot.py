@@ -140,7 +140,7 @@ class LinesPlot:
           axs[j].set_ylabel(s_title[1])
         j += 1
       i += 1
-    plt.tight_layout()
+    # plt.tight_layout()
     plt.savefig(f"stack_{self.filename}")
     fig.clear()
     plt.close()

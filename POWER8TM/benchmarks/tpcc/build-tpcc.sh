@@ -39,7 +39,7 @@ cp ../../backends/$backend/Makefile.flags .
 cp ../../backends/$backend/Defines.common.mk .
 
 
-if [[ $backend == spht ]] ; then
+if [[ $backend == spht* ]] ; then
     rm lib/rdtsc.h
     mkdir lib/
     bash ../../backends/$backend/copy_spht.sh $backend ./lib
