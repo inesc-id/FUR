@@ -10,6 +10,8 @@ static rep::args_t g_args;
 /*extern*/ int (*rep::destroy)();
 /*extern*/ int (*rep::generate_log)();
 /*extern*/ int (*rep::replay)();
+/*extern*/ int pm_delay = 46;
+/*extern*/ thread_local int nb_cache_lines;
 
 static void setup(rep::args_t& a)
 {
@@ -20,6 +22,7 @@ static void setup(rep::args_t& a)
   }
   gen = new std::mt19937(a.seed);
   g_args = a;
+  pm_delay = a.pm_delay;
   rep::init(a);
 }
 

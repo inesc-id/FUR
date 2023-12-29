@@ -71,11 +71,14 @@ int rep::seq_log::generate_log()
     int t = rep::random(0, g_args.nb_threads-1);
     int w = rep::random(g_args.min_writes, g_args.max_writes);
 
+    if (ptr_l[t] + w >= ptr_l_end[t]) // Not enough space for writes
+      break;
+
     ptr_m->start_addr.tid = t;
     ptr_m->start_addr.flags = SEQL_F_COMMITTED;
     ptr_m->start_addr.pos_in_log = ptr_l[t] - thread_logs;
+    ptr_m->end_addr = ptr_l[t] - thread_logs + w;
 
-    assert(ptr_l[t] + w < ptr_l_end[t] && "Not enough space for writes");
     while (w-- > 0)
     {
       long p = rep::random_access();
@@ -98,6 +101,7 @@ int rep::seq_log::replay()
   auto ptr_m = seq_log_metadata;
   auto ptr_m_end = seq_log_metadata + g_args.size_metadata;
   int nbReps = 0;
+  // long nbWrites = 0; // DEBUG
   
   while (ptr_m < ptr_m_end && ptr_m->start_addr.flags != SEQL_F_EMPTY)
   {    
@@ -112,16 +116,24 @@ int rep::seq_log::replay()
     {
       // write to PM the logged value
       *((uint64_t*)pos_s->addr) = pos_s->val;
+      flush((uint64_t*)pos_s->addr);
 
       // advance the iterator to the thread write log (currently does not wrap-arounds)
       pos_s++;
+      // nbWrites++;
     }
 
     // advance the iterator to the sequential log (currently does not wrap-arounds)
     ptr_m++;
     nbReps++;
+    // emulates flush of metadata that flags the workers that there is more log space
+    flush((uint64_t*)pos_s);
+    flush_barrier();
+
     // TODO: the replayer may want to truncate log space to unblock workers doing write transactions
   }
+
+  // printf("nbWrites = %li\n", nbWrites);
 
   return nbReps;
 }

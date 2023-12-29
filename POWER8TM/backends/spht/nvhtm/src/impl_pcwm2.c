@@ -54,6 +54,14 @@ static volatile uint64_t incFlushing = 0;
 static volatile uint64_t incScanning = 0;
 static volatile uint64_t incTX = 0;
 
+typedef struct {
+  uint64_t a[4];
+} __m256i;
+#define _mm256_load_si256(_m256i_addr) \
+  *(_m256i_addr)
+#define _mm256_store_si256(_m256i_addr, _m256i_val) \
+  *(_m256i_addr) = _m256i_val
+
 void install_bindings_pcwm2()
 {
   on_before_htm_begin  = on_before_htm_begin_pcwm2;
@@ -197,10 +205,10 @@ static inline void scan_others(int threadId)
 
     __m256i data = _mm256_load_si256((__m256i *)&gs_ts_array[i].pcwm);
     // order matters !!!
-    volatile uint64_t cpyTS = data[0];
-    volatile uint64_t cpyPrevTS = data[1];
-    volatile uint64_t cpyLogPos = data[2];
-    volatile uint64_t cpyPrevLogPos = data[3];
+    volatile uint64_t cpyTS = data.a[0];
+    volatile uint64_t cpyPrevTS = data.a[1];
+    volatile uint64_t cpyLogPos = data.a[2];
+    volatile uint64_t cpyPrevLogPos = data.a[3];
 
     // volatile uint64_t cpyPrevTS = gs_ts_array[i].pcwm.prevTS;
     // volatile uint64_t cpyLogPos = gs_ts_array[i].pcwm.logPos;
@@ -395,7 +403,7 @@ waitTheMarker:
           goto outerLoop;
         }
       }
-      _mm_pause();
+      // _mm_pause();
       if (spinCount > 10000) {
         goto putTheMarker;
       }

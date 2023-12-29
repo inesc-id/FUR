@@ -3,6 +3,9 @@ plots_scripts/data
 tests_py/data*
 tests_py/__pycache__
 tests_py/*.pdf
+POWER8TM/replayer/plot/*.pdf
+POWER8TM/replayer/plot/replayer
+POWER8TM/replayer/plot/__pycache__
 
 # use generate or fetch from somewhere else
 power8tm-pisces/benchmarks/stamp/kmeans/inputs/random-n65536-d32-c16.txt

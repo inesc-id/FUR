@@ -1,6 +1,7 @@
 
 cp ../../backends/$1/nvhtm/src/global_structs.c $2
 cp ../../backends/$1/nvhtm/src/impl_pcwm.c $2
+cp ../../backends/$1/nvhtm/src/impl_pcwm2.c $2
 cp ../../backends/$1/nvhtm/src/impl_crafty.c $2
 cp ../../backends/$1/nvhtm/src/impl_ccHTM.c $2
 cp ../../backends/$1/nvhtm/src/impl_epoch_impa.c $2

@@ -11,7 +11,7 @@ static rep::args_t g_args;
 int rep::naive::init(rep::args_t &a)
 {
   EASY_MALLOC(thread_logs, a.size_thread_log * a.nb_threads);
-  memset(thread_logs, 0, a.size_metadata * sizeof(rep::log_entry_t));
+  memset(thread_logs, 0, a.size_thread_log * a.nb_threads * sizeof(rep::log_entry_t));
   EASY_MALLOC(heap, a.heap_size);
   g_args = a;
   return 0;
@@ -75,6 +75,7 @@ int rep::naive::generate_log()
 int rep::naive::replay()
 {
   int nbReps = 0;
+  // long nbWrites = 0;
 
   rep::log_entry_t** ptr_l = new rep::log_entry_t*[g_args.nb_threads];
   rep::log_entry_t** ptr_l_end = new rep::log_entry_t*[g_args.nb_threads];
@@ -151,14 +152,21 @@ int rep::naive::replay()
       
       // writes back to PM
       *((uint64_t*)log_start->addr) = log_start->val;
+      flush((uint64_t*)log_start->addr);
 
       log_start++; // jumps addr+val
+      // nbWrites++;
       // TODO: no wrap-arounds implemented
     }
     ptr_l[threadToRep]++; // jumps the TS
     nbReps++;
     // TODO: the replayer may want to truncate log space to unblock workers doing write transactions
+    // emulates flush of metadata that flags the workers that there is more log space
+    flush((uint64_t*)log_start);
+    flush_barrier();
   }
+
+  // printf("nbWrites = %li\n", nbWrites);
 
   delete [] ptr_l;
   delete [] ptr_l_end;

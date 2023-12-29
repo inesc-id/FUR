@@ -11,7 +11,7 @@ static rep::args_t g_args;
 int rep::forward_link::init(rep::args_t &a)
 {
   EASY_MALLOC(thread_logs, a.size_thread_log * a.nb_threads);
-  memset(thread_logs, 0, a.size_metadata * sizeof(rep::log_entry_t));
+  memset(thread_logs, 0, a.size_thread_log * a.nb_threads * sizeof(rep::log_entry_t));
   EASY_MALLOC(heap, a.heap_size);
   g_args = a;
   return 0;
@@ -87,6 +87,7 @@ int rep::forward_link::replay()
   rep::log_entry_t link_start;
   rep::log_entry_t* link_pos = &link_start; // first position out of the log
   uint64_t tsToRep = (uint64_t)-1; // initiates tsToRep with the biggest number (unsigned)
+  // long nbWrites = 0;
 
   link_start.commit_ts = 0;
   link_start.link_next = nullptr;
@@ -108,23 +109,18 @@ int rep::forward_link::replay()
 
     rep::log_entry_t *start = log_start;
 
-    if (!link_start.link_next)
-      link_start.link_next = start;
-    else // check if this thread has a smaller TS than threadToRep
+    while ( !isbit63one(start->commit_ts) ) // assumes well formed log
     {
-      while ( !isbit63one(start->commit_ts) ) // assumes well formed log
-      {
-        assert(start <= log_end && start->addr != 0 && "Log is not well formed");
-        start++; // Jumps addr+val to the addr in the next position
-        // TODO: no wrap-arounds implemented
-      }
+      assert(start <= log_end && start->addr != 0 && "Log is not well formed");
+      start++; // Jumps addr+val to the addr in the next position
+      // TODO: no wrap-arounds implemented
+    }
 
-      uint64_t ts = zeroBit63(start->commit_ts);
-      if ( ts < tsToRep )
-      {
-        tsToRep = ts;
-        link_start.link_next = start;
-      }
+    uint64_t ts = zeroBit63(start->commit_ts);
+    if ( ts < tsToRep )
+    {
+      tsToRep = ts;
+      link_start.link_next = log_start;
     }
   }
 
@@ -136,6 +132,7 @@ int rep::forward_link::replay()
     if (!log_start)
       break; // there is nothing else left to replay
     
+    // TODO: I think the last TX is not being replayed
     while (!isbit63one(log_start->commit_ts))
     {
       // checks if the address is valid
@@ -143,14 +140,22 @@ int rep::forward_link::replay()
       
       // writes back to PM
       *((uint64_t*)log_start->addr) = log_start->val;
+      flush((uint64_t*)log_start->addr);
 
       log_start++; // jumps addr+val
       // TODO: no wrap-arounds implemented
+      // nbWrites++;
     }
     link_pos = log_start; // next tx
     nbReps++;
+
     // TODO: the replayer may want to truncate log space to unblock workers doing write transactions
+    // emulates flush of metadata that flags the workers that there is more log space
+    flush((uint64_t*)log_start);
+    flush_barrier();
   }
+
+  // printf("nbWrites = %li\n", nbWrites);
 
   delete [] ptr_l;
   delete [] ptr_l_end;

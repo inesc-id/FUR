@@ -17,7 +17,7 @@ if __name__ == "__main__":
 
   # Here set the possible values for each parameter (pass a list with valid values).
   # Note the experiment will run all possible combinations of arguments.
-  params.set_params("-u", [0, 10, 50])
+  params.set_params("-u", [1, 10, 50])
   # params.set_params("-d", [2000])
   params.set_params("-d", [600000])
   params.set_params("-i", [50000, 200000, 1000000])
@@ -59,7 +59,7 @@ if __name__ == "__main__":
   # Label names in the plots
   name_map = {
     "psi" : "DUMBO-SI",
-    "psi-strong" : "DUMBO-Ser",
+    "psi-strong" : "DUMBO-Opa",
     "pisces" : "Pisces",
     "htm-sgl" : "HTM",
     "htm-sgl-sr" : "HTM+sus",

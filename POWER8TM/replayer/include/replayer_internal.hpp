@@ -2,13 +2,16 @@
 #include "replayer.hpp"
 #include <cstdint>
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <errno.h>
 
 #ifndef EASY_MALLOC
 #define ARCH_CACHE_LINE_SIZE 128
 #define MALLOC_FN(size) aligned_alloc(ARCH_CACHE_LINE_SIZE, (size))
 #define EASY_MALLOC(var, nb) \
   if ((var = (__typeof__(var))MALLOC_FN(sizeof(__typeof__(*(var)))*(nb))) == NULL) \
-    perror("malloc");
+    fprintf(stderr, "malloc(%zu): %s\n", sizeof(__typeof__(*(var)))*(nb), strerror(errno));
 #endif /* EASY_MALLOC */
 
 #define bit63one              0x8000000000000000lu
@@ -22,8 +25,29 @@
 #define load_fence()          __atomic_thread_fence(__ATOMIC_ACQUIRE)
 #define atomic_STORE(ptr,val) __atomic_store_n(&(ptr), val, __ATOMIC_RELEASE)
 #define atomic_LOAD(ptr)      __atomic_load_n(&(ptr), __ATOMIC_ACQUIRE)
+
 #define __dcbst(base, index)  \
   __asm__ ("dcbst %0, %1" : /*no result*/ : "b%" (index), "r" (base) : "memory")
+
+// - n=10 (43ns, preprint do Izrael*)
+// - n=46 (eurosys'22)
+// - n=66 (TPP -> extrapolation to PM/CXL)
+extern int pm_delay /* = 46 */;
+extern thread_local int nb_cache_lines;
+
+#define flush(_cache_line_addr) ({ \
+  nb_cache_lines ++; \
+  __dcbst(_cache_line_addr, 0); \
+})
+
+#define flush_barrier() ({\
+  volatile int i, j; \
+  for (i = 0; i < nb_cache_lines; ++i) \
+    for (j = 0; j < pm_delay; ++j) \
+      { __asm__ volatile ("nop" ::: "memory"); } \
+  __asm__ volatile ("sync" ::: "memory"); \
+  nb_cache_lines = 0; \
+})
 
 namespace rep
 {

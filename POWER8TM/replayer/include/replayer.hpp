@@ -11,6 +11,7 @@ struct args_t
   long heap_size; 
   int min_writes;
   int max_writes;
+  int pm_delay;
   long seed;
 };
 
