@@ -12,8 +12,8 @@ if __name__ == "__main__":
 
   # Here set the possible values for each parameter (pass a list with valid values).
   # Note the experiment will run all possible combinations of arguments.
-  params.set_params("-d", [0, 10, 46, 66])
-  params.set_params("-n", [1, 2, 8, 16])
+  params.set_params("-d", [70])
+  params.set_params("-n", [1, 2, 8, 16, 24, 32, 48, 64])
 
   # Set the number of times each run is repeated (for average/stardard deviation computation).
   nb_samples = 10
@@ -79,11 +79,11 @@ if __name__ == "__main__":
 
     # Creates the plots. In this case we want 1 plot for each combination <"-u","-i">.
     # for-each "-u" value
-    for n in params.params["-n"]:
+    for d in params.params["-d"]:
       # if backend == "htm-sgl" or backend == "p8tm-si-v2": # NOTE: this serves to ignore some lines in the plots
       #   continue
-      if n not in datasets_thr:
-        datasets_thr[n] = []
+      if d not in datasets_thr:
+        datasets_thr[d] = []
 
       # Filters the data for the plot. In this case we are taking "-n" in the x-axis and
       # "-d"/"time" in the y-axis. Use a lambda function to take the required data into
@@ -92,11 +92,11 @@ if __name__ == "__main__":
       ds = BackendDataset(
         name_map[backend],
         [f"{data_folder}/{backend}-s{s}.csv" for s in range(nb_samples)],
-        lambda e: e["-d"] * 4.5, "Delay PM (ns)",
+        lambda e: e["-n"], "Number of per-thread write logs",
         lambda e: e["latency"], "Replay duration (ns/TX)",
-        {"-n": n}
+        {"-d": d}
       )
-      datasets_thr[n] += [ds]
+      datasets_thr[d] += [ds]
     
   # this for-loop does the actual plotting (in the previous ones we are just
   # setting up the data that we want to plot).
