@@ -126,7 +126,7 @@ static inline void fetch_log(int threadId)
   write_log_thread[(writeLogEnd + 8) & (gs_appInfo->info.allocLogSize - 1)] = 0;
 }
 
-void on_before_htm_begin_pcwm2(int threadId)
+void on_before_htm_begin_pcwm2(int threadId, int ro)
 {
   onBeforeWrite = on_before_htm_write;
   onBeforeHtmCommit = on_before_htm_commit;
