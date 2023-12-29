@@ -34,10 +34,10 @@ if __name__ == "__main__":
   # a benchmark (allows to compare with "exotic" implementations).
   locations = [
     "../POWER8TM/benchmarks/datastructures",
-    # "../POWER8TM/benchmarks/datastructures",
-    # "../POWER8TM/benchmarks/datastructures",
-    # "../POWER8TM/benchmarks/datastructures",
-    # "../power8tm-pisces/benchmarks/datastructures",
+    "../POWER8TM/benchmarks/datastructures",
+    "../POWER8TM/benchmarks/datastructures",
+    "../POWER8TM/benchmarks/datastructures",
+    "../power8tm-pisces/benchmarks/datastructures",
     # "../POWER8TM/benchmarks/datastructures",
     # "../POWER8TM/benchmarks/datastructures",
     # "../POWER8TM/benchmarks/datastructures",
@@ -46,11 +46,11 @@ if __name__ == "__main__":
   # The backend name goes here (don't forget to match the position in the
   # "backends" list with the position in the "locations" list)
   backends = [
-    # "psi",
-    # "psi-strong",
-    # "spht",
+    "psi",
+    "psi-strong",
+    "spht",
     "spht-log-linking",
-    # "pisces",
+    "pisces",
     # "htm-sgl",
     # "htm-sgl-sr",
     # "si-htm",
@@ -94,7 +94,7 @@ if __name__ == "__main__":
         )
       
       # This line starts the benchmark and tests all combinations parameters.
-      data.run_sample(params) # NOTE: comment if you already have the data and just want to refresh the plots.
+      #data.run_sample(params) # NOTE: comment if you already have the data and just want to refresh the plots.
 
       # Parses the stdout into a .csv that can be used for the plots.
       # Check the tests_py/parse_sol.py for the regular expressions that are catched in the stdout.
