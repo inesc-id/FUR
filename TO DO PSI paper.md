@@ -1,3 +1,12 @@
+Latency profile:
+- adaptar parse_sol.py para ter os novos campos, e no test_H1_H2 a parte comentada do profile plot
+- spht
+- si-htm
+- pisces
+- replicar para psi-strong e spht-ll
+
+
+
 TO DO PSI paper:
 - rever comentários no overleaf
 - foco em SI -> generalizar

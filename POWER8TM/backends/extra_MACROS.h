@@ -99,10 +99,10 @@ typedef struct padded_pointer {
 } __attribute__((aligned(CACHE_LINE_SIZE))) padded_pointer_t;
 
 typedef struct padded_statistics {
-    unsigned long total_time;
-    unsigned long wait_time;
-    unsigned long read_commits;
-    unsigned long htm_commits;
+    unsigned long total_time;   //Total execution time (entire benchmark)
+    unsigned long wait_time;    //Inner wait loop of isolation wait (ROT_QUIESCENCE_WAIT)
+    unsigned long read_commits; //#commits of read-only txs
+    unsigned long htm_commits;  //#commits of htm txs
     unsigned long htm_conflict_aborts;
     unsigned long htm_self_conflicts;
     unsigned long htm_trans_conflicts;
@@ -111,7 +111,7 @@ typedef struct padded_statistics {
     unsigned long htm_capacity_aborts;
     unsigned long htm_persistent_aborts;
     unsigned long htm_other_aborts;
-    unsigned long rot_commits;
+    unsigned long rot_commits;    //#commits of ROT txs
     unsigned long rot_conflict_aborts;
     unsigned long rot_self_conflicts;
     unsigned long rot_trans_conflicts;
@@ -122,11 +122,14 @@ typedef struct padded_statistics {
     unsigned long rot_capacity_aborts;
     unsigned long rot_other_aborts;
     unsigned long gl_commits;
-    unsigned long commit_time;
+    unsigned long commit_time;    //time from htmBegin to htmCommit
     unsigned long abort_time;
-    unsigned long sus_time;
-    unsigned long flush_time;
-    unsigned long wait2_time;
+    unsigned long sus_time;       //time from htmSuspend to htmResume (contains Isolation wait)
+    unsigned long flush_time;     //time to flush redo log entries (in Dumbo, exclusing time to issue flush inside sus-res)
+    unsigned long dur_commit_time;     //time from persistent redo logs until the tx is durable (and can return)
+    unsigned long readonly_durability_wait_time;     //time that a readonly tx must wait to ensure that its reads are durable
+    unsigned long tx_time_upd_txs;
+    unsigned long tx_time_ro_txs;
     char suffixPadding[CACHE_LINE_SIZE];
 } __attribute__((aligned(CACHE_LINE_SIZE))) padded_statistics_t;
 
@@ -571,7 +574,10 @@ else /* handles warp around case */ \
   unsigned long abort_time = 0; \
   unsigned long sus_time = 0; \
   unsigned long flush_time = 0; \
-  unsigned long wait2_time = 0; \
+  unsigned long dur_commit_time = 0; \
+  unsigned long readonly_durability_wait_time = 0; \
+  unsigned long tx_time_upd_txs = 0; \
+  unsigned long tx_time_ro_txs = 0; \
   int i = 0; \
   for (; i < 80; i++) \
   { \
@@ -601,7 +607,10 @@ else /* handles warp around case */ \
     commit_time += stats_array[i].commit_time; \
     sus_time += stats_array[i].sus_time; \
     flush_time += stats_array[i].flush_time; \
-    wait2_time += stats_array[i].wait2_time; \
+    dur_commit_time += stats_array[i].dur_commit_time; \
+    readonly_durability_wait_time += stats_array[i].readonly_durability_wait_time; \
+    tx_time_upd_txs += stats_array[i].tx_time_upd_txs; \
+    tx_time_ro_txs += stats_array[i].tx_time_ro_txs; \
     abort_time += stats_array[i].abort_time; \
   } \
   printf(\
@@ -611,7 +620,10 @@ else /* handles warp around case */ \
 "Total wait time: %lu\n" \
 "Total sus time: %lu\n" \
 "Total flush time: %lu\n" \
-"Total wait2 time: %lu\n" \
+"Total dur_commit time: %lu\n" \
+"Total RO_dur_wait time: %lu\n" \
+"Total upd tx time: %lu\n" \
+"Total RO tx time: %lu\n" \
 "Total commits: %lu\n" \
   "\tRead commits: %lu\n" \
   "\tHTM commits:  %lu\n" \
@@ -641,7 +653,10 @@ else /* handles warp around case */ \
   wait_time, \
   sus_time, \
   flush_time, \
-  wait2_time, \
+  dur_commit_time, \
+  readonly_durability_wait_time, \
+  tx_time_upd_txs, \
+  tx_time_ro_txs, \
   read_commits+htm_commits+rot_commits+gl_commits, \
   read_commits, \
   htm_commits, \

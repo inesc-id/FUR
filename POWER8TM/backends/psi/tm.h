@@ -149,6 +149,14 @@
 		else \
 				state_snapshot[q_args.index] = 0; \
   } \
+  max_cache_line[q_args.tid].value = 0; \
+  q_args.logptr = loc_var.mylogpointer_snapshot;\
+  flush_log_entries_no_wait( \
+    loc_var.mylogpointer, \
+    q_args.logptr, \
+    loc_var.mylogstart, \
+    loc_var.mylogend \
+  );\
 	for ( q_args.index = 0; q_args.index < q_args.num_threads; q_args.index++ ) \
   { \
 		if ( q_args.index == q_args.tid ) \
@@ -161,15 +169,6 @@
 	} \
   READ_TIMESTAMP(q_args.end_wait_time); \
   stats_array[q_args.tid].wait_time += q_args.end_wait_time - q_args.start_wait_time; \
-  max_cache_line[q_args.tid].value = 0; \
-  q_args.logptr = loc_var.mylogpointer_snapshot;\
-  flush_log_entries_no_wait( \
-    loc_var.mylogpointer, \
-    q_args.logptr, \
-    loc_var.mylogstart, \
-    loc_var.mylogend \
-  );\
-  stats_array[q_args.tid].flush_time += q_args.start_wait_time - q_args.end_wait_time; \
 };
 
 
@@ -180,6 +179,7 @@
   { \
 	  __TM_suspend(); \
     READ_TIMESTAMP(start_sus);\
+    stats_array[q_args.tid].tx_time_upd_txs += start_sus - start_tx;\
     __thread long myOldActiveState = ts_state[q_args.tid].value; \
     UPDATE_TS_STATE(NON_DURABLE); /* committing rot*/ \
     order_ts[q_args.tid].value = atomicInc();\
@@ -191,7 +191,6 @@
 		__TM_end(); \
     READ_TIMESTAMP(end_tx); \
     stats_array[q_args.tid].commit_time += end_tx - start_tx;\
-    READ_TIMESTAMP(start_flush);\
     /* flush_log_commit_marker( \
       loc_var.mylogpointer, \
       order_ts[q_args.tid].value, \
@@ -199,26 +198,27 @@
       loc_var.mylogend \
     ); */ \
     if (((start_flush - q_args.start_wait_time)/delay_per_cache_line) < max_cache_line[q_args.tid].value) \
-  {\
-    emulate_pm_slowdown_foreach_line(  /* 0); */ \
-    max_cache_line[q_args.tid].value /* computed number of cache-lines to flush*/ \
-    - ((q_args.end_wait_time - q_args.start_wait_time)/delay_per_cache_line) /* discount of the wait phase */ );\
-  }\
-    SEQL_START(order_ts[q_args.tid].value, q_args.tid, ((uint64_t)(loc_var.mylogpointer_snapshot - loc_var.mylogstart))); \
-    SEQL_COMMIT(order_ts[q_args.tid].value, (loc_var.mylogpointer - loc_var.mylogstart)); \
-    READ_TIMESTAMP(end_flush);\
-    stats_array[q_args.tid].flush_time += end_flush-start_flush;\
+    {\
+      READ_TIMESTAMP(start_flush);\
+      emulate_pm_slowdown_foreach_line(  /* 0); */ \
+      max_cache_line[q_args.tid].value /* computed number of cache-lines to flush*/ \
+      - ((q_args.end_wait_time - q_args.start_wait_time)/delay_per_cache_line) /* discount of the wait phase */ );\
+      READ_TIMESTAMP(end_flush);\
+      stats_array[q_args.tid].flush_time += end_flush-start_flush;\
+    }\
     long num_threads = global_numThread; \
     READ_TIMESTAMP(start_wait2);\
-  for(int index=0; index < num_threads; index++) \
-  { \
-    if(index == q_args.tid) \
-      continue; \
-    while(get_state(dur_state[index].value) == NON_DURABLE && get_ts_from_state(ts_state[index].value) < get_ts_from_state(myOldActiveState)) \
-    { cpu_relax(); } \
-	} \
+    for(int index=0; index < num_threads; index++) \
+    { \
+      if(index == q_args.tid) \
+        continue; \
+      while(get_state(dur_state[index].value) == NON_DURABLE && get_ts_from_state(ts_state[index].value) < get_ts_from_state(myOldActiveState)) \
+      { cpu_relax(); } \
+    } \
+    SEQL_START(order_ts[q_args.tid].value, q_args.tid, ((uint64_t)(loc_var.mylogpointer_snapshot - loc_var.mylogstart))); \
+    SEQL_COMMIT(order_ts[q_args.tid].value, (loc_var.mylogpointer - loc_var.mylogstart)); \
     READ_TIMESTAMP(end_wait2); \
-    stats_array[q_args.tid].wait2_time += end_wait2 - start_wait2; \
+    stats_array[q_args.tid].dur_commit_time += end_wait2 - start_wait2; \
 		UPDATE_STATE(INACTIVE); /* inactive rot*/ \
 		stats_array[q_args.tid].rot_commits++; \
 	} \
@@ -233,6 +233,8 @@
 };
 
 # define RELEASE_READ_LOCK(){\
+  READ_TIMESTAMP(end_tx); \
+  stats_array[q_args.tid].tx_time_ro_txs += end_tx - start_tx;\
   rwmb();\
   long myOldActiveState = ts_state[q_args.tid].value; \
   UPDATE_STATE(INACTIVE);\
@@ -251,7 +253,7 @@
 	} \
   /*printf("RO spins = %d\n", spins); */\
   READ_TIMESTAMP(end_wait2);\
-  stats_array[q_args.tid].wait2_time += end_wait2-start_wait2;\
+  stats_array[q_args.tid].readonly_durability_wait_time += end_wait2-start_wait2;\
 } \
 
 //-------------------------------------------------------------------------------
