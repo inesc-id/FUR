@@ -1,7 +1,7 @@
 Latency profile:
-- adaptar parse_sol.py para ter os novos campos, e no test_H1_H2 a parte comentada do profile plot
-- spht
-- si-htm
+- adaptar no test_H1_H2 a parte comentada do profile plot
+- spht: aproveitar instrumentacao detailed_profiling
+- si-htm: idem
 - pisces
 - replicar para psi-strong e spht-ll
 
