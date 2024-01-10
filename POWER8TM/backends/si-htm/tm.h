@@ -312,10 +312,11 @@ extern uint64_t *SI_wait_spins;
 
 
 # define RELEASE_WRITE_LOCK(){ \
+	unsigned long start_sus;\
+	READ_TIMESTAMP(start_sus);\
+	stats_array[q_args.tid].tx_time_upd_txs += start_sus - start_tx;\
 	if(local_exec_mode == 1){ \
 	  __TM_suspend(); \
-	  READ_TIMESTAMP(start_sus);\
-	  stats_array[q_args.tid].tx_time_upd_txs += start_sus - start_tx;\
 	  UPDATE_TS_STATE(NON_DURABLE); /* committing rot*/ \
       rmb(); \
 	  __TM_resume(); \
