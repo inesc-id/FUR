@@ -237,6 +237,7 @@
 		} \
 		break; \
 	} \
+	READ_TIMESTAMP(start_tx); \
 }; \
 
 
@@ -312,9 +313,10 @@ extern uint64_t *SI_wait_spins;
 
 # define RELEASE_WRITE_LOCK(){ \
 	if(local_exec_mode == 1){ \
-  READ_TIMESTAMP(start_sus);\
 	  __TM_suspend(); \
-	    UPDATE_TS_STATE(NON_DURABLE); /* committing rot*/ \
+	  READ_TIMESTAMP(start_sus);\
+	  stats_array[q_args.tid].tx_time_upd_txs += start_sus - start_tx;\
+	  UPDATE_TS_STATE(NON_DURABLE); /* committing rot*/ \
       rmb(); \
 	  __TM_resume(); \
     READ_TIMESTAMP(end_sus);\
@@ -336,6 +338,8 @@ extern uint64_t *SI_wait_spins;
 };
 
 # define RELEASE_READ_LOCK(){\
+  READ_TIMESTAMP(end_tx); \
+  stats_array[q_args.tid].tx_time_ro_txs += end_tx - start_tx;\
   rwmb();\
   UPDATE_STATE(INACTIVE);\
   stats_array[local_thread_id].read_commits++;\
