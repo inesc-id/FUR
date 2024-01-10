@@ -53,7 +53,7 @@ static volatile uint64_t incAfterTx = 0;
 static volatile uint64_t incWaiting = 0;
 static volatile uint64_t incFlushing = 0;
 static volatile uint64_t incScanning = 0;
-static volatile uint64_t incTX = 0;
+static volatile uint64_t incTXTime_upd = 0;
 
 void install_bindings_pcwm3()
 {
@@ -74,7 +74,7 @@ void state_gather_profiling_info_pcwm3(int threadId)
   __sync_fetch_and_add(&incWaiting, timeWaiting);
   __sync_fetch_and_add(&incFlushing, timeFlushing);
   __sync_fetch_and_add(&incScanning, timeScanning);
-  __sync_fetch_and_add(&incTX, timeTX);
+  __sync_fetch_and_add(&incTXTime_upd, timeTX);
   __sync_fetch_and_add(&timeAbortedTX_global, timeAbortedTX);
 
   timeSGL = 0;
@@ -109,7 +109,7 @@ void state_fprintf_profiling_info_pcwm3(char *filename)
               "TIME_SCANNING");
   }
   fprintf(fp, "%i\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\n", gs_appInfo->info.nbThreads,
-    incCommitsPhases, incTimeTotal, incAfterTx, incTX, incWaiting, timeSGL_global, timeAbortedTX_global, 0L,
+    incCommitsPhases, incTimeTotal, incAfterTx, incTXTime_upd, incWaiting, timeSGL_global, timeAbortedTX_global, 0L,
     incFlushing, incScanning);
 }
 

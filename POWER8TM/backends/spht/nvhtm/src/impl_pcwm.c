@@ -33,19 +33,30 @@ static volatile __thread uint64_t timeWaitingTS1 = 0;
 static volatile __thread uint64_t timeWaitingTS2 = 0;
 static volatile __thread uint64_t timeWaiting = 0;
 static volatile __thread uint64_t timeFlushing = 0;
-static volatile __thread uint64_t timeTX = 0;
+static volatile __thread uint64_t timeTX_upd = 0;
+static volatile __thread uint64_t timeTX_ro = 0;
+static volatile __thread uint64_t ro_durability_wait_time = 0;
+static volatile __thread uint64_t dur_commit_time = 0;
 
 static __thread int readonly_tx;
 
-static volatile __thread uint64_t countCommitPhases = 0;
+static volatile __thread uint64_t countUpdCommitPhases = 0;
+static volatile __thread uint64_t countROCommitPhases = 0;
 
 // static volatile uint64_t incNbSamples = 0;
 static volatile uint64_t incCommitsPhases = 0;
+static volatile uint64_t incROCommitsPhases = 0;
 static volatile uint64_t incTimeTotal = 0;
 static volatile uint64_t incAfterTx = 0;
 static volatile uint64_t incWaiting = 0;
 static volatile uint64_t incFlushing = 0;
-static volatile uint64_t incTX = 0;
+static volatile uint64_t incTXTime_upd = 0;
+static volatile uint64_t incTXTime_ro = 0;
+static volatile uint64_t inc_ro_durability_wait_time = 0;
+static volatile uint64_t inc_dur_commit_time = 0;
+
+
+
 
 #ifdef DETAILED_BREAKDOWN_PROFILING
 /* Breakdown of the main stages (JOAO) */
@@ -88,23 +99,40 @@ void init_stats_pcwm() {
 
 void state_gather_profiling_info_pcwm(int threadId)
 {
-  __sync_fetch_and_add(&incCommitsPhases, countCommitPhases);
+  __sync_fetch_and_add(&incCommitsPhases, countUpdCommitPhases);
+  __sync_fetch_and_add(&incROCommitsPhases, countROCommitPhases);
   // __sync_fetch_and_add(&incNbSamples, nbSamplesDone);
   __sync_fetch_and_add(&incTimeTotal, timeTotal);
   __sync_fetch_and_add(&incAfterTx, timeAfterTXSuc);
   __sync_fetch_and_add(&incWaiting, timeWaiting);
   __sync_fetch_and_add(&incFlushing, timeFlushing);
-  __sync_fetch_and_add(&incTX, timeTX);
+  __sync_fetch_and_add(&incTXTime_upd, timeTX_upd);
+  __sync_fetch_and_add(&incTXTime_ro, timeTX_ro);
+  __sync_fetch_and_add(&inc_dur_commit_time, dur_commit_time);
+  __sync_fetch_and_add(&inc_ro_durability_wait_time, ro_durability_wait_time);
   __sync_fetch_and_add(&timeSGL_global, timeSGL);
   __sync_fetch_and_add(&timeAbortedTX_global, timeAbortedTX);
 
+  stats_array[threadId].htm_commits = countUpdCommitPhases;
+  stats_array[threadId].read_commits = countROCommitPhases;
+  stats_array[threadId].flush_time = timeFlushing;
+  stats_array[threadId].tx_time_upd_txs = timeTX_upd;
+  stats_array[threadId].tx_time_ro_txs = timeTX_ro;
+  stats_array[threadId].dur_commit_time = dur_commit_time;
+  stats_array[threadId].readonly_durability_wait_time = ro_durability_wait_time;
+  stats_array[threadId].abort_time = timeAbortedTX;
+
   timeSGL = 0;
   timeAbortedTX = 0;
-  timeTX = 0;
+  timeTX_upd = 0;
+  timeTX_ro = 0;
+  dur_commit_time = 0;
+  ro_durability_wait_time = 0;
   timeAfterTXSuc = 0;
   timeWaiting = 0;
   timeTotal = 0;
-  countCommitPhases = 0;
+  countUpdCommitPhases = 0;
+  countROCommitPhases = 0;
 }
 
 void state_fprintf_profiling_info_pcwm(char *filename)
@@ -129,7 +157,7 @@ void state_fprintf_profiling_info_pcwm(char *filename)
               "TIME_FLUSH_LOG");
   }
   fprintf(fp, "%i\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\n", gs_appInfo->info.nbThreads,
-    incCommitsPhases, incTimeTotal, incAfterTx, incTX, incWaiting, timeSGL_global, timeAbortedTX_global, 0L, incFlushing);
+    incCommitsPhases, incTimeTotal, incAfterTx, incTXTime_upd, incWaiting, timeSGL_global, timeAbortedTX_global, 0L, incFlushing);
 
   fclose(fp);
 
@@ -251,7 +279,11 @@ static inline void smart_close_log_pcwm(uint64_t marker, uint64_t *marker_pos)
 
 void on_after_htm_commit_pcwm(int threadId)
 {
-  INC_PERFORMANCE_COUNTER(timeTotalTS1, timeAfterTXTS1, timeTX);
+  if (readonly_tx)
+    INC_PERFORMANCE_COUNTER(timeTotalTS1, timeAfterTXTS1, timeTX_ro);
+  else
+    INC_PERFORMANCE_COUNTER(timeTotalTS1, timeAfterTXTS1, timeTX_upd);
+
   int didTheFlush = 0;
 
   // gs_ts_array[threadId].pcwm.ts = readClockVal; // currently has the TS of begin
@@ -390,6 +422,15 @@ outerLoop:
   G_next[threadId].log_ptrs.write_log_next = (writeLogEnd + 1) & (gs_appInfo->info.allocLogSize - 1);
 ret:
 
+if (readonly_tx) {
+  MEASURE_INC(countROCommitPhases);
+} else {
+  uint64_t ts2;
+  MEASURE_TS(ts2);
+  INC_PERFORMANCE_COUNTER(timeAfterTXTS1, ts2, dur_commit_time);
+  MEASURE_INC(countUpdCommitPhases);
+}
+
 #ifdef DETAILED_BREAKDOWN_PROFILING
   if (!is_readonly_tx) {
     uint64_t ts2;
@@ -404,7 +445,7 @@ ret:
   }
 #endif
 
-  MEASURE_INC(countCommitPhases);
+  
 }
 
 void RO_wait_for_durable_reads(int threadId, uint64_t myPreCommitTS)
@@ -412,9 +453,7 @@ void RO_wait_for_durable_reads(int threadId, uint64_t myPreCommitTS)
   uint64_t ts1, ts2;
   uint64_t otherTS;
 
-#ifdef DETAILED_BREAKDOWN_PROFILING
-  MEASURE_TS(ts1);
-#endif
+MEASURE_TS(ts1);
   
   for (int i = 0; i < gs_appInfo->info.nbThreads; i++) {
     if (i!=threadId) {
@@ -426,8 +465,10 @@ void RO_wait_for_durable_reads(int threadId, uint64_t myPreCommitTS)
     }
   }
 
+MEASURE_TS(ts2);
+INC_PERFORMANCE_COUNTER(ts1, ts2, ro_durability_wait_time);
+
 #ifdef DETAILED_BREAKDOWN_PROFILING
-  MEASURE_TS(ts2);
   int c = ro_durability_wait_count[threadId];
   if (c < MAX_PROFILE_COUNT) {
     ro_durability_wait_duration[threadId][c] = ts2 - ts1;

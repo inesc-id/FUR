@@ -42,7 +42,7 @@ static volatile __thread uint64_t timeWaitingTS2 = 0;
 static volatile __thread uint64_t timeWaiting = 0;
 static volatile __thread uint64_t timeFlushing = 0;
 static volatile __thread uint64_t timeScanning = 0;
-static volatile __thread uint64_t timeTX = 0;
+static volatile __thread uint64_t timeTX_upd = 0;
 
 static volatile __thread uint64_t countCommitPhases = 0;
 
@@ -52,7 +52,7 @@ static volatile uint64_t incAfterTx = 0;
 static volatile uint64_t incWaiting = 0;
 static volatile uint64_t incFlushing = 0;
 static volatile uint64_t incScanning = 0;
-static volatile uint64_t incTX = 0;
+static volatile uint64_t incTXTime_upd = 0;
 
 typedef struct {
   uint64_t a[4];
@@ -81,12 +81,12 @@ void state_gather_profiling_info_pcwm2(int threadId)
   __sync_fetch_and_add(&incWaiting, timeWaiting);
   __sync_fetch_and_add(&incFlushing, timeFlushing);
   __sync_fetch_and_add(&incScanning, timeScanning);
-  __sync_fetch_and_add(&incTX, timeTX);
+  __sync_fetch_and_add(&incTXTime_upd, timeTX_upd);
   __sync_fetch_and_add(&timeAbortedTX_global, timeAbortedTX);
 
   timeSGL = 0;
   timeAbortedTX = 0;
-  timeTX = 0;
+  timeTX_upd = 0;
   timeAfterTXSuc = 0;
   timeWaiting = 0;
   timeTotal = 0;
@@ -116,7 +116,7 @@ void state_fprintf_profiling_info_pcwm2(char *filename)
               "TIME_SCANNING");
   }
   fprintf(fp, "%i\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\n", gs_appInfo->info.nbThreads,
-    incCommitsPhases, incTimeTotal, incAfterTx, incTX, incWaiting, timeSGL_global, timeAbortedTX_global, 0L,
+    incCommitsPhases, incTimeTotal, incAfterTx, incTXTime_upd, incWaiting, timeSGL_global, timeAbortedTX_global, 0L,
     incFlushing, incScanning);
 }
 
@@ -274,7 +274,7 @@ static inline void smart_close_log_pcwm(uint64_t marker, uint64_t *marker_pos)
 
 void on_after_htm_commit_pcwm2(int threadId)
 {
-  INC_PERFORMANCE_COUNTER(timeTotalTS1, timeAfterTXTS1, timeTX);
+  INC_PERFORMANCE_COUNTER(timeTotalTS1, timeAfterTXTS1, timeTX_upd);
   int didTheFlush = 0;
   __m256i storeStableData;
 

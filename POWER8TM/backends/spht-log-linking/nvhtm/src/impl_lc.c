@@ -19,7 +19,7 @@ static volatile __thread
 static volatile __thread uint64_t timeWaitingTS1 = 0;
 static volatile __thread uint64_t timeWaitingTS2 = 0;
 static volatile __thread uint64_t timeWaiting = 0;
-static volatile __thread uint64_t timeTX = 0;
+static volatile __thread uint64_t timeTX_upd = 0;
 
 static volatile __thread uint64_t countCommitPhases = 0;
 
@@ -27,7 +27,7 @@ static volatile uint64_t incCommitsPhases = 0;
 static volatile uint64_t incTimeTotal = 0;
 static volatile uint64_t incAfterTx = 0;
 static volatile uint64_t incWaiting = 0;
-static volatile uint64_t incTX = 0;
+static volatile uint64_t incTXTime_upd = 0;
 
 void install_bindings_lc()
 {
@@ -43,12 +43,12 @@ void state_gather_profiling_info_lc(int threadId)
   __sync_fetch_and_add(&incTimeTotal, timeTotal);
   __sync_fetch_and_add(&incAfterTx, timeAfterTXSuc);
   __sync_fetch_and_add(&incWaiting, timeWaiting);
-  __sync_fetch_and_add(&incTX, timeTX);
+  __sync_fetch_and_add(&incTXTime_upd, timeTX_upd);
   __sync_fetch_and_add(&timeAbortedTX_global, timeAbortedTX);
 
   timeSGL = 0;
   timeAbortedTX = 0;
-  timeTX = 0;
+  timeTX_upd = 0;
   timeAfterTXSuc = 0;
   timeWaiting = 0;
   timeTotal = 0;
@@ -76,7 +76,7 @@ void state_fprintf_profiling_info_lc(char *filename)
               "TIME_AFTER_TX_FAIL");
   }
   fprintf(fp, "%i\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\n", gs_appInfo->info.nbThreads,
-    incCommitsPhases, incTimeTotal, incAfterTx, incTX, incWaiting, timeSGL_global, timeAbortedTX_global, 0L);
+    incCommitsPhases, incTimeTotal, incAfterTx, incTXTime_upd, incWaiting, timeSGL_global, timeAbortedTX_global, 0L);
 }
 
 static inline void fetch_log(int threadId)
@@ -114,7 +114,7 @@ void on_before_htm_commit_lc(int threadId)
 
 void on_after_htm_commit_lc(int threadId)
 {
-  INC_PERFORMANCE_COUNTER(timeTotalTS1, timeAfterTXTS1, timeTX);
+  INC_PERFORMANCE_COUNTER(timeTotalTS1, timeAfterTXTS1, timeTX_upd);
 
   if (writeLogStart == writeLogEnd) {
     goto ret;

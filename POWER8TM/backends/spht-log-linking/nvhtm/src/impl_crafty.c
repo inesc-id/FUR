@@ -33,7 +33,7 @@ static __thread jmp_buf *respawn_point;
 static volatile __thread uint64_t timeWaitingTS1 = 0;
 static volatile __thread uint64_t timeWaitingTS2 = 0;
 static volatile __thread uint64_t timeWaiting = 0;
-static volatile __thread uint64_t timeTX = 0;
+static volatile __thread uint64_t timeTX_upd = 0;
 static volatile __thread uint64_t redoHTMCommits = 0;
 static volatile __thread uint64_t redoFallbacks = 0;
 static volatile __thread uint64_t redoAborts = 0;
@@ -55,7 +55,7 @@ static volatile uint64_t incNbTransactions = 0;
 static volatile uint64_t incAfterTxSuc = 0;
 static volatile uint64_t incAfterTxFail = 0;
 static volatile uint64_t incWaiting = 0;
-static volatile uint64_t incTX = 0;
+static volatile uint64_t incTXTime_upd = 0;
 static volatile uint64_t incRedoHTMCommits = 0;
 static volatile uint64_t incRedoFallbacks = 0;
 static volatile uint64_t incRedoAborts = 0;
@@ -85,7 +85,7 @@ void state_gather_profiling_info_crafty(int threadId)
   __sync_fetch_and_add(&incNbTransactions, nbTransactions);
   __sync_fetch_and_add(&incAfterTxSuc, timeAfterTXSuc);
   __sync_fetch_and_add(&incAfterTxFail, timeAfterTXFail);
-  __sync_fetch_and_add(&incTX, timeTX);
+  __sync_fetch_and_add(&incTXTime_upd, timeTX_upd);
   __sync_fetch_and_add(&incWaiting, timeWaiting);
   __sync_fetch_and_add(&incRedoHTMCommits, redoHTMCommits);
   __sync_fetch_and_add(&incRedoFallbacks, redoFallbacks);
@@ -140,7 +140,7 @@ void state_fprintf_profiling_info_crafty(char *filename)
               "REDO_ABORTS");
   }
   fprintf(fp, "%i\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\n", gs_appInfo->info.nbThreads,
-    incCommitsPhases, incTimeTotal, incAfterTxSuc, incTX, incWaiting, timeSGL_global, timeAbortedTX_global, incAfterTxFail,
+    incCommitsPhases, incTimeTotal, incAfterTxSuc, incTXTime_upd, incWaiting, timeSGL_global, timeAbortedTX_global, incAfterTxFail,
     incRedoHTMCommits, incRedoFallbacks, incRedoAborts);
 }
 
@@ -301,7 +301,7 @@ void on_after_htm_commit_crafty(int threadId)
   if (writeLogStart == writeLogEnd) {
     goto complete;
   }
-  INC_PERFORMANCE_COUNTER(timeTotalTS1, timeAfterTXTS1, timeTX);
+  INC_PERFORMANCE_COUNTER(timeTotalTS1, timeAfterTXTS1, timeTX_upd);
   
   /* flush the undo log */
   FLUSH_RANGE(&write_log_thread[writeLogStart], &write_log_thread[writeLogEnd],
