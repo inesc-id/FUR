@@ -314,21 +314,18 @@ extern uint64_t *SI_wait_spins;
 # define RELEASE_WRITE_LOCK(){ \
 	unsigned long start_sus;\
 	READ_TIMESTAMP(start_sus);\
-	stats_array[q_args.tid].tx_time_upd_txs += start_sus - start_tx;\
 	if(local_exec_mode == 1){ \
-	  __TM_suspend(); \
-	  UPDATE_TS_STATE(NON_DURABLE); /* committing rot*/ \
-      rmb(); \
-	  __TM_resume(); \
-    READ_TIMESTAMP(end_sus);\
-    stats_array[local_thread_id].sus_time+=end_sus-start_sus;\
+		__TM_suspend(); \
+		UPDATE_TS_STATE(NON_DURABLE); /* committing rot*/ \
+    	rmb(); \
+		__TM_resume(); \
+    	READ_TIMESTAMP(end_sus);\
 		QUIESCENCE_CALL_ROT();\
 		__TM_end(); \
-  \
-  READ_TIMESTAMP(end_tx); \
-  stats_array[local_thread_id].commit_time += end_tx - start_tx;\
-  \
-  \
+  		READ_TIMESTAMP(end_tx); \
+  		stats_array[q_args.tid].tx_time_upd_txs += start_sus - start_tx;\
+		stats_array[local_thread_id].sus_time+=end_sus-start_sus;\
+  		stats_array[local_thread_id].commit_time += end_tx - start_tx;\
 		UPDATE_STATE(INACTIVE); /* inactive rot*/ \
 		stats_array[local_thread_id].rot_commits++; \
 	} \
