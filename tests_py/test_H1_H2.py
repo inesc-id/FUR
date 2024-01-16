@@ -17,10 +17,10 @@ if __name__ == "__main__":
 
   # Here set the possible values for each parameter (pass a list with valid values).
   # Note the experiment will run all possible combinations of arguments.
-  params.set_params("-u", [1, 10])
-  params.set_params("-b", [32, 64, 128])
+  params.set_params("-u", [1, 10, 50])
+  params.set_params("-b", [8, 16, 32, 64, 128])
   # params.set_params("-d", [2000])
-  params.set_params("-d", [6000000])
+  params.set_params("-d", [600000])
   params.set_params("-i", [50000, 200000, 800000])
   # params.set_params("-i", [1000])
   params.set_params("-r", [2000000])
@@ -35,12 +35,12 @@ if __name__ == "__main__":
   # a benchmark (allows to compare with "exotic" implementations).
   locations = [
     "../POWER8TM/benchmarks/datastructures",
-    "../POWER8TM/benchmarks/datastructures",
-    "../POWER8TM/benchmarks/datastructures",
-    "../POWER8TM/benchmarks/datastructures",
+    # "../POWER8TM/benchmarks/datastructures",
+    # "../POWER8TM/benchmarks/datastructures",
+    # "../POWER8TM/benchmarks/datastructures",
     "../power8tm-pisces/benchmarks/datastructures",
-    "../POWER8TM/benchmarks/datastructures",
-    "../POWER8TM/benchmarks/datastructures",
+    # "../POWER8TM/benchmarks/datastructures",
+    # "../POWER8TM/benchmarks/datastructures",
     # "../POWER8TM/benchmarks/datastructures",
     # "../POWER8TM/benchmarks/datastructures",
   ]
@@ -48,13 +48,13 @@ if __name__ == "__main__":
   # "backends" list with the position in the "locations" list)
   backends = [
     "psi",
-    "psi-strong",
-    "spht",
-    "spht-log-linking",
+    # "psi-strong",
+    # "spht",
+    # "spht-log-linking",
     "pisces",
-    "htm-sgl",
+    # "htm-sgl",
     # "htm-sgl-sr",
-    "si-htm",
+    # "si-htm",
     # "ureads-strong",
     # "ureads-p8tm"
   ]
@@ -113,71 +113,76 @@ if __name__ == "__main__":
       # for-each "-i" value
       for i in params.params["-i"]:
         if i not in datasets_thr[u]:
-          datasets_thr[u][i] = []
+          datasets_thr[u][i] = {}
 
-        # Filters the data for the plot. In this case we are taking "-n" in the x-axis and
-        # "-d"/"time" in the y-axis. Use a lambda function to take the required data into
-        # each axis. The final argument is a dictionary with the filter of the dataset.
-        # In this case we are looking for rows where "-u" == u AND "-i" == i.
-        ds = BackendDataset(
-          name_map[backend],
-          [f"{data_folder}/{backend}-s{s}.csv" for s in range(nb_samples)],
-          lambda e: e["-n"], "Nb. Threads",
-          lambda e: e["-d"]/e["time"], "Throughput (T/s)",
-          {"-u": u, "-i": i}
-        )
+        # for-each "-b" value
+        for b in params.params["-b"]:
+          if b not in datasets_thr[u][i]:
+            datasets_thr[u][i][b] = []
+          # Filters the data for the plot. In this case we are taking "-n" in the x-axis and
+          # "-d"/"time" in the y-axis. Use a lambda function to take the required data into
+          # each axis. The final argument is a dictionary with the filter of the dataset.
+          # In this case we are looking for rows where "-u" == u AND "-i" == i.
+          ds = BackendDataset(
+            name_map[backend],
+            [f"{data_folder}/{backend}-s{s}.csv" for s in range(nb_samples)],
+            lambda e: e["-n"], "Nb. Threads",
+            lambda e: e["-d"]/e["time"], "Throughput (T/s)",
+            {"-u": u, "-i": i, "-b": b}
+          )
 
-        # TODO: fix pisces stdout
-        if backend != "pisces":
+          # TODO: fix pisces stdout
+          if backend != "pisces":
 
-          # Adds a bar plot for number of abort. The last argument is a dictionary with the label
-          # and the the data from the dataset (use a lambda function to calculate).
-          ds.add_stack("Commits vs Aborts", "Count", {
-            "ROT-commits": lambda e: e["rot-commits"] if "rot-commits" in e else 0,
-            "HTM-commits": lambda e: e["htm-commits"],
-            "SGL-commits": lambda e: e["gl-commits"],
-            "aborts": lambda e: e["total-aborts"]
-          })
+            # Adds a bar plot for number of abort. The last argument is a dictionary with the label
+            # and the the data from the dataset (use a lambda function to calculate).
+            ds.add_stack("Commits vs Aborts", "Count", {
+              "ROT-commits": lambda e: e["rot-commits"] if "rot-commits" in e else 0,
+              "HTM-commits": lambda e: e["htm-commits"],
+              "SGL-commits": lambda e: e["gl-commits"],
+              "aborts": lambda e: e["total-aborts"]
+            })
 
-          # Adds a bar plot for the abort type.
-          ds.add_stack("Abort types", "Nb. aborts", {
-            "conflict-transactional": lambda e: e["confl-trans"] + e["rot-trans-aborts"],
-            "conflict-non-transactional": lambda e: e["confl-non-trans"] + e["rot-non-trans-aborts"],
-            "self": lambda e: e["confl-self"] + e["rot-self-aborts"],
-            "capacity": lambda e: e["capac-aborts"] + e["rot-capac-aborts"],
-            "persistent": lambda e: e["persis-aborts"] + e["rot-persis-aborts"],
-            "user": lambda e: e["user-aborts"] + e["rot-user-aborts"],
-            "other": lambda e: e["other-aborts"] + e["rot-other-aborts"]
-          })
+            # Adds a bar plot for the abort type.
+            ds.add_stack("Abort types", "Nb. aborts", {
+              "conflict-transactional": lambda e: e["confl-trans"] + e["rot-trans-aborts"],
+              "conflict-non-transactional": lambda e: e["confl-non-trans"] + e["rot-non-trans-aborts"],
+              "self": lambda e: e["confl-self"] + e["rot-self-aborts"],
+              "capacity": lambda e: e["capac-aborts"] + e["rot-capac-aborts"],
+              "persistent": lambda e: e["persis-aborts"] + e["rot-persis-aborts"],
+              "user": lambda e: e["user-aborts"] + e["rot-user-aborts"],
+              "other": lambda e: e["other-aborts"] + e["rot-other-aborts"]
+            })
 
-          # # Adds a bar plot for the profile information.
-          # def divByNumUpdTxs(e, attr):
-          #   return (e[attr] / (e["htm-commits"]+e["rot-commits"]))
-          # ds.add_stack("Latency profile (update txs)", "Time (clock ticks)", {
-          #   "tx proc.": lambda e: divByNumUpdTxs(e, "total-upd-tx-time"),
-          #   "isolation wait": lambda e: divByNumUpdTxs(e, "total-sus-time"),
-          #   "redo log flush": lambda e: divByNumUpdTxs(e, "total-flush-time"),
-          #   "durability wait": lambda e: divByNumUpdTxs(e, "total-dur-commit-time")
-          # })
+            # # Adds a bar plot for the profile information.
+            # def divByNumUpdTxs(e, attr):
+            #   return (e[attr] / (e["htm-commits"]+e["rot-commits"]))
+            # ds.add_stack("Latency profile (update txs)", "Time (clock ticks)", {
+            #   "tx proc.": lambda e: divByNumUpdTxs(e, "total-upd-tx-time"),
+            #   "isolation wait": lambda e: divByNumUpdTxs(e, "total-sus-time"),
+            #   "redo log flush": lambda e: divByNumUpdTxs(e, "total-flush-time"),
+            #   "durability wait": lambda e: divByNumUpdTxs(e, "total-dur-commit-time")
+            # })
 
-          # # Adds a bar plot for the profile information.
-          # def divByNumROTxs(e, attr):
-          #   return (e[attr] / (e["read-commits"]))
-          # ds.add_stack("Latency profile (read-only txs)", "Time (clock ticks)", {
-          #   "tx proc.": lambda e: divByNumUpdTxs(e, "total-ro-tx-time"),
-          #   "durability wait": lambda e: divByNumUpdTxs(e, "total-ro-dur-wait-time")
-          # })
+            # # Adds a bar plot for the profile information.
+            # def divByNumROTxs(e, attr):
+            #   return (e[attr] / (e["read-commits"]))
+            # ds.add_stack("Latency profile (read-only txs)", "Time (clock ticks)", {
+            #   "tx proc.": lambda e: divByNumUpdTxs(e, "total-ro-tx-time"),
+            #   "durability wait": lambda e: divByNumUpdTxs(e, "total-ro-dur-wait-time")
+            # })
 
-        datasets_thr[u][i] += [ds]
+          datasets_thr[u][i][b] += [ds]
     
   # this for-loop does the actual plotting (in the previous ones we are just
   # setting up the data that we want to plot).
   for u,v in datasets_thr.items():
-    for i,w in v.items():
-      lines_plot = LinesPlot(f"{u}% updates, {i/1000}k initial items", f"thr_{u}upds_{i}items.pdf", figsize=(8, 4))
-      
-      # throughput plot
-      lines_plot.plot(w)
+    for i,z in v.items():
+      for b,w in z.items():
+        lines_plot = LinesPlot(f"{u}% updates, {i/1000}k initial items", f"thr_{u}upds_{i}items_{b}buckets.pdf", figsize=(8, 4))
+        
+        # throughput plot
+        lines_plot.plot(w)
 
-      # abort+profiling plot
-      lines_plot.plot_stack(w)
+        # abort+profiling plot
+        lines_plot.plot_stack(w)

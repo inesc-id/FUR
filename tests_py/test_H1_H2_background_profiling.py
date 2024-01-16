@@ -75,7 +75,7 @@ if __name__ == "__main__":
   # IMPORTANT: set the name of the dataset here, this folder needs to be
   # empty when taking new samples (else it can overwrite/append the stdout
   # of the new samples with the stdout of the old samples).
-  data_folder = "dataH1H2_test"
+  data_folder = "dataHashmapProfiling"
 
   datasets_thr = {}
   datasets_aborts = {}
@@ -94,7 +94,7 @@ if __name__ == "__main__":
         )
       
       # This line starts the benchmark and tests all combinations parameters.
-      #data.run_sample(params) # NOTE: comment if you already have the data and just want to refresh the plots.
+      data.run_sample(params) # NOTE: comment if you already have the data and just want to refresh the plots.
 
       # Parses the stdout into a .csv that can be used for the plots.
       # Check the tests_py/parse_sol.py for the regular expressions that are catched in the stdout.

@@ -288,7 +288,7 @@ int hm_remove_stm(TM_ARGDECL List* set, long val)
 			SLOW_PATH_SHARED_WRITE_P(mod_point->m_next, temp_p);
 
       // //JOAO: I believe this extra write is needed for SI safety
-      // SLOW_PATH_SHARED_WRITE_P(curr->m_next, temp_p);
+      SLOW_PATH_SHARED_WRITE_P(curr->m_next, temp_p);
 
       // //paranoid (debug)
       // if (temp_p) {

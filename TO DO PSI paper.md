@@ -1,5 +1,5 @@
 Latency profile:
-- adaptar no test_H1_H2 a parte comentada do profile plot
+- spht vs si-htm: evolucao estranha dos tx_times
 - pisces
 - replicar para psi-strong e spht-ll
 
