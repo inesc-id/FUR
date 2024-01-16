@@ -17,16 +17,16 @@ if __name__ == "__main__":
 
   # Here set the possible values for each parameter (pass a list with valid values).
   # Note the experiment will run all possible combinations of arguments.
-  params.set_params("-u", [1, 10, 50])
-  params.set_params("-b", [8, 16, 32, 64, 128])
+  params.set_params("-u", [10])
+  params.set_params("-b", [32])
   # params.set_params("-d", [2000])
   params.set_params("-d", [600000])
-  params.set_params("-i", [50000, 200000, 800000])
+  params.set_params("-i", [50000])
   # params.set_params("-i", [1000])
   params.set_params("-r", [2000000])
   # params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32])
   #params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60, 62, 64])
-  params.set_params("-n", [1, 2, 4, 8, 16, 32, 64])
+  params.set_params("-n", [1, 8, 32, 64])
 
   # Set the number of times each run is repeated (for average/stardard deviation computation).
   nb_samples = 1
@@ -131,46 +131,43 @@ if __name__ == "__main__":
             {"-u": u, "-i": i, "-b": b}
           )
 
-          # TODO: fix pisces stdout
-          if backend != "pisces":
+          # Adds a bar plot for number of abort. The last argument is a dictionary with the label
+          # and the the data from the dataset (use a lambda function to calculate).
+          ds.add_stack("Commits vs Aborts", "Count", {
+            "ROT-commits": lambda e: e["rot-commits"] if "rot-commits" in e else 0,
+            "HTM-commits": lambda e: e["htm-commits"],
+            "SGL-commits": lambda e: e["gl-commits"],
+            "aborts": lambda e: e["total-aborts"]
+          })
 
-            # Adds a bar plot for number of abort. The last argument is a dictionary with the label
-            # and the the data from the dataset (use a lambda function to calculate).
-            ds.add_stack("Commits vs Aborts", "Count", {
-              "ROT-commits": lambda e: e["rot-commits"] if "rot-commits" in e else 0,
-              "HTM-commits": lambda e: e["htm-commits"],
-              "SGL-commits": lambda e: e["gl-commits"],
-              "aborts": lambda e: e["total-aborts"]
-            })
+          # Adds a bar plot for the abort type.
+          ds.add_stack("Abort types", "Nb. aborts", {
+            "conflict-transactional": lambda e: e["confl-trans"] + e["rot-trans-aborts"],
+            "conflict-non-transactional": lambda e: e["confl-non-trans"] + e["rot-non-trans-aborts"],
+            "self": lambda e: e["confl-self"] + e["rot-self-aborts"],
+            "capacity": lambda e: e["capac-aborts"] + e["rot-capac-aborts"],
+            "persistent": lambda e: e["persis-aborts"] + e["rot-persis-aborts"],
+            "user": lambda e: e["user-aborts"] + e["rot-user-aborts"],
+            "other": lambda e: e["other-aborts"] + e["rot-other-aborts"]
+          })
 
-            # Adds a bar plot for the abort type.
-            ds.add_stack("Abort types", "Nb. aborts", {
-              "conflict-transactional": lambda e: e["confl-trans"] + e["rot-trans-aborts"],
-              "conflict-non-transactional": lambda e: e["confl-non-trans"] + e["rot-non-trans-aborts"],
-              "self": lambda e: e["confl-self"] + e["rot-self-aborts"],
-              "capacity": lambda e: e["capac-aborts"] + e["rot-capac-aborts"],
-              "persistent": lambda e: e["persis-aborts"] + e["rot-persis-aborts"],
-              "user": lambda e: e["user-aborts"] + e["rot-user-aborts"],
-              "other": lambda e: e["other-aborts"] + e["rot-other-aborts"]
-            })
+          # Adds a bar plot for the profile information.
+          def divByNumUpdTxs(e, attr):
+            return (e[attr] / (e["htm-commits"]+e["rot-commits"]))
+          ds.add_stack("Latency profile (update txs)", "Time (clock ticks)", {
+            "tx proc.": lambda e: divByNumUpdTxs(e, "total-upd-tx-time"),
+            "isolation wait": lambda e: divByNumUpdTxs(e, "total-sus-time"),
+            "redo log flush": lambda e: divByNumUpdTxs(e, "total-flush-time"),
+            "durability wait": lambda e: divByNumUpdTxs(e, "total-dur-commit-time")
+          })
 
-            # # Adds a bar plot for the profile information.
-            # def divByNumUpdTxs(e, attr):
-            #   return (e[attr] / (e["htm-commits"]+e["rot-commits"]))
-            # ds.add_stack("Latency profile (update txs)", "Time (clock ticks)", {
-            #   "tx proc.": lambda e: divByNumUpdTxs(e, "total-upd-tx-time"),
-            #   "isolation wait": lambda e: divByNumUpdTxs(e, "total-sus-time"),
-            #   "redo log flush": lambda e: divByNumUpdTxs(e, "total-flush-time"),
-            #   "durability wait": lambda e: divByNumUpdTxs(e, "total-dur-commit-time")
-            # })
-
-            # # Adds a bar plot for the profile information.
-            # def divByNumROTxs(e, attr):
-            #   return (e[attr] / (e["read-commits"]))
-            # ds.add_stack("Latency profile (read-only txs)", "Time (clock ticks)", {
-            #   "tx proc.": lambda e: divByNumUpdTxs(e, "total-ro-tx-time"),
-            #   "durability wait": lambda e: divByNumUpdTxs(e, "total-ro-dur-wait-time")
-            # })
+          # Adds a bar plot for the profile information.
+          def divByNumROTxs(e, attr):
+            return (e[attr] / (e["read-commits"]))
+          ds.add_stack("Latency profile (read-only txs)", "Time (clock ticks)", {
+            "tx proc.": lambda e: divByNumUpdTxs(e, "total-ro-tx-time"),
+            "durability wait": lambda e: divByNumUpdTxs(e, "total-ro-dur-wait-time")
+          })
 
           datasets_thr[u][i][b] += [ds]
     

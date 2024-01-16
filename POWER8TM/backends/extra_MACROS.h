@@ -496,6 +496,7 @@ else /* handles warp around case */ \
   { \
     READ_TIMESTAMP(loc_var.ts1); \
 		UPDATE_TS_STATE(ACTIVE); \
+    READ_TIMESTAMP(start_tx); \
 		rmb(); \
 		CONTINUE_LOOP_IF ( IS_LOCKED(single_global_lock), \
     { \

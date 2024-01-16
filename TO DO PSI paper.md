@@ -29,3 +29,4 @@ LATER:
 - ver misterios nos resultados hashmap (msg no skype)
 - adicionar escrita unlogged no hashmap (e, mais tarde, no tpcc)
 - no PSI, comentar READ_TIMESTAMP (para ganhar algum desempenho)
+- Nos plots, Pisces "HTM commits" -> "STM commits"

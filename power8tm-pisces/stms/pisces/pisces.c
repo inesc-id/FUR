@@ -82,6 +82,18 @@ struct _Thread {
     volatile long Retries;
     long Starts;
     long Aborts; /* Tally of # of aborts */
+    long flush_time;
+    long upd_dur_commit_time;
+    long ro_wait_time;
+    long isolation_wait_time;
+    long ro_tx_time;
+    long upd_tx_time;
+    long abort_time;
+    long upd_commits;
+    long ro_commits;
+    
+    long tsBegin_for_stats;
+
     // long snapshot;
     // unsigned long long rng;
     // unsigned long long xorrng [1];
@@ -194,6 +206,18 @@ AtomicAdd (volatile intptr_t* addr, intptr_t dx)
 
 volatile long StartTally         = 0;
 volatile long AbortTally         = 0;
+
+volatile long flush_timeTally = 0;
+volatile long upd_dur_commit_timeTally  = 0;
+volatile long ro_wait_timeTally = 0;
+volatile long isolation_wait_timeTally = 0;
+volatile long ro_tx_timeTally = 0;
+volatile long upd_tx_timeTally = 0;
+volatile long abort_timeTally = 0;
+volatile long upd_commitsTally = 0;
+volatile long ro_commitsTally = 0;
+
+
 volatile long ReadOverflowTally  = 0;
 volatile long WriteOverflowTally = 0;
 volatile long LocalOverflowTally = 0;
@@ -293,43 +317,21 @@ READ_TIMESTAMP(end_time);
     //        , StartTally, AbortTally,
     //        ReadOverflowTally, WriteOverflowTally, LocalOverflowTally);
 
-  unsigned long wait_time = 0; \
   unsigned long total_time = end_time - start_time; \
-  unsigned long read_commits = 0; \
-  unsigned long htm_commits = 0; \
-  unsigned long htm_conflict_aborts = 0; \
-  unsigned long htm_user_aborts = 0; \
-  unsigned long htm_self_conflicts = 0; \
-  unsigned long htm_trans_conflicts = 0; \
-  unsigned long htm_nontrans_conflicts = 0; \
-  unsigned long htm_persistent_aborts = 0; \
-  unsigned long htm_capacity_aborts = 0; \
-  unsigned long htm_other_aborts = 0; \
-  unsigned long rot_commits = 0; \
-  unsigned long rot_conflict_aborts = 0; \
-  unsigned long rot_user_aborts = 0; \
-  unsigned long rot_self_conflicts = 0; \
-  unsigned long rot_trans_conflicts = 0; \
-  unsigned long rot_nontrans_conflicts = 0; \
-  unsigned long rot_other_conflicts = 0; \
-  unsigned long rot_persistent_aborts = 0; \
-  unsigned long rot_capacity_aborts = 0; \
-  unsigned long rot_other_aborts = 0; \
-  unsigned long gl_commits = 0; \
-  unsigned long commit_time = 0; \
-  unsigned long abort_time = 0; \
-  unsigned long sus_time = 0; \
-  unsigned long flush_time = 0; \
-  unsigned long wait2_time = 0; \
 
-  printf(\
+  
+
+printf(\
 "Total sum time: %lu\n" \
 "Total commit time: %lu\n" \
 "Total abort time: %lu\n" \
 "Total wait time: %lu\n" \
 "Total sus time: %lu\n" \
 "Total flush time: %lu\n" \
-"Total wait2 time: %lu\n" \
+"Total dur_commit time: %lu\n" \
+"Total RO_dur_wait time: %lu\n" \
+"Total upd tx time: %lu\n" \
+"Total RO tx time: %lu\n" \
 "Total commits: %lu\n" \
   "\tRead commits: %lu\n" \
   "\tHTM commits:  %lu\n" \
@@ -353,36 +355,39 @@ READ_TIMESTAMP(end_time);
   "\tROT capacity aborts:  %lu\n" \
     "\t\tROT persistent aborts:  %lu\n" \
   "\tROT other aborts:  %lu\n", \
-  total_time, \
-  commit_time, \
-  abort_time, \
-  wait_time, \
-  sus_time, \
-  flush_time, \
-  wait2_time, \
-  StartTally-AbortTally, \
-  read_commits, \
-  htm_commits, \
-  rot_commits, \
-  gl_commits, \
-  AbortTally, \
-  htm_conflict_aborts, \
-  htm_self_conflicts, \
-  htm_trans_conflicts, \
-  htm_nontrans_conflicts, \
-  htm_user_aborts, \
-  htm_capacity_aborts, \
-  htm_persistent_aborts, \
-  htm_other_aborts, \
-  rot_conflict_aborts, \
-  rot_self_conflicts, \
-  rot_trans_conflicts, \
-  rot_nontrans_conflicts, \
-  rot_other_conflicts, \
-  rot_user_aborts, \
-  rot_capacity_aborts, \
-  rot_persistent_aborts, \
-  rot_other_aborts);
+  0,
+  0,
+  abort_timeTally,
+  0,
+  isolation_wait_timeTally,
+  flush_timeTally,
+  upd_dur_commit_timeTally,
+  ro_wait_timeTally,
+  upd_tx_timeTally,
+  ro_tx_timeTally,
+  upd_commitsTally+ro_commitsTally, 
+  ro_commitsTally,
+  upd_commitsTally, 
+  0,
+  0,
+  AbortTally, 
+  AbortTally,
+  0,
+  AbortTally,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0);
 
   printf("Emulated PM latency: %d\n", delay_for_pm);
 
@@ -399,8 +404,10 @@ READ_TIMESTAMP(end_time);
 Thread*
 TxNewThread ()
 {
-    Thread* t = (Thread*)malloc(sizeof(Thread));
+    Thread* t = (Thread*)calloc(sizeof(Thread),1);
     assert(t);
+
+    
 
     return t;
 }
@@ -421,6 +428,22 @@ TxFreeThread (Thread* t)
 
     AtomicAdd((volatile intptr_t*)((void*)(&StartTally)),         t->Starts);
     AtomicAdd((volatile intptr_t*)((void*)(&AbortTally)),         t->Aborts);
+
+
+    AtomicAdd((volatile intptr_t*)((void*)(&flush_timeTally)),         t->flush_time);
+    AtomicAdd((volatile intptr_t*)((void*)(&upd_dur_commit_timeTally)),         t->upd_dur_commit_time);
+    AtomicAdd((volatile intptr_t*)((void*)(&ro_wait_timeTally)),         t->ro_wait_time);
+    AtomicAdd((volatile intptr_t*)((void*)(&isolation_wait_timeTally)),         t->isolation_wait_time);
+    AtomicAdd((volatile intptr_t*)((void*)(&ro_tx_timeTally)),         t->ro_tx_time);
+    AtomicAdd((volatile intptr_t*)((void*)(&upd_tx_timeTally)),         t->upd_tx_time);
+    AtomicAdd((volatile intptr_t*)((void*)(&abort_timeTally)),         t->abort_time);
+
+    AtomicAdd((volatile intptr_t*)((void*)(&upd_commitsTally)),         t->upd_commits);
+    AtomicAdd((volatile intptr_t*)((void*)(&ro_commitsTally)),         t->ro_commits);
+
+    AtomicAdd((volatile intptr_t*)((void*)(&AbortTally)),         t->Aborts);
+
+
 
     // FreeList(&(t->rdSet),     pisces_INIT_RDSET_NUM_ENTRY);
     // FreeList(&(t->wrSet),     pisces_INIT_WRSET_NUM_ENTRY);
@@ -466,6 +489,7 @@ txReset (Thread* Self)
     Self->inCritical = 0;
     MEMBARLDLD();
 
+    READ_TIMESTAMP(Self->tsBegin_for_stats);
     //TODO: free locks and AVpairs, careful with gc rules of pisces
 
 }
@@ -596,6 +620,10 @@ TxAbort (Thread* Self)
     // printf("\n");
 
     MEMBARSTLD();
+    
+    unsigned long tsAbort;
+    READ_TIMESTAMP(tsAbort);
+    Self->abort_time += tsAbort - Self->tsBegin_for_stats;
 
     txReset(Self);
     Self->Retries++;
@@ -755,9 +783,14 @@ TxLoad (Thread* Self, volatile intptr_t* addr)
         return l->avp->Valu;
     }
     
+    unsigned long t1, t2;
+    READ_TIMESTAMP(t1);
     while (wtx && wtx->inCritical) {/* wait */
         // printf("Thread %d waiting in txLoad\n", Self->UniqID);
     }
+    READ_TIMESTAMP(t2);
+    Self->ro_wait_time += t2-t1;
+
 
     unsigned long endTS_lido;
    
@@ -810,21 +843,27 @@ TxCommit (Thread* Self)
     //     assert(0);
     // } 
         
+    unsigned long tBeforeCommit;
+    READ_TIMESTAMP(tBeforeCommit);
 
     Self->isActive = 0;
 
     //If log is empty, it's a read-only tx
     if (Self->wrSet.put == Self->wrSet.List)
     {
+        Self->ro_tx_time += tBeforeCommit - Self->tsBegin_for_stats;
         txCommitReset(Self);
         // printf("*********************** committed tx with 0 writes (RO)\n");
         
         //debug - apagar
         // assert_empty_locks(Self);
-
+        Self->ro_commits ++;
+        
         return 1;
     }
 
+    Self->upd_tx_time += tBeforeCommit - Self->tsBegin_for_stats;
+    
     /* stage 1: persist stage */
 
     //*Emulate* flush wr log
@@ -848,7 +887,15 @@ TxCommit (Thread* Self)
     Self->inCritical = 0;
     AtomicAdd(&(LOCK->value), 1);
 
+    unsigned long tBeforeWriteBack;
+    READ_TIMESTAMP(tBeforeWriteBack);
+
+    Self->upd_dur_commit_time += tBeforeWriteBack - tBeforeCommit;
+
     /* stage 3: write-back stage */
+
+    unsigned long tBeforeWait;
+    READ_TIMESTAMP(tBeforeWait);
 
     for (int i = 0; i < MAX_THREADS; i++) {
         if (threads[i]) {
@@ -858,6 +905,10 @@ TxCommit (Thread* Self)
                 }
         }
     }
+
+    unsigned long tAfterWait;
+    READ_TIMESTAMP(tAfterWait);
+    Self->isolation_wait_time += tAfterWait-tBeforeWait;
 
     // printf("TxCommit: Self %x. Writeset: ", Self);
 
@@ -875,11 +926,17 @@ TxCommit (Thread* Self)
     }
     // printf("\n");
 
+    unsigned long tAfterWriteBack;
+    READ_TIMESTAMP(tAfterWriteBack);
+    Self->flush_time += tAfterWriteBack-tAfterWait;
+
     // printf("*********************** committed tx with %d writes\n", aux);
     txCommitReset(Self);
 
     //debug - apagar
     // assert_empty_locks(Self);
+
+    Self->upd_commits ++;
 
     return 1;
 
