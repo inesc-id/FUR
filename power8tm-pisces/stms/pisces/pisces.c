@@ -629,6 +629,9 @@ TxAbort (Thread* Self)
     Self->Retries++;
     Self->Aborts++;
 
+    
+    usleep(rand() % 1000);
+
     // assert_empty_locks(Self);
 
     SIGLONGJMP(*Self->envPtr, 1);
@@ -701,7 +704,7 @@ TxStore (Thread* Self, volatile intptr_t* addr, intptr_t valu)
     Thread *owner = *LOCK_OWNER(addr);
 
     if (owner && owner != Self) {
-        // printf("I will abort because I tried to write in a locked location\n");
+        // printf("Aborted: thread %d, addr=%p, owner=%d\n", Self->UniqID, addr, owner->UniqID);
         TxAbort(Self);
         assert(0); //I should never reachi this point
         return;
