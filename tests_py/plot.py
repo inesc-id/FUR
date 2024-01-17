@@ -94,7 +94,7 @@ class LinesPlot:
         j += 1
         k = 0
         for sn, sy in ss.items():
-          cmap = plt.cm.get_cmap("hsv", len(ss)+1)
+          cmap = plt.cm.get_cmap("hsv", len(ss)+5)
           stacked_bar_idx[sn] = {"idx": k, "color": cmap(k)}
           k += 1
 
