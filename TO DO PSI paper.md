@@ -26,9 +26,19 @@ p: 100% update, 5 writes                                Pisces mau
 r: 99% update, 44-91 writes                             crash
 
 conclusões/conjetura:
-- no tpcc ou são RO (bom para dumbo) ou têm 5+ escritas (aparentemente, bom para dumbo -- pisces só é melhor com 1-2 escritas). Única exceção: "s" (ver acima).
-- na R (new order), provavelmente haverá problema com o limite de alguma estrutura de dados de locking,etc. Posso tentar alterar o tpcc para que esta operação faça menos escritas => pedir ajuda ao Daniel.
-- eu devia entender porque é que, com txs com muitas escritas, o pisces é tão mau (olhar para gráficos profile)
+- eu devia entender porque é que, com txs com escritas, o pisces é tão mau (olhar para gráficos profile)
+
+exploração 18-jan para ter um mix completo:
+
+funcionou (e é próximo do standard mix):
+./code/tpcc -w 32 -m 32 -s 0 -d 6 -o 6 -p 43 -r 45 -n 32 -t 5
+
+funcionou (new order -> deliver)
+./code/tpcc -w 32 -m 32 -s 0 -d 50 -o 0 -p 0 -r 50 -n 32 -t 5
+
+não funcionou (um dos casos mais simples que encontrei)
+./code/tpcc -w 1 -m 1 -s 50 -d 0 -o 0 -p 0 -r 50 -n 3 -t 5
+
 
 
 LATER:

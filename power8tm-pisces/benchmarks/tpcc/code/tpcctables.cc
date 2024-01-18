@@ -249,7 +249,7 @@ bool TPCCTables::newOrder(TM_ARGDECL int64_t warehouse_id, int64_t district_id, 
             return false;
         }
         // Process all remote warehouses
-        printf("neworder %d items\n", items_size);
+        // printf("neworder %d items\n", items_size);
         for (size_t i = 0; i < items_size; ++i) {
             if (items[i].ol_supply_w_id != warehouse_id) {
                 warehouse_set[i] = items[i].ol_supply_w_id;

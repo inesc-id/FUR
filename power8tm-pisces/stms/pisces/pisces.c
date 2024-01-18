@@ -633,7 +633,7 @@ TxAbort (Thread* Self)
     Self->Aborts++;
 
     
-    usleep(rand() % 1000);
+    // usleep(rand() % 1000);
 
     // assert_empty_locks(Self);
 

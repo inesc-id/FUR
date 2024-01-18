@@ -10,12 +10,12 @@ if __name__ == "__main__":
   params.set_params("-m", [32]) # max nb warehouses (put the same as -w)
   params.set_params("-t", [5])
   
-#   # From SI-HTM paper: mixed scenario
-#   params.set_params("-s", [4], True)
-#   params.set_params("-d", [4], True)
-#   params.set_params("-o", [4], True)
-#   params.set_params("-p", [43], True)
-#   params.set_params("-r", [45], True)
+  # From SI-HTM paper: mixed scenario
+  # params.set_params("-s", [4], True)
+  # params.set_params("-d", [4], True)
+  # params.set_params("-o", [4], True)
+  # params.set_params("-p", [43], True)
+  # params.set_params("-r", [45], True)
 
 # #   From SI-HTM paper: read-dominated scenario
 #   params.set_params("-s", [4], True)
@@ -24,10 +24,17 @@ if __name__ == "__main__":
 #   params.set_params("-p", [4], True)
 #   params.set_params("-r", [8], True)
   
-  # From SPHT paper
-  params.set_params("-s", [0], True)
+  # # From SPHT paper
+  # params.set_params("-s", [0], True)
+  # params.set_params("-o", [0], True)
+  # params.set_params("-p", [95], True)
+  # params.set_params("-r", [2], True)
+  # params.set_params("-d", [3], True)
+
+# Misc configurations:
+  params.set_params("-s", [10], True)
   params.set_params("-o", [0], True)
-  params.set_params("-p", [95], True)
+  params.set_params("-p", [85], True)
   params.set_params("-r", [2], True)
   params.set_params("-d", [3], True)
 
@@ -36,13 +43,13 @@ if __name__ == "__main__":
   # params.set_params("-o", [4, 4], True)
   # params.set_params("-p", [43, 39], True)
   # params.set_params("-r", [45, 45], True)
-  params.set_params("-n", [1, 4, 8, 12, 16, 32, 64])
+  params.set_params("-n", [4, 16, 32])
   #params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60, 62, 64])
   nb_samples = 1
   locations = [
     "../power8tm-pisces/benchmarks/tpcc",
-    "../POWER8TM/benchmarks/tpcc",
-    "../POWER8TM/benchmarks/tpcc",
+    # "../POWER8TM/benchmarks/tpcc",
+    # "../POWER8TM/benchmarks/tpcc",
     # "../POWER8TM/benchmarks/tpcc",
     # "../POWER8TM/benchmarks/tpcc",
     # "../POWER8TM/benchmarks/tpcc",
@@ -53,9 +60,9 @@ if __name__ == "__main__":
   # "backends" list with the position in the "locations" list)
   backends = [
     "pisces",
-    "psi",
-    # "psi-strong",
-    "spht",
+    # "psi",
+    # # "psi-strong",
+    # "spht",
     # "htm-sgl",
     # "htm-sgl-sr",
     # "si-htm",
@@ -89,7 +96,7 @@ if __name__ == "__main__":
           backend,
           f"{data_folder}/{backend}-s{sample}"
         )
-      #data.run_sample(params) # TODO: not running samples
+      data.run_sample(params) # TODO: not running samples
       parser = Parser(f"{data_folder}/{backend}-s{sample}")
       parser.parse_all(f"{data_folder}/{backend}-s{sample}.csv")
     lst_each = params.list_for_each_param(["-s", "-d", "-o", "-p", "-r"])
@@ -148,8 +155,8 @@ if __name__ == "__main__":
         else:
           return (e[attr] / (e["read-commits"]))
       ds.add_stack("Latency profile (read-only txs)", "Time (clock ticks)", {
-        "tx proc.": lambda e: divByNumUpdTxs(e, "total-ro-tx-time"),
-        "durability wait": lambda e: divByNumUpdTxs(e, "total-ro-dur-wait-time")
+        "tx proc.": lambda e: divByNumROTxs(e, "total-ro-tx-time"),
+        "durability wait": lambda e: divByNumROTxs(e, "total-ro-dur-wait-time")
       })
       
       # ds.add_stack("Commits vs Aborts", "Count", {
