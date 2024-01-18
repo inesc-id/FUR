@@ -28,9 +28,12 @@
 
 
 # define delay_for_pm 70
-# define emulate_pm_slowdown(){\
-    for(volatile int i=0;i<delay_for_pm;i++);\
-}\
+# define emulate_pm_slowdown() \
+{ \
+  volatile int i; \
+  for (i = 0; i < delay_for_pm; ++i) \
+    __asm__ volatile ("nop" ::: "memory"); \
+}
 
 
 #ifndef READ_TIMESTAMP
