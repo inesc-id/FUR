@@ -89,7 +89,7 @@ if __name__ == "__main__":
           backend,
           f"{data_folder}/{backend}-s{sample}"
         )
-      data.run_sample(params) # TODO: not running samples
+      #data.run_sample(params) # TODO: not running samples
       parser = Parser(f"{data_folder}/{backend}-s{sample}")
       parser.parse_all(f"{data_folder}/{backend}-s{sample}.csv")
     lst_each = params.list_for_each_param(["-s", "-d", "-o", "-p", "-r"])
@@ -130,7 +130,10 @@ if __name__ == "__main__":
 
       # Adds a bar plot for the profile information.
       def divByNumUpdTxs(e, attr):
-        return (e[attr] / (e["htm-commits"]+e["rot-commits"]))
+        if (e["htm-commits"]+e["rot-commits"] == 0).any():
+          return 0
+        else:
+          return (e[attr] / (e["htm-commits"]+e["rot-commits"]))
       ds.add_stack("Latency profile (update txs)", "Time (clock ticks)", {
         "tx proc.": lambda e: divByNumUpdTxs(e, "total-upd-tx-time"),
         "isolation wait": lambda e: divByNumUpdTxs(e, "total-sus-time"),
@@ -140,7 +143,10 @@ if __name__ == "__main__":
 
       # Adds a bar plot for the profile information.
       def divByNumROTxs(e, attr):
-        return (e[attr] / (e["read-commits"]))
+        if (e["read-commits"] == 0).any():
+          return 0
+        else:
+          return (e[attr] / (e["read-commits"]))
       ds.add_stack("Latency profile (read-only txs)", "Time (clock ticks)", {
         "tx proc.": lambda e: divByNumUpdTxs(e, "total-ro-tx-time"),
         "durability wait": lambda e: divByNumUpdTxs(e, "total-ro-dur-wait-time")
