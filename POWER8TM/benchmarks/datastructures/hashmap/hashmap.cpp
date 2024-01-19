@@ -67,7 +67,7 @@ typedef struct Node_HM_t
   struct Node_HM_t* m_next;
 
   // each node has the size of a cache line
-  uint8_t padding[CACHE_LINE_SIZE - sizeof(long) - sizeof(struct Node_HM_t*)];
+  uint8_t padding[CACHE_LINE_SIZE/sizeof(uint8_t) - sizeof(long) - sizeof(struct Node_HM_t*)];
 } Node_HM;
 
 typedef struct List_t
