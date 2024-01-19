@@ -20,7 +20,7 @@
 #  define TM_PRINT2                     printf
 #  define TM_PRINT3                     printf
 
-#  define P_MEMORY_STARTUP(numThread,id)   /* nothing */
+#  define P_MEMORY_STARTUP(numThread)   /* nothing */
 #  define P_MEMORY_SHUTDOWN()           /* nothing */
 
 #  include <assert.h>
@@ -49,17 +49,27 @@ static int pstm_nb_threads;
 #  define TM_END_WAIVER()
 
 // outside the TX
-# define S_MALLOC                       pstm_nvmalloc
+// # define S_MALLOC                       pstm_nvmalloc
+# define S_MALLOC                       malloc
 # define S_FREE(ptr)                    /* empty */
 
-# define P_MALLOC(_size)                ({ void *_PTR = pstm_local_nvmalloc(thread_getId(), _size); /*onBeforeWrite(HTM_SGL_tid, _ptr, 0);*/ _PTR; })
-# define P_MALLOC_THR(_size, _thr)      ({ void *_PTR = pstm_local_nvmalloc(_thr, _size); /*onBeforeWrite(HTM_SGL_tid, _ptr, 0);*/ _PTR; })
-# define P_FREE(ptr)                    /* empty */
+// # define P_MALLOC(_size)                ({ void *_PTR = pstm_local_nvmalloc(thread_getId(), _size); /*onBeforeWrite(HTM_SGL_tid, _ptr, 0);*/ _PTR; })
+// # define P_MALLOC_THR(_size, _thr)      ({ void *_PTR = pstm_local_nvmalloc(_thr, _size); /*onBeforeWrite(HTM_SGL_tid, _ptr, 0);*/ _PTR; })
+// # define P_FREE(ptr)                    /* empty */
+// # define SLOW_PATH_FREE P_FREE
+
+#  define P_MALLOC(size)                ({ void* _res = malloc(size); PRE_TOUCH_CACHELINES(_res, size); _res; })
+#  define P_FREE(ptr)                   free(ptr)
+#  define TM_MALLOC(size)               ({ void* _res = malloc(size); PRE_TOUCH_CACHELINES(_res, size); _res; })
+#  define FAST_PATH_FREE(ptr)           free(ptr)
+#  define SLOW_PATH_FREE(ptr)           free(ptr)
 
 // inside the TX
 // TODO: cannot write twice to the same memory location
-# define TM_MALLOC(_size)               pstm_local_nvmalloc(thread_getId(), _size)
-# define TM_FREE(ptr)                   /* TODO */
+// # define TM_MALLOC(_size)               pstm_local_nvmalloc(thread_getId(), _size)
+// # define TM_FREE(ptr)                   /* TODO */
+# define TM_MALLOC(_size)               malloc( _size)
+# define TM_FREE(ptr)                   free(ptr)
 
 # define SETUP_NUMBER_TASKS(n)
 # define SETUP_NUMBER_THREADS(n)
@@ -74,7 +84,22 @@ static int pstm_nb_threads;
 #  define SPECIAL_THREAD_ID()          thread_getId()
 #endif
 
-# define TM_STARTUP(numThread) \
+#ifndef BATCH_RATIO
+#define BATCH_RATIO 1
+#endif
+
+#ifndef ROT_RETRIES
+#define ROT_RETRIES 20
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include "POWER_common.h"
+#include "extra_MACROS.h"
+
+# define TM_STARTUP(numThread,id) \
   if (sizeof(long) != sizeof(void *)) { \
     fprintf(stderr, "Error: unsupported long and pointer sizes\n"); \
     exit(1); \
@@ -192,6 +217,10 @@ extern long stats_nbCapac;
 extern long stats_nbExpli;
 extern long stats_nbOther;
 extern double stats_benchTime;
+
+#ifdef __cplusplus
+}
+#endif
 
 // extern __thread long stats_nbTXwrites;
 

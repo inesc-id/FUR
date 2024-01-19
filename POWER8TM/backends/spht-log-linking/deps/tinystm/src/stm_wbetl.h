@@ -28,7 +28,7 @@
 
 #include "stm_internal.h"
 #include "atomic.h"
-#include "log.h"
+// #include "log.h"
 
 #if CM == CM_MODULAR
 /* Function declaration */
@@ -928,9 +928,9 @@ stm_wbetl_commit(stm_tx_t *tx)
     if (w->mask != 0) {
       ATOMIC_STORE(w->addr, w->value);
 #ifdef TM_STATISTICS3
-#if LOG_AUTO==1
-	  stm_log_newentry(&tx->log, (long*)w->addr, w->value, w->version);
-#endif
+// #if LOG_AUTO==1
+// 	  stm_log_newentry(&tx->log, (long*)w->addr, w->value, w->version);
+// #endif
 #endif /*TM_STATISTICS3*/
 	}
     /* Only drop lock for last covered address in write set */

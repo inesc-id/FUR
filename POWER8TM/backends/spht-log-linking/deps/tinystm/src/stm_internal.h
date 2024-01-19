@@ -33,7 +33,7 @@
 #include "utils.h"
 #include "atomic.h"
 #include "gc.h"
-#include "log.h"
+// #include "log.h"
 
 /* ################################################################### *
  * DEFINES
@@ -1772,17 +1772,17 @@ int_stm_get_specific(stm_tx_t *tx, int key)
 }
 
 #ifdef TM_STATISTICS3
-static INLINE int
-int_stm_log_add(tx_log_t *log, stm_word_t * pos, long val, stm_word_t vers)
-{
-  return stm_log_newentry(log, (long*)pos, val, vers);
-}
+// static INLINE int
+// int_stm_log_add(tx_log_t *log, stm_word_t * pos, long val, stm_word_t vers)
+// {
+//   return stm_log_newentry(log, (long*)pos, val, vers);
+// }
 
-static INLINE int
-int_stm_log_initBM(tx_log_t *log, stm_word_t * pointer, int size)
-{
-  return stm_log_initBM(log, (long*)pointer, size);
-}
+// static INLINE int
+// int_stm_log_initBM(tx_log_t *log, stm_word_t * pointer, int size)
+// {
+//   return stm_log_initBM(log, (long*)pointer, size);
+// }
 #endif
 
 #endif /* _STM_INTERNAL_H_ */

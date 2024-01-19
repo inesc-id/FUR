@@ -15,7 +15,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
-// #include <x86intrin.h>
+#include <x86intrin.h>
 
 /* ################################################################### *
  * Defines

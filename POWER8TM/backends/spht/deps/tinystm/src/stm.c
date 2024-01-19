@@ -348,11 +348,12 @@ stm_init(void)
 #endif /* EPOCH_GC */
 
 #if DESIGN == WRITE_BACK_CTL_PSTM
-  pstm_nvram_ptr = alocateInNVRAM("/mnt/nvram0/", "nvmalloc_file_shar_t0",
-    pstm_shared_heap_size +
-    pstm_heap_size_per_thread * 64 +
-    pstm_log_size_per_thread * sizeof(w_entry_t) * 64,
-  /*MAP_SHARED_VALIDATE|MAP_SYNC*/MAP_SHARED, NULL);
+  // pstm_nvram_ptr = alocateInNVRAM("/mnt/nvram0/", "nvmalloc_file_shar_t0",
+  //   pstm_shared_heap_size +
+  //   pstm_heap_size_per_thread * 64 +
+  //   pstm_log_size_per_thread * sizeof(w_entry_t) * 64,
+  // /*MAP_SHARED_VALIDATE|MAP_SYNC*/MAP_SHARED, NULL);
+  pstm_nvram_ptr = malloc(pstm_shared_heap_size + pstm_heap_size_per_thread * 64 + pstm_log_size_per_thread * sizeof(w_entry_t) * 64);
   pstm_nvram_heap_ptr = pstm_nvram_ptr;
   pstm_nvram_priv_heap_ptr = (void*)(((uintptr_t)pstm_nvram_ptr) + pstm_shared_heap_size);
   pstm_nvram_logs_ptr = (void*)(((uintptr_t)pstm_nvram_ptr) + pstm_shared_heap_size + pstm_heap_size_per_thread * 64);

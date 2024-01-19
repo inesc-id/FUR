@@ -74,17 +74,6 @@
 
 #include <pthread.h>
 
-
-extern long              global_numThread    ;
-
-extern __thread unsigned long backoff;
-extern __thread unsigned long cm_seed;
-
-extern __thread unsigned int local_exec_mode;
-
-extern __thread void* rot_readset[];
-extern __thread unsigned long rs_counter;
-
 #ifndef REDUCED_TM_API
 
 #include <stdlib.h>
@@ -93,6 +82,17 @@ extern __thread unsigned long rs_counter;
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+extern long              global_numThread    ;
+
+extern __thread unsigned long backoff;
+extern __thread unsigned long cm_seed;
+
+extern __thread unsigned int local_thread_id;
+extern __thread unsigned int local_exec_mode;
+
+extern __thread void* rot_readset[];
+extern __thread unsigned long rs_counter;
 
 #define THREAD_T                            pthread_t
 #define THREAD_ATTR_T                       pthread_attr_t

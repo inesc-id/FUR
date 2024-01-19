@@ -48,7 +48,7 @@ if [[ $backend == p8tm-psi || $backend == p8tm-psi-v2 ]] ; then
     cp ../../backends/p8tm-psi/rdtsc.h lib/
 fi
 
-if [[ $backend == spht* ]] ; then
+if [[ $backend == spht* || $backend == pstm ]] ; then
     rm lib/rdtsc.h
     bash ../../backends/$backend/copy_spht.sh $backend ./lib
 fi

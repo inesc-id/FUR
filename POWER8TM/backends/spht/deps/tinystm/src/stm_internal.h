@@ -33,7 +33,7 @@
 #include "utils.h"
 #include "atomic.h"
 #include "gc.h"
-#include "log.h"
+// #include "log.h"
 
 /* ################################################################### *
  * DEFINES
@@ -152,7 +152,7 @@ extern __thread int w_set_log_id;
   __asm__ volatile(FLUSH_X86_INST " (%0)" : : "r"((void*)((uint64_t)(_addr) & -ARCH_CACHE_LINE_SIZE)) : "memory") \
 //
 
-# define delay_for_pm 29000
+# define delay_for_pm 70
 
 # define emulate_pm_slowdown(){\
     for(volatile int i=0;i<delay_for_pm;i++);\
@@ -163,11 +163,13 @@ emulate_pm_slowdown();\
   __asm__ ("dcbst %0, %1" : /*no result*/ : "b%" (0), "r" (base) : "memory");\
 }\
 
-
+// #define FENCE_PREV_FLUSHES() \
+  // __asm__ volatile(FENCE_X86_INST : : : "memory"); \
+//
+// #def
 #define FENCE_PREV_FLUSHES() \
   __asm__ volatile("sync" : : : "memory"); \
 //
-
 
 // allow circular buffer
 #define FLUSH_RANGE(addr1, addr2, beginAddr, endAddr) \
@@ -175,18 +177,18 @@ emulate_pm_slowdown();\
     for (uint64_t _addr = ((uint64_t)(addr1) & (uint64_t)-ARCH_CACHE_LINE_SIZE); \
                   _addr < (uint64_t)(endAddr); \
                   _addr += ARCH_CACHE_LINE_SIZE) { \
-      __asm__ volatile(FLUSH_X86_INST " (%0)" : : "r"(((void*)_addr)) : "memory"); \
+      FLUSH_CL((void*)_addr); \
     } \
     for (uint64_t _addr = ((uint64_t)(beginAddr) & (uint64_t)-ARCH_CACHE_LINE_SIZE); \
                   _addr < (uint64_t)(addr2); \
                   _addr += ARCH_CACHE_LINE_SIZE) { \
-      __asm__ volatile(FLUSH_X86_INST " (%0)" : : "r"(((void*)_addr)) : "memory"); \
+      FLUSH_CL((void*)_addr); \
     } \
   } else { \
     for (uint64_t _addr = ((uint64_t)(addr1) & (uint64_t)-ARCH_CACHE_LINE_SIZE); \
                   _addr < (uint64_t)(addr2); \
                   _addr += ARCH_CACHE_LINE_SIZE) { \
-      __asm__ volatile(FLUSH_X86_INST " (%0)" : : "r"(((void*)_addr)) : "memory"); \
+      FLUSH_CL((void*)_addr); \
     } \
   } \
 //
@@ -1772,17 +1774,17 @@ int_stm_get_specific(stm_tx_t *tx, int key)
 }
 
 #ifdef TM_STATISTICS3
-static INLINE int
-int_stm_log_add(tx_log_t *log, stm_word_t * pos, long val, stm_word_t vers)
-{
-  return stm_log_newentry(log, (long*)pos, val, vers);
-}
+// static INLINE int
+// int_stm_log_add(tx_log_t *log, stm_word_t * pos, long val, stm_word_t vers)
+// {
+//   return stm_log_newentry(log, (long*)pos, val, vers);
+// }
 
-static INLINE int
-int_stm_log_initBM(tx_log_t *log, stm_word_t * pointer, int size)
-{
-  return stm_log_initBM(log, (long*)pointer, size);
-}
+// static INLINE int
+// int_stm_log_initBM(tx_log_t *log, stm_word_t * pointer, int size)
+// {
+//   return stm_log_initBM(log, (long*)pointer, size);
+// }
 #endif
 
 #endif /* _STM_INTERNAL_H_ */
