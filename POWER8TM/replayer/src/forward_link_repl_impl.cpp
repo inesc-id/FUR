@@ -75,7 +75,6 @@ int rep::forward_link::generate_log()
   return nbWrTxs;
 }
 
-
 int rep::forward_link::replay()
 {
   int nbReps = 0;
@@ -151,7 +150,7 @@ int rep::forward_link::replay()
 
     // TODO: the replayer may want to truncate log space to unblock workers doing write transactions
     // emulates flush of metadata that flags the workers that there is more log space
-    flush((uint64_t*)log_start);
+    // flush((uint64_t*)log_start);
     flush_barrier();
   }
 
@@ -161,5 +160,4 @@ int rep::forward_link::replay()
   delete [] ptr_l_end;
   return nbReps;
 }
-
 

@@ -127,7 +127,7 @@ int rep::seq_log::replay()
     ptr_m++;
     nbReps++;
     // emulates flush of metadata that flags the workers that there is more log space
-    flush((uint64_t*)pos_s);
+    // flush((uint64_t*)pos_s);
     flush_barrier();
 
     // TODO: the replayer may want to truncate log space to unblock workers doing write transactions

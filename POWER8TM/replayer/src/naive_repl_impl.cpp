@@ -162,7 +162,7 @@ int rep::naive::replay()
     nbReps++;
     // TODO: the replayer may want to truncate log space to unblock workers doing write transactions
     // emulates flush of metadata that flags the workers that there is more log space
-    flush((uint64_t*)log_start);
+    // flush((uint64_t*)log_start);
     flush_barrier();
   }
 
