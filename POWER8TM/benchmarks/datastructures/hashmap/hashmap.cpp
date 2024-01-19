@@ -4,6 +4,7 @@
 #include <limits.h>
 #include <pthread.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <time.h>
 #include "timer.h"
