@@ -19,6 +19,7 @@ X = []
 Ys = []
 err = []
 
+
 for f in files:
     r = pd.DataFrame()
     for i in range(NB_FILES):
@@ -32,6 +33,7 @@ for f in files:
 
 # Create the first subplot
 fig, axs = plt.subplots(figsize=(7,3), nrows=1, ncols=1)
+axs.set_ylim([2e5,2.9e5])
 
 for y,e,s in zip(Ys,err,solutions):
     axs.errorbar(X, y, yerr=e, label=s)

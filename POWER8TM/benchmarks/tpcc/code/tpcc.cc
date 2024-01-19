@@ -291,6 +291,17 @@ int main(int argc, char** argv) {
 	// P_MEMORY_STARTUP(num_clients);
 	// thread_startup(num_clients);
 
+  // TODO: add more new Order here
+  /*for (int i = 0; i < 1; ++i)
+  {
+    for (c = 0; c < num_clients; c++)
+    {
+      TM_BEGIN(0);
+      clients[c]->doNewOrder(); // TODO: this is the transactional code
+      TM_END();
+    }
+  }*/
+
   printf("Running... ");
   fflush(stdout);
   GOTO_SIM();
