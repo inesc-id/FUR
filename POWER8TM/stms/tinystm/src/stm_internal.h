@@ -25,18 +25,15 @@
 
 #ifndef _STM_INTERNAL_H_
 #define _STM_INTERNAL_H_
-#ifdef _DIE_
-    //#define _POSIX_C_SOURCE >= 199309L
-    #include <time.h>
-    #include <stdio.h>
-#endif
+
 #include <pthread.h>
 #include <string.h>
-#include <stm_tinystm.h>
+#include <stm.h>
+#include "tls.h"
 #include "utils.h"
 #include "atomic.h"
 #include "gc.h"
-#include "tls.h"
+#include "log.h"
 
 /* ################################################################### *
  * DEFINES
@@ -47,6 +44,7 @@
 #define WRITE_BACK_CTL                  1
 #define WRITE_THROUGH                   2
 #define MODULAR                         3
+#define WRITE_BACK_CTL_PSTM             4
 
 #ifndef DESIGN
 # define DESIGN                         WRITE_BACK_ETL
@@ -82,6 +80,10 @@
 # error "SIGNAL_HANDLER can only be used without EPOCH_GC"
 #endif /* defined(EPOCH_GC) && defined(SIGNAL_HANDLER) */
 
+#if defined(HYBRID_ASF) && CM != CM_SUICIDE
+# error "HYBRID_ASF can only be used with SUICIDE contention manager"
+#endif /* defined(HYBRID_ASF) && CM != CM_SUICIDE */
+
 #define TX_GET                          stm_tx_t *tx = tls_get_tx()
 
 #ifndef RW_SET_SIZE
@@ -89,7 +91,7 @@
 #endif /* ! RW_SET_SIZE */
 
 #ifndef LOCK_ARRAY_LOG_SIZE
-# define LOCK_ARRAY_LOG_SIZE            20                  /* Size of lock array: 2^20 = 1M */
+# define LOCK_ARRAY_LOG_SIZE            24                  /* Size of lock array: 2^20 = 1M */
 #endif /* LOCK_ARRAY_LOG_SIZE */
 
 #ifndef LOCK_SHIFT_EXTRA
@@ -114,18 +116,6 @@
 
 #define NO_SIGNAL_HANDLER               "NO_SIGNAL_HANDLER"
 
-/* Indicates to use _ITM_siglongjmp */
-#if defined(__i386__)
-# define _ITM_CALL_CONVENTION __attribute__((regparm(2)))
-#else
-# define _ITM_CALL_CONVENTION
-#endif
-
-extern void reset_nesting_level();
-
-//# define CTX_ITM   reset_nesting_level(); _ITM_siglongjmp
-extern void _ITM_CALL_CONVENTION _ITM_siglongjmp(int val, sigjmp_buf env) __attribute__ ((noreturn));
-
 #if defined(CTX_LONGJMP)
 # define JMP_BUF                        jmp_buf
 # define LONGJMP(ctx, value)            longjmp(ctx, value)
@@ -137,6 +127,49 @@ extern void _ITM_CALL_CONVENTION _ITM_siglongjmp(int val, sigjmp_buf env) __attr
 # define JMP_BUF                        sigjmp_buf
 # define LONGJMP(ctx, value)            siglongjmp(ctx, value)
 #endif /* !CTX_LONGJMP && !CTX_ITM */
+
+#if DESIGN == WRITE_BACK_CTL_PSTM
+
+extern __thread int w_set_log_id;
+
+#define FLUSH_X86_INST       "clwb"
+// #define FLUSH_X86_INST    "clflushopt"
+// #define FLUSH_X86_INST    "clflush"
+
+#define FENCE_X86_INST       "sfence"
+#define ARCH_CACHE_LINE_SIZE 64
+
+#define FLUSH_CL(_addr) \
+  __asm__ volatile(FLUSH_X86_INST " (%0)" : : "r"((void*)((uint64_t)(_addr) & -ARCH_CACHE_LINE_SIZE)) : "memory") \
+//
+
+#define FENCE_PREV_FLUSHES() \
+  __asm__ volatile(FENCE_X86_INST : : : "memory"); \
+//
+
+// allow circular buffer
+#define FLUSH_RANGE(addr1, addr2, beginAddr, endAddr) \
+  if (addr2 < addr1) { \
+    for (uint64_t _addr = ((uint64_t)(addr1) & (uint64_t)-ARCH_CACHE_LINE_SIZE); \
+                  _addr < (uint64_t)(endAddr); \
+                  _addr += ARCH_CACHE_LINE_SIZE) { \
+      __asm__ volatile(FLUSH_X86_INST " (%0)" : : "r"(((void*)_addr)) : "memory"); \
+    } \
+    for (uint64_t _addr = ((uint64_t)(beginAddr) & (uint64_t)-ARCH_CACHE_LINE_SIZE); \
+                  _addr < (uint64_t)(addr2); \
+                  _addr += ARCH_CACHE_LINE_SIZE) { \
+      __asm__ volatile(FLUSH_X86_INST " (%0)" : : "r"(((void*)_addr)) : "memory"); \
+    } \
+  } else { \
+    for (uint64_t _addr = ((uint64_t)(addr1) & (uint64_t)-ARCH_CACHE_LINE_SIZE); \
+                  _addr < (uint64_t)(addr2); \
+                  _addr += ARCH_CACHE_LINE_SIZE) { \
+      __asm__ volatile(FLUSH_X86_INST " (%0)" : : "r"(((void*)_addr)) : "memory"); \
+    } \
+  } \
+//
+
+#endif
 
 
 /* ################################################################### *
@@ -155,12 +188,6 @@ enum {                                  /* Transaction status */
 };
 #define STATUS_BITS                     4
 #define STATUS_MASK                     ((1 << STATUS_BITS) - 1)
-
-#ifdef _DIE_
-#define myTimeDiff(start, end, ret)    if ((end.tv_nsec-start.tv_nsec)<0){temp.tv_sec = end.tv_sec-start.tv_sec-1;temp.tv_nsec = 1000000000+end.tv_nsec-start.tv_nsec;}\
-                                       else {temp.tv_sec = end.tv_sec-start.tv_sec;temp.tv_nsec = end.tv_nsec-start.tv_nsec;}\
-                                       (*ret) = temp.tv_nsec;
-#endif //DIE
 
 #if CM == CM_MODULAR
 # define SET_STATUS(s, v)               ATOMIC_STORE_REL(&(s), ((s) & ~(stm_word_t)STATUS_MASK) | (v))
@@ -283,17 +310,6 @@ enum {                                  /* Transaction status */
 # define MAX_SPECIFIC                   7
 #endif /* MAX_SPECIFIC */
 
-#ifdef _DIE_
-   static unsigned short active_workload_profiling = 1;
-   void tinystm_enable_profiling_stats(){
-      active_workload_profiling = 1;
-   }
-   void tinystm_disable_profiling_stats(){
-      active_workload_profiling = 0;
-   }
-#endif //DIE
-
-#include "dmp.h"
 
 typedef struct r_entry {                /* Read set entry */
   stm_word_t version;                   /* Version read */
@@ -346,16 +362,22 @@ typedef struct cb_entry {               /* Callback entry */
 } cb_entry_t;
 
 typedef struct stm_tx {                 /* Transaction descriptor */
-  JMP_BUF* env;                          /* Environment for setjmp/longjmp */
+  JMP_BUF env;                          /* Environment for setjmp/longjmp */
   stm_tx_attr_t attr;                   /* Transaction attributes (user-specified) */
   volatile stm_word_t status;           /* Transaction status */
   stm_word_t start;                     /* Start timestamp */
   stm_word_t end;                       /* End timestamp (validity range) */
   r_set_t r_set;                        /* Read set */
   w_set_t w_set;                        /* Write set */
+#if DESIGN == WRITE_BACK_CTL_PSTM
+  unsigned long start_tsc, end_tsc;
+#endif
 #ifdef IRREVOCABLE_ENABLED
   unsigned int irrevocable:4;           /* Is this execution irrevocable? */
 #endif /* IRREVOCABLE_ENABLED */
+#ifdef HYBRID_ASF
+  unsigned int software:1;              /* Is the transaction mode pure software? */
+#endif /* HYBRID_ASF */
   unsigned int nesting;                 /* Nesting level */
 #if CM == CM_MODULAR
   stm_word_t timestamp;                 /* Timestamp (not changed upon restart) */
@@ -375,55 +397,13 @@ typedef struct stm_tx {                 /* Transaction descriptor */
 #if CM == CM_MODULAR
   int visible_reads;                    /* Should we use visible reads? */
 #endif /* CM == CM_MODULAR */
-#if CM == CM_MODULAR || defined(TM_STATISTICS)
+#if CM == CM_MODULAR || defined(TM_STATISTICS) || defined(HYBRID_ASF)
   unsigned int stat_retries;            /* Number of consecutive aborts (retries) */
-#endif /* CM == CM_MODULAR || defined(TM_STATISTICS) */
+#endif /* CM == CM_MODULAR || defined(TM_STATISTICS) || defined(HYBRID_ASF) */
 #ifdef TM_STATISTICS
   unsigned int stat_commits;            /* Total number of commits (cumulative) */
   unsigned int stat_aborts;             /* Total number of aborts (cumulative) */
   unsigned int stat_retries_max;        /* Maximum number of consecutive aborts (retries) */
-  //DIE
-    #ifdef _DIE_
-        #if DESIGN != WRITE_BACK_ETL
-           #error "_DIE_ Statistics are only fully supported with DESIGN == WRITE_BACK_ETL"
-        #endif
-        #if CM != CM_SUICIDE
-           #error "_DIE_ Statistics are only fully supported with CM == CM_SUICIDE"
-        #endif
-        unsigned int cumulative_wr_nb_items;
-        unsigned int cumulative_ww_nb_items;
-        unsigned int cumulative_ro_nb_items;
-        unsigned int cumulative_ro_commits;
-        unsigned int cumulative_wr_commits;
-        unsigned int cumulative_wr_commits2;
-        struct timespec tx_overall_start_time;  //wallclock timestamp of tm_begin  (only for non nested xacts)
-        struct timespec tx_current_run_start_time;  //wallclock timestamp of start/restart of an xact (only for non nested xacts)
-        double cumulative_overall_wallclock_ro_time; //cumulative duration of a ro xact  (only for non nested xacts)
-        double cumulative_overall_wallclock_wr_time; //cumulative duration of a wr xact, inclusive of retries and duration of nested xact
-        double cumulative_run_commit_wallclock_wr_time; //cumulative duration of the current run of a wr xact, inclusive of nested xact duration, up to the time of a commit
-        double cumulative_run_abort_wallclock_wr_time;  //cumulative duration of the current run of a wr xact, inclusive of nested xact duration, up to the time of an abort
-        double cumulative_run_commit_wallclock_ro_time; //cumulative duration of the current run of a wr xact, inclusive of nested xact duration, up to the time of a commit
-        double cumulative_run_abort_wallclock_ro_time;  //cumulative duration of the current run of a wr xact, inclusive of nested xact duration, up to the time of an abort
-        struct timespec tx_last_commit_wallckock_time;
-        double cumulative_non_transactional_wallclock_time; //time between the commit of a xact and the begin of the next one. Possible back-offs times are not counted here
-        unsigned short trace_additional_stats; //1 if we indeed want to profile workload
-        unsigned int brand_new_transaction; //One if the xact is executing for the first time, 0 otherwise
-        unsigned int tx_current_run_num_writes; //Writes performed by the current run of a xact  (it is different from w_set size, as some writes may be repeated)
-        unsigned int tx_current_run_num_reads;
-        unsigned int tx_current_run_num_repeated_writes; //Number of issued writes operation against elements already in the wset. I add this because with some policies (e.g., visible reads), the write set is populated also when not doing a write, so I don't feel confortable in computing this s the difference of wset size and total number of writes
-        unsigned int tx_current_run_num_reads_pre_first_write;
-        unsigned int tx_current_run_num_raw_reads;//Num reads served by the write set
-        unsigned int tx_current_run_num_non_raw_reads_after_first_write;
-        unsigned int cumulative_num_writes;
-        unsigned int cumulative_num_repeated_writes;
-        unsigned int cumulative_num_wr_reads;
-        unsigned int cumulative_num_ro_reads;
-        unsigned int cumulative_num_reads_before_first_write;
-        unsigned int cumulative_num_non_raw_reads_after_first_write; //NB raw = read after write
-        unsigned int cumulative_num_raw_reads;
-        unsigned int cumulative_num_update_aborts;
-        unsigned int cumulative_num_ro_aborts;
-    #endif //_DIE_
 #endif /* TM_STATISTICS */
 #ifdef TM_STATISTICS2
   unsigned int stat_aborts_1;           /* Total number of transactions that abort once or more (cumulative) */
@@ -434,6 +414,9 @@ typedef struct stm_tx {                 /* Transaction descriptor */
   unsigned int stat_locked_reads_failed;/* Failed reads of previous value */
 # endif /* READ_LOCKED_DATA */
 #endif /* TM_STATISTICS2 */
+#ifdef TM_STATISTICS3
+  tx_log_t log;							/*Transaction Log*/
+#endif /* TM_STATISTICS3 */
 } stm_tx_t;
 
 /* This structure should be ordered by hot and cold variables */
@@ -807,7 +790,6 @@ static NOINLINE void
 stm_allocate_rs_entries(stm_tx_t *tx, int extend)
 {
   PRINT_DEBUG("==> stm_allocate_rs_entries(%p[%lu-%lu],%d)\n", tx, (unsigned long)tx->start, (unsigned long)tx->end, extend);
-
   if (extend) {
     /* Extend read set */
     tx->r_set.size *= 2;
@@ -833,6 +815,23 @@ stm_allocate_ws_entries(stm_tx_t *tx, int extend)
 
   PRINT_DEBUG("==> stm_allocate_ws_entries(%p[%lu-%lu],%d)\n", tx, (unsigned long)tx->start, (unsigned long)tx->end, extend);
 
+#if DESIGN == WRITE_BACK_CTL_PSTM
+  if (!extend) {
+    int logPos = w_set_log_id;
+    if (logPos == -1) {
+      logPos = __sync_fetch_and_add(&pstm_thread_pos, 1);
+      w_set_log_id = logPos;
+    }
+    void* pos = (void*)((uintptr_t)pstm_nvram_logs_ptr + logPos * pstm_log_size_per_thread * sizeof(w_entry_t));
+    tx->w_set.size = pstm_log_size_per_thread;
+    tx->w_set.entries = (w_entry_t *)pos;
+    return;
+  }
+  // else ERROR! for now it is not possible to extend
+  // printf("error! cannot extend!\n");
+  return;
+#else
+
   if (extend) {
     /* Extend write set */
     /* Transaction must be inactive for WRITE_THROUGH or WRITE_BACK_ETL */
@@ -857,6 +856,8 @@ stm_allocate_ws_entries(stm_tx_t *tx, int extend)
   for (i = first; i < tx->w_set.size; i++)
     tx->w_set.entries[i].tx = tx;
 #endif /* CM == CM_MODULAR || defined(CONFLICT_TRACKING) */
+
+#endif /* DESIGN == WRITE_BACK_CTL_PSTM */
 }
 
 
@@ -864,6 +865,8 @@ stm_allocate_ws_entries(stm_tx_t *tx, int extend)
 # include "stm_wbetl.h"
 #elif DESIGN == WRITE_BACK_CTL
 # include "stm_wbctl.h"
+#elif DESIGN == WRITE_BACK_CTL_PSTM
+# include "stm_wbctl_pstm.h"
 #elif DESIGN == WRITE_THROUGH
 # include "stm_wt.h"
 #elif DESIGN == MODULAR
@@ -984,35 +987,6 @@ int_stm_prepare(stm_tx_t *tx)
     stm_quiesce_barrier(tx, rollover_clock, NULL);
     goto start;
   }
-  //DIE: take the start time from here, after the quiesce_barrier
-    #ifdef TM_STATISTICS
-     #ifdef _DIE_
-     if(unlikely(active_workload_profiling)){
-     struct timespec startTime, temp;
-     clock_gettime(CLOCK_REALTIME, &startTime);
-     double diff;
-     myTimeDiff(tx->tx_last_commit_wallckock_time, startTime,&diff);
-      if(tx->brand_new_transaction){
-        tx->brand_new_transaction = 0;
-        tx->tx_overall_start_time = startTime;
-        //the wc time between last commit and begin of a brand new xact is the non xact code
-        tx->cumulative_non_transactional_wallclock_time+=(diff);
-        //Enable the workload profiling for the current xact
-        tx->trace_additional_stats=1;
-      }
-      tx->tx_current_run_num_writes = 0;
-      tx->tx_current_run_num_repeated_writes = 0;
-      tx->tx_current_run_num_reads_pre_first_write = 0;
-      tx->tx_current_run_num_non_raw_reads_after_first_write = 0;
-      tx->tx_current_run_num_raw_reads = 0;
-      tx->tx_current_run_start_time = startTime;
-      tx->tx_current_run_num_reads = 0;
-      }
-      else{
-      tx->trace_additional_stats=0;
-      }
-     #endif //_DIE_
-    #endif  //TM_STATISTICS
 #if CM == CM_MODULAR
   if (tx->stat_retries == 0)
     tx->timestamp = tx->start;
@@ -1076,6 +1050,8 @@ stm_rollback(stm_tx_t *tx, unsigned int reason)
   stm_wbetl_rollback(tx);
 #elif DESIGN == WRITE_BACK_CTL
   stm_wbctl_rollback(tx);
+#elif DESIGN == WRITE_BACK_CTL_PSTM
+  stm_wbctl_pstm_rollback(tx);
 #elif DESIGN == WRITE_THROUGH
   stm_wt_rollback(tx);
 #elif DESIGN == MODULAR
@@ -1096,26 +1072,8 @@ stm_rollback(stm_tx_t *tx, unsigned int reason)
 #endif /* CM == CM_MODULAR || defined(TM_STATISTICS) */
 #ifdef TM_STATISTICS
   tx->stat_aborts++;
-  if (tx->stat_retries_max < tx->stat_retries) {
+  if (tx->stat_retries_max < tx->stat_retries)
     tx->stat_retries_max = tx->stat_retries;
-  }
-	#ifdef _DIE_
-	   if(unlikely(tx->trace_additional_stats)){
-      struct timespec endTx, temp;
-      clock_gettime(CLOCK_REALTIME, &endTx);
-      struct timespec initTx = tx->tx_current_run_start_time;
-      double diff;
-      myTimeDiff(initTx, endTx, &diff);
-      if(tx->tx_current_run_num_writes == 0){ //An xact that dies at the first write might have empty writeset, whereas this stat is updated as soon as the write is issued
-         tx->cumulative_num_ro_aborts++;
-         tx->cumulative_run_abort_wallclock_ro_time+= (diff);
-      }
-      else{
-         tx->cumulative_num_update_aborts++;
-         tx->cumulative_run_abort_wallclock_wr_time+= (diff);
-      }
-      }
-   #endif //DIE
 #endif /* TM_STATISTICS */
 #ifdef TM_STATISTICS2
   /* Aborts stats wrt reason */
@@ -1178,7 +1136,7 @@ stm_rollback(stm_tx_t *tx, unsigned int reason)
 
   /* Reset field to restart transaction */
   int_stm_prepare(tx);
- 
+
   /* Jump back to transaction start */
   /* Note: ABI usually requires 0x09 (runInstrumented+restoreLiveVariable) */
 #ifdef IRREVOCABLE_ENABLED
@@ -1189,7 +1147,7 @@ stm_rollback(stm_tx_t *tx, unsigned int reason)
 #else /* ! IRREVOCABLE_ENABLED */
   reason |= STM_PATH_INSTRUMENTED;
 #endif /* ! IRREVOCABLE_ENABLED */
-  LONGJMP(*tx->env, reason);
+  LONGJMP(tx->env, reason);
 }
 
 /*
@@ -1199,14 +1157,7 @@ static INLINE w_entry_t *
 stm_write(stm_tx_t *tx, volatile stm_word_t *addr, stm_word_t value, stm_word_t mask)
 {
   w_entry_t *w;
-  #ifdef TM_STATISTICS
-      #ifdef _DIE_
-      if(unlikely(tx->trace_additional_stats)){
-         //Increase the number of performed overall writes
-         tx->tx_current_run_num_writes++;
-         }
-      #endif //DIE
-  #endif //TM_STATISTICS
+
   PRINT_DEBUG2("==> stm_write(t=%p[%lu-%lu],a=%p,d=%p-%lu,m=0x%lx)\n",
                tx, (unsigned long)tx->start, (unsigned long)tx->end, addr, (void *)value, (unsigned long)value, (unsigned long)mask);
 
@@ -1228,6 +1179,8 @@ stm_write(stm_tx_t *tx, volatile stm_word_t *addr, stm_word_t value, stm_word_t 
   w = stm_wbetl_write(tx, addr, value, mask);
 #elif DESIGN == WRITE_BACK_CTL
   w = stm_wbctl_write(tx, addr, value, mask);
+#elif DESIGN == WRITE_BACK_CTL_PSTM
+  w = stm_wbctl_pstm_write(tx, addr, value, mask);
 #elif DESIGN == WRITE_THROUGH
   w = stm_wt_write(tx, addr, value, mask);
 #elif DESIGN == MODULAR
@@ -1250,6 +1203,8 @@ int_stm_RaR(stm_tx_t *tx, volatile stm_word_t *addr)
   value = stm_wbetl_RaR(tx, addr);
 #elif DESIGN == WRITE_BACK_CTL
   value = stm_wbctl_RaR(tx, addr);
+#elif DESIGN == WRITE_BACK_CTL_PSTM
+  value = stm_wbctl_pstm_RaR(tx, addr);
 #elif DESIGN == WRITE_THROUGH
   value = stm_wt_RaR(tx, addr);
 #endif /* DESIGN == WRITE_THROUGH */
@@ -1264,6 +1219,8 @@ int_stm_RaW(stm_tx_t *tx, volatile stm_word_t *addr)
   value = stm_wbetl_RaW(tx, addr);
 #elif DESIGN == WRITE_BACK_CTL
   value = stm_wbctl_RaW(tx, addr);
+#elif DESIGN == WRITE_BACK_CTL_PSTM
+  value = stm_wbctl_pstm_RaW(tx, addr);
 #elif DESIGN == WRITE_THROUGH
   value = stm_wt_RaW(tx, addr);
 #endif /* DESIGN == WRITE_THROUGH */
@@ -1278,6 +1235,8 @@ int_stm_RfW(stm_tx_t *tx, volatile stm_word_t *addr)
   value = stm_wbetl_RfW(tx, addr);
 #elif DESIGN == WRITE_BACK_CTL
   value = stm_wbctl_RfW(tx, addr);
+#elif DESIGN == WRITE_BACK_CTL_PSTM
+  value = stm_wbctl_pstm_RfW(tx, addr);
 #elif DESIGN == WRITE_THROUGH
   value = stm_wt_RfW(tx, addr);
 #endif /* DESIGN == WRITE_THROUGH */
@@ -1291,6 +1250,8 @@ int_stm_WaR(stm_tx_t *tx, volatile stm_word_t *addr, stm_word_t value, stm_word_
   stm_wbetl_WaR(tx, addr, value, mask);
 #elif DESIGN == WRITE_BACK_CTL
   stm_wbctl_WaR(tx, addr, value, mask);
+#elif DESIGN == WRITE_BACK_CTL_PSTM
+  stm_wbctl_pstm_WaR(tx, addr, value, mask);
 #elif DESIGN == WRITE_THROUGH
   stm_wt_WaR(tx, addr, value, mask);
 #endif /* DESIGN == WRITE_THROUGH */
@@ -1303,6 +1264,8 @@ int_stm_WaW(stm_tx_t *tx, volatile stm_word_t *addr, stm_word_t value, stm_word_
   stm_wbetl_WaW(tx, addr, value, mask);
 #elif DESIGN == WRITE_BACK_CTL
   stm_wbctl_WaW(tx, addr, value, mask);
+#elif DESIGN == WRITE_BACK_CTL_PSTM
+  stm_wbctl_pstm_WaW(tx, addr, value, mask);
 #elif DESIGN == WRITE_THROUGH
   stm_wt_WaW(tx, addr, value, mask);
 #endif /* DESIGN == WRITE_THROUGH */
@@ -1316,17 +1279,22 @@ int_stm_init_thread(void)
   PRINT_DEBUG("==> stm_init_thread()\n");
 
   /* Avoid initializing more than once */
-  if ((tx = tls_get_tx()) != NULL)
+  tx = tls_get_tx();
+  if (tx != NULL) {
+    printf("Found repeated TX\n");
     return tx;
+  }
 
 #ifdef EPOCH_GC
+    printf("   GC\n");
   gc_init_thread();
 #endif /* EPOCH_GC */
 
   /* Allocate descriptor */
   tx = (stm_tx_t *)xmalloc_aligned(sizeof(stm_tx_t));
   /* Set attribute */
-  tx->attr = (stm_tx_attr_t)0;
+  // tx->attr = (stm_tx_attr_t)0;
+  memset(&(tx->attr), 0, sizeof(tx->attr));
   /* Set status (no need for CAS or atomic op) */
   tx->status = TX_IDLE;
   /* Read set */
@@ -1364,51 +1332,14 @@ int_stm_init_thread(void)
   tx->visible_reads = 0;
   tx->timestamp = 0;
 #endif /* CM == CM_MODULAR */
-#if CM == CM_MODULAR || defined(TM_STATISTICS)
+#if CM == CM_MODULAR || defined(TM_STATISTICS) || defined(HYBRID_ASF)
   tx->stat_retries = 0;
-#endif /* CM == CM_MODULAR || defined(TM_STATISTICS) */
+#endif /* CM == CM_MODULAR || defined(TM_STATISTICS) || defined(HYBRID_ASF) */
 #ifdef TM_STATISTICS
   /* Statistics */
   tx->stat_commits = 0;
   tx->stat_aborts = 0;
   tx->stat_retries_max = 0;
-  //DIE
-    #ifdef _DIE_
-    if(unlikely(tx->trace_additional_stats)){
-        tx->cumulative_wr_nb_items = 0;
-        tx->cumulative_ww_nb_items = 0;
-        tx->cumulative_ro_nb_items = 0;
-        tx->cumulative_ro_commits = 0;
-        tx->cumulative_wr_commits = 0;
-        tx->cumulative_wr_commits2 = 0;
-        //tx->tx_overall_start_time = 0;
-        //tx->tx_current_run_start_time = 0;
-        //tx->tx_last_commit_wallckock_time = 0;
-        tx->cumulative_overall_wallclock_ro_time = 0;
-        tx->cumulative_overall_wallclock_wr_time = 0;
-        tx->cumulative_run_commit_wallclock_wr_time = 0;
-        tx->cumulative_run_abort_wallclock_wr_time = 0;
-        tx->cumulative_run_commit_wallclock_ro_time = 0;
-        tx->cumulative_run_abort_wallclock_ro_time = 0;
-        tx->brand_new_transaction = 1; //The first xact that will run is of course at its first execution
-        tx->cumulative_non_transactional_wallclock_time = 0; //time between the commit of a xact and the begin of the next one. Possible back-offs times are not counted here
-        tx->tx_current_run_num_writes=0; //Writes performed by the current run of a xact  (it is different from w_set size, as some writes may be repeated)
-        tx->tx_current_run_num_repeated_writes = 0;
-        tx->tx_current_run_num_reads_pre_first_write = 0;
-        tx->tx_current_run_num_raw_reads = 0;//Num reads served by the write set
-        tx->tx_current_run_num_non_raw_reads_after_first_write=0;
-        tx->cumulative_num_repeated_writes=0;
-        tx->cumulative_num_writes = 0;
-        tx->cumulative_num_reads_before_first_write=0;
-        tx->cumulative_num_non_raw_reads_after_first_write=0; //NB raw = read after write
-        tx->cumulative_num_raw_reads=0;
-        tx->cumulative_num_update_aborts = 0;
-        tx->cumulative_num_ro_aborts = 0;
-        tx->tx_current_run_num_reads = 0;
-        tx->cumulative_num_ro_reads = 0;
-        tx->cumulative_num_wr_reads = 0;
-        }
-    #endif //_DIE
 #endif /* TM_STATISTICS */
 #ifdef TM_STATISTICS2
   tx->stat_aborts_1 = 0;
@@ -1419,6 +1350,12 @@ int_stm_init_thread(void)
   tx->stat_locked_reads_failed = 0;
 # endif /* READ_LOCKED_DATA */
 #endif /* TM_STATISTICS2 */
+#ifdef TM_STATISTICS3
+  stm_log_init(&tx->log);
+#endif /* TM_STATISTICS3 */
+#ifdef HYBRID_ASF
+  tx->software = 0;
+#endif /* HYBRID_ASF */
 #ifdef IRREVOCABLE_ENABLED
   tx->irrevocable = 0;
 #endif /* IRREVOCABLE_ENABLED */
@@ -1458,87 +1395,15 @@ int_stm_exit_thread(stm_tx_t *tx)
 
 #ifdef TM_STATISTICS
   /* Display statistics before to lose it */
-  //DIE: removing the dependence form environment variable
-    #ifndef _DIE_
-    if (getenv("TM_STATISTICS") != NULL) {
-    #endif
-      double avg_aborts = .0;
-      if (tx->stat_commits)   {
-        avg_aborts = (double)tx->stat_aborts / tx->stat_commits;
-      }
-      //DIE
-      #ifdef _DIE_
-      if(unlikely(tx->trace_additional_stats)){
-            double wr_perc = .0;
-            double avg_commit_run_wr_exec = 0;
-            double avg_abort_run_wr_exec = 0;
-            double avg_commit_run_ro_exec = 0;
-            double avg_abort_run_ro_exec = 0;
-            double avg_overall_wr_exec = 0;
-            double avg_overall_ro_exec = 0;
-            double w_s = 0;
-            double rw_s = 0;
-            double r_s = 0;
-            double wr = tx->cumulative_wr_commits;
-            double ro = tx->cumulative_ro_commits;
-            double wr2 = tx->cumulative_wr_commits2;
-            double dAborts = (double) tx->stat_aborts;
-            double avg_repeated_wr=0;
-            double avg_reads_before_first_write = 0;
-            double avg_non_raw_after_first_write = 0;
-            double avg_raw_reads = 0;
-            double avg_sum_writes = 0;
-            double avg_sum_reads = 0;
-            double avg_non_tx_wct = 0;
-            double avg_write_per_xact = 0;
-            double avg_reads_wr = 0;
-            double avg_reads_ro = 0;
-            double total_wr_aborts = tx->cumulative_num_update_aborts;
-            double total_ro_aborts = tx->cumulative_num_ro_aborts;
-            if(wr + ro)  {
-               wr_perc = wr/(wr + ro);
-               avg_non_tx_wct = tx->cumulative_non_transactional_wallclock_time / (wr+ro);
-            }
-            if(wr > 0){
-               w_s = tx->cumulative_ww_nb_items / wr;
-               rw_s = tx->cumulative_wr_nb_items / wr;
-               avg_commit_run_wr_exec = tx->cumulative_run_commit_wallclock_wr_time / (1000 * wr);
-               avg_overall_wr_exec = tx->cumulative_overall_wallclock_wr_time / (1000 * wr);
-               avg_repeated_wr = tx->cumulative_num_repeated_writes / wr;
-               avg_reads_before_first_write = tx->cumulative_num_reads_before_first_write / wr;
-               avg_non_raw_after_first_write = tx->cumulative_num_non_raw_reads_after_first_write / wr;
-               avg_raw_reads = tx->cumulative_num_raw_reads / wr;
-               avg_sum_reads = avg_reads_before_first_write + avg_non_raw_after_first_write + avg_raw_reads;
-               avg_sum_writes = avg_repeated_wr + w_s;
-               avg_write_per_xact = tx->cumulative_num_writes / wr;
-               avg_reads_wr = tx->cumulative_num_wr_reads / wr;
-            }
-            if(dAborts){
-               avg_aborts = dAborts / (tx->stat_commits);
-            }
-            if(ro > 0){
-               r_s = tx->cumulative_ro_nb_items / ro;
-               avg_overall_ro_exec = tx->cumulative_overall_wallclock_ro_time  / (1000 * ro);
-               avg_reads_ro = tx->cumulative_num_ro_reads / ro;
-               avg_commit_run_ro_exec = tx->cumulative_run_commit_wallclock_ro_time / (1000 * ro);
-            }
-            if(total_wr_aborts){
-              avg_abort_run_wr_exec = tx->cumulative_run_abort_wallclock_wr_time / (1000 * total_wr_aborts);
-            }
-            if(total_ro_aborts){
-              avg_abort_run_ro_exec = tx->cumulative_run_abort_wallclock_ro_time / (1000 * total_ro_aborts);
-            }
-
-            //printf("Thread %p | commits:%12u aborts:%12u updateCommits:%12u updateAborts:%12u readOnlyCommits:%12u readOnlyAborts:%12u avg_aborts:%12.9f max_retries:%12u update_perc:%12.9f writeXactWriteset_items:%12.9f writeXactReadset_items:%12.9f ROXactReadset_items:%12.9f ro_duration:%12.9f wr_duration:%12.9f wr_commit_duration:%12.9f wr_abort_duration:%12.9f ro_commit_duration:%12.9f ro_abort_duration:%12.9f non_tx_duration:%12.9f repeated_wr:%12.9f rbfw:%12.9f raw:%12.9f nraw:%12.9f tot_wr:%12.9f tot_rd:%12.9f wr_per_xact:%12.9f avg_reads_per_wr:%12.9f avg_reads_per_ro:%12.9f num_update_commits2:%12.9f\n",
-           printf("Thread %p | commits:%u aborts:%u updateCommits:%u updateAborts:%u readOnlyCommits:%u readOnlyAborts:%u avg_aborts:%f max_retries:%u update_perc:%f writeXactWriteset_items:%f writeXactReadset_items:%f ROXactReadset_items:%f ro_duration:%f wr_duration:%f wr_commit_duration:%f wr_abort_duration:%f ro_commit_duration:%f ro_abort_duration:%f non_tx_duration:%f repeated_wr:%f rbfw:%f raw:%12.9f nraw:%f tot_wr:%f tot_rd:%f wr_per_xact:%f avg_reads_per_wr:%f avg_reads_per_ro:%f num_update_commits2:%f\n",
-           (void *)pthread_self(), tx->stat_commits, tx->stat_aborts, tx->cumulative_wr_commits, tx->cumulative_num_update_aborts, tx->cumulative_ro_commits, tx->cumulative_num_ro_aborts, avg_aborts, tx->stat_retries_max, wr_perc, w_s, rw_s, r_s, avg_overall_ro_exec, avg_overall_wr_exec, avg_commit_run_wr_exec, avg_abort_run_wr_exec, avg_commit_run_ro_exec, avg_abort_run_ro_exec, avg_non_tx_wct, avg_repeated_wr, avg_reads_before_first_write, avg_raw_reads, avg_non_raw_after_first_write, avg_sum_writes, avg_sum_reads, avg_write_per_xact, avg_reads_wr, avg_reads_ro, wr2);
-      }
-      #else
-            printf("Thread %p | commits:%12u avg_aborts:%12.2f max_retries:%12u\n", (void *)pthread_self(), tx->stat_commits, avg_aborts, tx->stat_retries_max);
-      #endif //_DIE_
-    #ifndef _DIE_
-    }
-    #endif
+  if (getenv("TM_STATISTICS") != NULL) {
+    double avg_aborts = .0;
+    if (tx->stat_commits)
+      avg_aborts = (double)tx->stat_aborts / tx->stat_commits;
+    printf("Thread %p | commits:%12u avg_aborts:%12.2f max_retries:%12u\n", (void *)pthread_self(), tx->stat_commits, avg_aborts, tx->stat_retries_max);
+  }
+#endif /* TM_STATISTICS */
+#ifdef TM_STATISTICS3
+  stm_log_free(&tx->log);
 #endif /* TM_STATISTICS */
 
   stm_quiesce_exit_thread(tx);
@@ -1546,36 +1411,44 @@ int_stm_exit_thread(stm_tx_t *tx)
 #ifdef EPOCH_GC
   t = GET_CLOCK;
   gc_free(tx->r_set.entries, t);
+#if DESIGN != WRITE_BACK_CTL_PSTM
   gc_free(tx->w_set.entries, t);
+#endif
   gc_free(tx, t);
   gc_exit_thread();
 #else /* ! EPOCH_GC */
   xfree(tx->r_set.entries);
+#if DESIGN != WRITE_BACK_CTL_PSTM
   xfree(tx->w_set.entries);
+#endif
   xfree(tx);
 #endif /* ! EPOCH_GC */
 
   tls_set_tx(NULL);
 }
 
-// returns the nesting level
-static INLINE int
-int_stm_start(stm_tx_t *tx, sigjmp_buf *buf, stm_tx_attr_t attr)
+static INLINE sigjmp_buf *
+int_stm_start(stm_tx_t *tx, stm_tx_attr_t attr)
 {
   PRINT_DEBUG("==> stm_start(%p)\n", tx);
 
+#if DESIGN == WRITE_BACK_CTL_PSTM
+  if ((nbSamples & (PSTM_NB_SAMPLES - 1)) == (PSTM_NB_SAMPLES - 1)) {
+    if (tx->start_tsc == 0) {
+      tx->start_tsc = rdtscp();
+    }
+  }
+#endif
 
   /* TODO Nested transaction attributes are not checked if they are coherent
    * with parent ones.  */
 
   /* Increment nesting level */
   if (tx->nesting++ > 0)
-    return tx->nesting;
+    return NULL;
 
   /* Attributes */
   tx->attr = attr;
-
-  tx->env = buf;
 
   /* Initialize transaction descriptor */
   int_stm_prepare(tx);
@@ -1587,7 +1460,7 @@ int_stm_start(stm_tx_t *tx, sigjmp_buf *buf, stm_tx_attr_t attr)
       _tinystm.start_cb[cb].f(_tinystm.start_cb[cb].arg);
   }
 
-  return tx->nesting;
+  return &tx->env;
 }
 
 static INLINE int
@@ -1632,6 +1505,8 @@ int_stm_commit(stm_tx_t *tx)
   stm_wbetl_commit(tx);
 #elif DESIGN == WRITE_BACK_CTL
   stm_wbctl_commit(tx);
+#elif DESIGN == WRITE_BACK_CTL_PSTM
+  stm_wbctl_pstm_commit(tx);
 #elif DESIGN == WRITE_THROUGH
   stm_wt_commit(tx);
 #elif DESIGN == MODULAR
@@ -1646,48 +1521,6 @@ int_stm_commit(stm_tx_t *tx)
  end:
 #ifdef TM_STATISTICS
   tx->stat_commits++;
-  //DIE: NB: read set and write set are reset upon start/restart of the transaction
-    #ifdef _DIE_
-        if(unlikely(tx->trace_additional_stats)){
-        unsigned int c_w =  tx->w_set.nb_entries;
-        struct timespec endTx, temp;
-        clock_gettime(CLOCK_REALTIME, &temp);
-        struct timespec initTx = tx->tx_overall_start_time;
-        struct timespec initRun = tx->tx_current_run_start_time;
-        double diffTx;
-        double diffRun;
-        myTimeDiff(initTx,endTx,&diffTx);
-        myTimeDiff(initRun,endTx,&diffRun);
-        if(tx->tx_current_run_num_writes > 0){
-           tx->cumulative_wr_commits2++;
-        }
-        if( c_w > 0 ){        //If the writeset is not empty...
-           tx->cumulative_ww_nb_items+=c_w;
-           tx->cumulative_wr_nb_items+=tx->r_set.nb_entries;
-           tx->cumulative_wr_commits++;
-           tx->cumulative_overall_wallclock_wr_time+= diffTx;
-           tx->cumulative_run_commit_wallclock_wr_time+= diffRun;
-           tx->cumulative_num_raw_reads+=tx->tx_current_run_num_raw_reads;
-           tx->cumulative_num_reads_before_first_write+=tx->tx_current_run_num_reads_pre_first_write;
-           tx->cumulative_num_non_raw_reads_after_first_write+=tx->tx_current_run_num_non_raw_reads_after_first_write;
-           tx->cumulative_num_repeated_writes+=tx->tx_current_run_num_repeated_writes; //Distinct writes as difference of total writes and elements in the ws
-           tx->cumulative_num_writes+=tx->tx_current_run_num_writes;
-           //TODO: why is this slightly different from the sum of the other?
-           tx->cumulative_num_wr_reads+=tx->tx_current_run_num_reads;
-          // printf("Committing WR: diffTx = %f, diffRun = %f, cumulative = %f\n", diffTx,diffRun,tx->cumulative_run_commit_wallclock_ro_time);
-        }
-        else{
-           tx->cumulative_ro_commits++;
-           tx->cumulative_ro_nb_items+=tx->r_set.nb_entries;
-           tx->cumulative_overall_wallclock_ro_time+= diffTx;
-           //printf("Committing RO:  diffTx = %f, diffRun = %f, cumulative = %f\n", diffTx,diffRun,tx->cumulative_run_commit_wallclock_ro_time);
-           tx->cumulative_run_commit_wallclock_ro_time+= diffRun;
-           tx->cumulative_num_ro_reads+=tx->tx_current_run_num_reads;
-        }
-        tx->brand_new_transaction = 1; // Set the run of the next xact to be the first
-        tx->tx_last_commit_wallckock_time = endTx; //mark the last commit time to measure non transactional block
-      }
-    #endif //_DIE_
 #endif /* TM_STATISTICS */
 #if CM == CM_MODULAR || defined(TM_STATISTICS)
   tx->stat_retries = 0;
@@ -1701,6 +1534,11 @@ int_stm_commit(stm_tx_t *tx)
 #if CM == CM_MODULAR
   tx->visible_reads = 0;
 #endif /* CM == CM_MODULAR */
+
+#ifdef HYBRID_ASF
+  /* Reset to Hybrid mode */
+  tx->software = 0;
+#endif /* HYBRID_ASF */
 
 #ifdef IRREVOCABLE_ENABLED
   if (unlikely(tx->irrevocable)) {
@@ -1727,21 +1565,12 @@ int_stm_commit(stm_tx_t *tx)
 static INLINE stm_word_t
 int_stm_load(stm_tx_t *tx, volatile stm_word_t *addr)
 {
-#ifdef TM_STATISTICS
-   #ifdef _DIE_
-   if(unlikely(tx->trace_additional_stats)){
-   //Increment the reads before first write if xact has not performed a write yet in this execution run
-   if(tx->tx_current_run_num_writes == 0){
-      tx->tx_current_run_num_reads_pre_first_write++;
-   }
-   tx->tx_current_run_num_reads++;
-   }
-   #endif   //_DIE_
-#endif   //TM_STATISTICS
 #if DESIGN == WRITE_BACK_ETL
   return stm_wbetl_read(tx, addr);
 #elif DESIGN == WRITE_BACK_CTL
   return stm_wbctl_read(tx, addr);
+#elif DESIGN == WRITE_BACK_CTL_PSTM
+  return stm_wbctl_pstm_read(tx, addr);
 #elif DESIGN == WRITE_THROUGH
   return stm_wt_read(tx, addr);
 #elif DESIGN == MODULAR
@@ -1803,7 +1632,7 @@ int_stm_get_env(stm_tx_t *tx)
 {
   assert (tx != NULL);
   /* Only return environment for top-level transaction */
-  return tx->nesting == 0 ? tx->env : NULL;
+  return tx->nesting == 0 ? &tx->env : NULL;
 }
 
 static INLINE int
@@ -1897,21 +1726,41 @@ int_stm_get_stats(stm_tx_t *tx, const char *name, void *val)
   }
 # endif /* READ_LOCKED_DATA */
 #endif /* TM_STATISTICS2 */
+#ifdef TM_STATISTICS3
+  if (strcmp("tx_log", name) == 0) {
+	*(tx_logu_t **)val = stm_log_read(&tx->log);
+    return 1;
+  }
+#endif
   return 0;
 }
 
 static INLINE void
 int_stm_set_specific(stm_tx_t *tx, int key, void *data)
 {
-  assert (tx != NULL && key >= 0 && key < _tinystm.nb_specific);
+  assert (tx != NULL && key >= 0 && (unsigned)key < _tinystm.nb_specific);
   ATOMIC_STORE(&tx->data[key], data);
 }
 
 static INLINE void *
 int_stm_get_specific(stm_tx_t *tx, int key)
 {
-  assert (tx != NULL && key >= 0 && key < _tinystm.nb_specific);
+  assert (tx != NULL && key >= 0 && (unsigned)key < _tinystm.nb_specific);
   return (void *)ATOMIC_LOAD(&tx->data[key]);
 }
-#endif /* _STM_INTERNAL_H_ */
 
+#ifdef TM_STATISTICS3
+static INLINE int
+int_stm_log_add(tx_log_t *log, stm_word_t * pos, long val, stm_word_t vers)
+{
+  return stm_log_newentry(log, (long*)pos, val, vers);
+}
+
+static INLINE int
+int_stm_log_initBM(tx_log_t *log, stm_word_t * pointer, int size)
+{
+  return stm_log_initBM(log, (long*)pointer, size);
+}
+#endif
+
+#endif /* _STM_INTERNAL_H_ */
