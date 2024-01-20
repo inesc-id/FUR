@@ -145,13 +145,14 @@ extern "C" {
 
 # define IS_LOCKED(lock)        *((volatile int*)(&lock)) != 0
 
-# define TM_BEGIN() \
+# define TM_BEGIN(ro) \
 do { \
   stm_tx_attr_t _a = {}; \
   sigjmp_buf *buf = stm_start(_a); \
   sigsetjmp((__jmp_buf_tag*)buf, 0); \
 } while (0) \
 //
+#    define TM_BEGIN_EXT(b,ro)		local_exec_mode = 3;TM_BEGIN(ro)
 
 # define TM_END() \
   stm_commit() \

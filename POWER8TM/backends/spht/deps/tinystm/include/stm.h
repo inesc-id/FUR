@@ -866,9 +866,12 @@ int stm_log_add(stm_word_t * pos, long val);
 int stm_log_init_bm(void * pointer, int size);
 
 #if DESIGN == WRITE_BACK_CTL_PSTM
-static const long pstm_heap_size_per_thread = 4294967296;
-static const long pstm_shared_heap_size = 8589934592;
+static const long pstm_heap_size_per_thread = 16777216;
+static const long pstm_shared_heap_size = 33554432;
 static const long pstm_log_size_per_thread = 1048576;
+// static const long pstm_heap_size_per_thread = 4294967296;
+// static const long pstm_shared_heap_size = 8589934592;
+// static const long pstm_log_size_per_thread = 1048576;
 
 extern void *pstm_nvram_ptr;
 extern void *pstm_nvram_heap_ptr;
