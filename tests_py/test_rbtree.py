@@ -17,10 +17,10 @@ if __name__ == "__main__":
 
   # Here set the possible values for each parameter (pass a list with valid values).
   # Note the experiment will run all possible combinations of arguments.
-  params.set_params("-u", [1, 10])
+  params.set_params("-u", [1,10,50])
   # params.set_params("-d", [2000])
-  params.set_params("-d", [600000])
-  params.set_params("-i", [100, 1000, 10000])
+  params.set_params("-d", [100000])
+  params.set_params("-i", [1000])
   # params.set_params("-i", [1000])
   params.set_params("-r", [2000000])
   # params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32])
@@ -35,7 +35,7 @@ if __name__ == "__main__":
   locations = [
     "../POWER8TM/benchmarks/datastructures",
     "../POWER8TM/benchmarks/datastructures",
-    "../POWER8TM/benchmarks/datastructures",
+    # "../POWER8TM/benchmarks/datastructures",
     # "../POWER8TM/benchmarks/datastructures",
     "../power8tm-pisces/benchmarks/datastructures",
     # "../POWER8TM/benchmarks/datastructures",
@@ -46,7 +46,7 @@ if __name__ == "__main__":
   # The backend name goes here (don't forget to match the position in the
   # "backends" list with the position in the "locations" list)
   backends = [
-    "psi",
+    # "psi",
     "psi-strong",
     "spht",
     # "spht-log-linking",
@@ -94,7 +94,7 @@ if __name__ == "__main__":
         )
       
       # This line starts the benchmark and tests all combinations parameters.
-      # data.run_sample(params) # NOTE: comment if you already have the data and just want to refresh the plots.
+      data.run_sample(params) # NOTE: comment if you already have the data and just want to refresh the plots.
 
       # Parses the stdout into a .csv that can be used for the plots.
       # Check the tests_py/parse_sol.py for the regular expressions that are catched in the stdout.
