@@ -130,8 +130,7 @@ int currentCombination = 0;
 
 void operation(TM_ARGDECL int &val, random_t* &randomPtr, long &pruned_range)
 {
-  int ro = 0;
-  TM_BEGIN_EXT(0,ro);
+  
   // __transaction_atomic {
     int access;
     for (access = 0; access < accessesPerOperations; access++)
@@ -143,24 +142,33 @@ void operation(TM_ARGDECL int &val, random_t* &randomPtr, long &pruned_range)
         {
           /* Add random value */
           val = (random_generate(randomPtr) % pruned_range) + 1;
+          int ro = 0;
+          TM_BEGIN_EXT(0,ro);
           set_add(set, val);
+          TM_END();
         }
         else
         {
           /* Remove random value */
           val = (random_generate(randomPtr) % pruned_range) + 1;
+          int ro = 0;
+          TM_BEGIN_EXT(0,ro);
           set_remove(set, val);
+          TM_END();
         }
       }
       else
       {
+        int ro = 1;
+        TM_BEGIN_EXT(0,ro);
         /* Look for random value */
         long tmp = (random_generate(randomPtr) % pruned_range) + 1;
         set_contains(set, tmp);
+        TM_END();
       }
     }
     // }
-    TM_END();
+    
 }
 
 void test(void *data)
