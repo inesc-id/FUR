@@ -103,6 +103,21 @@ int set_contains( intset_t *set, intptr_t val) {
     return rbtree_contains(set, val);
 }
 
+int TMset_add(TM_ARGDECL intset_t *set, intptr_t val) {
+    int res = TMrbtree_insert(TM_ARG set, val, val);
+
+    return res;
+}
+
+int TMset_remove(TM_ARGDECL intset_t *set, intptr_t val) {
+    int res = TMrbtree_delete(TM_ARG set, val);
+    return res;
+}
+
+int TMset_contains(TM_ARGDECL intset_t *set, intptr_t val) {
+    return TMrbtree_contains(TM_ARG set, val);
+}
+
 /* ################################################################### *
  * STRESS TEST
  * ################################################################### */
@@ -144,7 +159,7 @@ void operation(TM_ARGDECL int &val, random_t* &randomPtr, long &pruned_range)
           val = (random_generate(randomPtr) % pruned_range) + 1;
           int ro = 0;
           TM_BEGIN_EXT(0,ro);
-          set_add(set, val);
+          TMset_add(TM_ARG set, val);
           TM_END();
         }
         else
@@ -153,7 +168,7 @@ void operation(TM_ARGDECL int &val, random_t* &randomPtr, long &pruned_range)
           val = (random_generate(randomPtr) % pruned_range) + 1;
           int ro = 0;
           TM_BEGIN_EXT(0,ro);
-          set_remove(set, val);
+          TMset_remove(TM_ARG set, val);
           TM_END();
         }
       }
@@ -163,7 +178,7 @@ void operation(TM_ARGDECL int &val, random_t* &randomPtr, long &pruned_range)
         TM_BEGIN_EXT(0,ro);
         /* Look for random value */
         long tmp = (random_generate(randomPtr) % pruned_range) + 1;
-        set_contains(set, tmp);
+        TMset_contains(TM_ARG set, tmp);
         TM_END();
       }
     }

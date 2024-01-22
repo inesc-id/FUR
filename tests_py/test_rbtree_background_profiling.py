@@ -13,17 +13,16 @@ if __name__ == "__main__":
   
   # This class keeps the parameters for the benchmark.
   # Pass a list of arguments that need to be passed to the bechmark during the experiment
-  params = BenchmarkParameters(["-u", "-d", "-i", "-r", "-n", "-b"])
+  params = BenchmarkParameters(["-u", "-d", "-i", "-r", "-n"])
 
   # Here set the possible values for each parameter (pass a list with valid values).
   # Note the experiment will run all possible combinations of arguments.
   params.set_params("-u", [10])
   # params.set_params("-d", [2000])
   params.set_params("-d", [6000000])
-  params.set_params("-i", [500000])
+  params.set_params("-i", [1000])
   # params.set_params("-i", [1000])
-  params.set_params("-r", [2000000])
-  params.set_params("-b", [1000000])
+  params.set_params("-r", [10000000])
   # params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32])
   #params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60, 62, 64])
   params.set_params("-n", [1, 2, 4, 8, 16, 32])
@@ -35,7 +34,7 @@ if __name__ == "__main__":
   # a benchmark (allows to compare with "exotic" implementations).
   locations = [
     "../POWER8TM/benchmarks/datastructures",
-    "../POWER8TM/benchmarks/datastructures",
+    # "../POWER8TM/benchmarks/datastructures",
     # "../POWER8TM/benchmarks/datastructures",
     # "../POWER8TM/benchmarks/datastructures",
     # "../power8tm-pisces/benchmarks/datastructures",
@@ -48,13 +47,13 @@ if __name__ == "__main__":
   # "backends" list with the position in the "locations" list)
   backends = [
     # "psi",
-    # "psi-strong",
-    "spht",
+    "psi-strong",
+    # "spht",
     # "spht-log-linking",
     # "pisces",
     # "htm-sgl",
     # "htm-sgl-sr",
-    "si-htm",
+    # "si-htm",
     # "ureads-strong",
     # "ureads-p8tm"
   ]
@@ -76,7 +75,7 @@ if __name__ == "__main__":
   # IMPORTANT: set the name of the dataset here, this folder needs to be
   # empty when taking new samples (else it can overwrite/append the stdout
   # of the new samples with the stdout of the old samples).
-  data_folder = "dataHashmapProfiling"
+  data_folder = "dataRBTreeProfiling"
 
   datasets_thr = {}
   datasets_aborts = {}
@@ -88,7 +87,7 @@ if __name__ == "__main__":
     for s in range(nb_samples):
       data = CollectData(
           loc,
-          "hashmap/hashmap",
+          "redblacktree/redblacktree",
           "build-datastructures.sh",
           backend,
           f"{data_folder}/{backend}-s{s}"
