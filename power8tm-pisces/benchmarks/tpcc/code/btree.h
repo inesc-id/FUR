@@ -155,10 +155,10 @@ fast_find(
   register unsigned  index;
   while ( d-- != 0 )
   {
-    inner= reinterpret_cast<const InnerNode*>(node);
+    inner = reinterpret_cast<const InnerNode*>(node);
     unsigned long num_keys_1 = FAST_PATH_SHARED_READ(inner->num_keys);
-    index= fast_inner_position_for(TM_ARG key, inner->keys, num_keys_1);
-    node= FAST_PATH_SHARED_READ_P(inner->children[index]);
+    index = fast_inner_position_for(TM_ARG key, inner->keys, num_keys_1);
+    node = FAST_PATH_SHARED_READ_P(inner->children[index]);
   }
   const LeafNode* leaf= reinterpret_cast<const LeafNode*>(node);
   unsigned long num_keys = FAST_PATH_SHARED_READ(leaf->num_keys);
@@ -173,11 +173,10 @@ fast_find(
         *value = temp_value;
       if (temp_value)
         return true;
-      else return false;
     }
   }
-  else
-    return false;
+  
+  return false;
 }
 
 __attribute__((transaction_safe)) bool

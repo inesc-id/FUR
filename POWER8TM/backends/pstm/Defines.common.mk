@@ -1,7 +1,7 @@
 LIB      := ../lib
 
 CC       := gcc
-CFLAGS   += -std=c++11 -w -fpermissive -mhtm -O0 -g
+CFLAGS   += -std=c++11 -w -fpermissive -mhtm -Werror=return-type -O0 -g
 CFLAGS   += -I $(LIB)
 CPP      := g++
 CPPFLAGS += $(CFLAGS)

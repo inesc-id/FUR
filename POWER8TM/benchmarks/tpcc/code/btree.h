@@ -153,7 +153,11 @@ public:
   //Looks for the given key.If it is not found, it returns false,
   //if it is found, it returns true and copies the associated value
   // unless the pointer is null.
-  __attribute__((transaction_safe)) bool fast_find(TM_ARGDECL const KEY & key, VALUE * value = 0)const {
+  __attribute__((transaction_safe)) bool
+  fast_find(
+    TM_ARGDECL const KEY & key,
+    VALUE * value = 0
+  ) const {
     const InnerNode * inner;
     register const void *node = FAST_PATH_SHARED_READ_P(root);
     register unsigned long d = FAST_PATH_SHARED_READ(depth);
@@ -177,21 +181,23 @@ public:
           *value = temp_value;
         }
         if (temp_value)
-        return true;
-        else
-        return false;
+          return true;
       }
-    } else {
-      return false;
     }
+    return false;
   }
 
-  __attribute__((transaction_safe)) bool slow_find(TM_ARGDECL const KEY & key, VALUE * value = 0)const {
+  __attribute__((transaction_safe)) bool
+  slow_find(
+    TM_ARGDECL const KEY & key,
+    VALUE * value = 0
+  ) const {
     const InnerNode * inner;
     register const void *node = SLOW_PATH_SHARED_READ_P(root);
     register unsigned long d = SLOW_PATH_SHARED_READ(depth);
     register unsigned index;
-    while    (d-- != 0) {
+    while (d-- != 0)
+    {
       inner = reinterpret_cast < const InnerNode *>(node);
       unsigned long num_keys_1 = SLOW_PATH_SHARED_READ(inner->num_keys);
       index = slow_inner_position_for(TM_ARG key, inner->keys, num_keys_1);
@@ -211,13 +217,10 @@ public:
           *value = temp_value;
         }
         if (temp_value)
-        return true;
-        else
-        return false;
+          return true;
       }
-    } else {
-      return false;
     }
+    return false;
   }
 
 
