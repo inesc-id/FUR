@@ -141,7 +141,7 @@ int64_t TPCCTables::stockLevel(TM_ARGDECL int64_t warehouse_id, int64_t district
     for (int line_number = 1; line_number <= Order::MAX_OL_CNT; ++line_number)
     {
       OrderLine* line = findOrderLine(TM_ARG warehouse_id, district_id, order_id, line_number);
-      if (line == NULL) {
+      if (line == NULL || ((uintptr_t)line & 0xfL) != 0) {
         // We can break since we have reached the end of the lines for this order.
         // TODO: A btree iterate in (w_id, d_id, o_id) order would be a clean way to do this
         break;
