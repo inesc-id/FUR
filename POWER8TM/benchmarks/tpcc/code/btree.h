@@ -158,10 +158,10 @@ public:
     TM_ARGDECL const KEY & key,
     VALUE * value = 0
   ) const {
-    const InnerNode * inner;
+    const InnerNode * inner = NULL;
     register const void *node = FAST_PATH_SHARED_READ_P(root);
     register unsigned long d = FAST_PATH_SHARED_READ(depth);
-    register unsigned index;
+    register unsigned index = 0;
     while (d-- != 0) {
       inner = reinterpret_cast < const InnerNode *>(node);
       unsigned long num_keys_1 = FAST_PATH_SHARED_READ(inner->num_keys);

@@ -134,7 +134,7 @@ int64_t TPCCTables::stockLevel(TM_ARGDECL int64_t warehouse_id, int64_t district
 	//printf("address of d is %p\n",d);
 	int64_t o_id = d->d_next_o_id;
   // Iterate over [o_id-20, o_id)
-  int64_t stock_quantity;
+  int64_t stock_quantity = 0;
 	Stock * stock;
   for (int64_t order_id = o_id - STOCK_LEVEL_ORDERS; order_id < o_id; ++order_id)
   {
@@ -235,7 +235,7 @@ __attribute__((transaction_safe)) void TPCCTables::internalOrderStatus(TM_ARGDEC
     output->o_carrier_id = order->o_carrier_id;
 
     for (int64_t line_number = 1; line_number <= order->o_ol_cnt; ++line_number) {
-        OrderLine* line = findOrderLine(TM_ARG customer->c_w_id, customer->c_d_id, order->o_id, line_number);
+      OrderLine* line = findOrderLine(TM_ARG customer->c_w_id, customer->c_d_id, order->o_id, line_number);
       if (line && line->ol_amount < 0.0) { customer->c_credit_lim = line->ol_amount; }
     }
   }
