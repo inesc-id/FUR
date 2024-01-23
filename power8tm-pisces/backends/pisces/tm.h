@@ -66,12 +66,12 @@
 #    define TM_EARLY_RELEASE(var)       /* nothing */
 
 
-# define FAST_PATH_SHARED_READ(var) (var)
-# define FAST_PATH_SHARED_READ_P(var) (var)
-# define FAST_PATH_SHARED_READ_D(var) (var)
-# define FAST_PATH_SHARED_WRITE(var, val) ({var = val; var;})
-# define FAST_PATH_SHARED_WRITE_P(var, val) ({var = val; var;})
-# define FAST_PATH_SHARED_WRITE_D(var, val) ({var = val; var;})
+# define FAST_PATH_SHARED_READ(var) SLOW_PATH_SHARED_READ(var) 
+# define FAST_PATH_SHARED_READ_P(var) SLOW_PATH_SHARED_READ_P(var)  
+# define FAST_PATH_SHARED_READ_D(var) SLOW_PATH_SHARED_READ_D(var)
+# define FAST_PATH_SHARED_WRITE(var, val) SLOW_PATH_SHARED_WRITE(var, val) 
+# define FAST_PATH_SHARED_WRITE_P(var, val) SLOW_PATH_SHARED_WRITE_P(var, val) 
+# define FAST_PATH_SHARED_WRITE_D(var, val) SLOW_PATH_SHARED_WRITE_D(var, val)
 
 
 #  define SLOW_PATH_SHARED_READ(var)           STM_READ(var)

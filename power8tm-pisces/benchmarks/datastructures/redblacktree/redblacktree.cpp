@@ -69,9 +69,14 @@ static volatile int stop;
 
 typedef rbtree_t intset_t;
 
+static long compare(const void *a, const void *b)
+{
+  return ((intptr_t)a - (intptr_t)b);
+}
+
 intset_t *set_new()
 {
-  return rbtree_alloc();
+  return rbtree_alloc(&compare);
 }
 
 void set_delete(intset_t *set)
@@ -96,6 +101,22 @@ int set_remove(intset_t *set, intptr_t val) {
 
 int set_contains( intset_t *set, intptr_t val) {
     return rbtree_contains(set, val);
+}
+
+int TMset_add(TM_ARGDECL intset_t *set, intptr_t val) {
+    // printf("called set_add\n");
+    int res = TMrbtree_insert(TM_ARG set, val, val);
+
+    return res;
+}
+
+int TMset_remove(TM_ARGDECL intset_t *set, intptr_t val) {
+    int res = TMrbtree_delete(TM_ARG set, val);
+    return res;
+}
+
+int TMset_contains(TM_ARGDECL intset_t *set, intptr_t val) {
+    return TMrbtree_contains(TM_ARG set, val);
 }
 
 /* ################################################################### *
@@ -123,39 +144,54 @@ int set_contains( intset_t *set, intptr_t val) {
 int currentCombination = 0;
 #endif
 
-void operation(TM_ARGDECL int &val, random_t* &randomPtr, long &pruned_range)
+void operation(TM_ARGDECL int &val_obsolete, random_t* &randomPtr, long &pruned_range)
 {
-  int ro = 0;
-  TM_BEGIN_EXT(0,ro);
   // __transaction_atomic {
     int access;
+    int val = -1;
     for (access = 0; access < accessesPerOperations; access++)
     {
-      val = random_generate(randomPtr) % 100;
-      if (val < update)
+      int op = random_generate(randomPtr) % 100;
+      // val = random_generate(randomPtr) % 100;
+      // printf("val %d < update %d\n", val, update);
+      if (op < update)
       {
-        if (val < update / 2)
-        {
+        if (val == -1) {
+        // if (val < update / 2)
+        // {
+          // printf("operation: add\n");
           /* Add random value */
           val = (random_generate(randomPtr) % pruned_range) + 1;
-          set_add(set, val);
+          int ro = 0;
+          TM_BEGIN_EXT(0,ro);
+          TMset_add(TM_ARG set, val);
+          TM_END();
         }
         else
         {
+          // printf("operation: remove\n");
           /* Remove random value */
-          val = (random_generate(randomPtr) % pruned_range) + 1;
-          set_remove(set, val);
+          // val = (random_generate(randomPtr) % pruned_range) + 1;
+          int ro = 0;
+          TM_BEGIN_EXT(0,ro);
+          TMset_remove(TM_ARG set, val);
+          TM_END();
+          val = -1;
         }
       }
       else
       {
+        // printf("operation: lookup\n");
+        int ro = 1;
+        TM_BEGIN_EXT(0,ro);
         /* Look for random value */
         long tmp = (random_generate(randomPtr) % pruned_range) + 1;
-        set_contains(set, tmp);
+        TMset_contains(TM_ARG set, tmp);
+        TM_END();
       }
     }
     // }
-    TM_END();
+    
 }
 
 void test(void *data)
