@@ -17,15 +17,15 @@ if __name__ == "__main__":
 
   # Here set the possible values for each parameter (pass a list with valid values).
   # Note the experiment will run all possible combinations of arguments.
-  params.set_params("-u", [1,10,50])
+  params.set_params("-u", [2,10,50])
   # params.set_params("-d", [2000])
   params.set_params("-d", [100000])
-  params.set_params("-i", [1000])
+  params.set_params("-i", [51200000,204800000])
   # params.set_params("-i", [1000])
-  params.set_params("-r", [2000000])
+  params.set_params("-r", [904800000])
   # params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32])
   #params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60, 62, 64])
-  params.set_params("-n", [1, 4, 8, 16, 32])
+  params.set_params("-n", [1, 4, 8, 16, 32, 64])
 
   # Set the number of times each run is repeated (for average/stardard deviation computation).
   nb_samples = 1
@@ -34,10 +34,10 @@ if __name__ == "__main__":
   # a benchmark (allows to compare with "exotic" implementations).
   locations = [
     "../POWER8TM/benchmarks/datastructures",
-    "../POWER8TM/benchmarks/datastructures",
     # "../POWER8TM/benchmarks/datastructures",
     # "../POWER8TM/benchmarks/datastructures",
-    "../power8tm-pisces/benchmarks/datastructures",
+    # # "../POWER8TM/benchmarks/datastructures",
+    # "../power8tm-pisces/benchmarks/datastructures",
     # "../POWER8TM/benchmarks/datastructures",
     # "../POWER8TM/benchmarks/datastructures",
     # "../POWER8TM/benchmarks/datastructures",
@@ -47,10 +47,10 @@ if __name__ == "__main__":
   # "backends" list with the position in the "locations" list)
   backends = [
     # "psi",
-    "psi-strong",
+    # "psi-strong",
     "spht",
     # "spht-log-linking",
-    "pisces",
+    # "pisces",
     # "htm-sgl",
     # "htm-sgl-sr",
     # "si-htm",

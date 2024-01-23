@@ -32,26 +32,26 @@ if __name__ == "__main__":
   # params.set_params("-d", [3], True)
 
 # Misc configurations:
-  params.set_params("-s", [10], True)
+  params.set_params("-s", [100], True)
   params.set_params("-o", [0], True)
-  params.set_params("-p", [85], True)
-  params.set_params("-r", [2], True)
-  params.set_params("-d", [3], True)
+  params.set_params("-p", [0], True)
+  params.set_params("-r", [0], True)
+  params.set_params("-d", [0], True)
 
   # params.set_params("-s", [4, 8], True) # to pass more than 1 combination of values
   # params.set_params("-d", [4, 4], True)
   # params.set_params("-o", [4, 4], True)
   # params.set_params("-p", [43, 39], True)
   # params.set_params("-r", [45, 45], True)
-  params.set_params("-n", [4, 16, 32])
+  params.set_params("-n", [1, 4, 8, 16, 32, 64])
   #params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60, 62, 64])
   nb_samples = 1
   locations = [
     "../power8tm-pisces/benchmarks/tpcc",
-    # "../POWER8TM/benchmarks/tpcc",
-    # "../POWER8TM/benchmarks/tpcc",
-    # "../POWER8TM/benchmarks/tpcc",
-    # "../POWER8TM/benchmarks/tpcc",
+    "../POWER8TM/benchmarks/tpcc",
+    "../POWER8TM/benchmarks/tpcc",
+    "../POWER8TM/benchmarks/tpcc",
+    "../POWER8TM/benchmarks/tpcc",
     # "../POWER8TM/benchmarks/tpcc",
     # "../POWER8TM/benchmarks/tpcc",
     # "../POWER8TM/benchmarks/tpcc",
@@ -60,10 +60,10 @@ if __name__ == "__main__":
   # "backends" list with the position in the "locations" list)
   backends = [
     "pisces",
-    # "psi",
-    # # "psi-strong",
-    # "spht",
-    # "htm-sgl",
+    "psi",
+    "psi-strong",
+    "spht",
+    "htm-sgl",
     # "htm-sgl-sr",
     # "si-htm",
     # "ureads-strong",
@@ -83,7 +83,7 @@ if __name__ == "__main__":
     "ureads-p8tm": "ureads-p8tm"
   }
   
-  data_folder = "dataTPCC_spht_scenario"
+  data_folder = "dataTPCC"
 
   datasets_thr = {}
   datasets_aborts = {}
