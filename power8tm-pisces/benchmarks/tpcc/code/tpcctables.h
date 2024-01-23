@@ -55,33 +55,41 @@ public:
 
     // Copies item into the item table.
     void insertItem(TM_ARGDECL Item* item);
+    void insertItemSingleThread(Item* item);
     __attribute__((transaction_safe)) Item* findItem(TM_ARGDECL int64_t i_id);
 
     void insertWarehouse(TM_ARGDECL const Warehouse& warehouse);
+    void insertWarehouseSingleThread(const Warehouse& warehouse);
     __attribute__((transaction_safe)) Warehouse* findWarehouse(TM_ARGDECL int64_t w_id);
 
     void insertStock(TM_ARGDECL const Stock& stock);
+    void insertStockSingleThread(const Stock& stock);
     __attribute__((transaction_safe)) Stock* findStock(TM_ARGDECL int64_t w_id, int64_t s_id);
 
     void insertDistrict(TM_ARGDECL const District& district);
+    void insertDistrictSingleThread(const District& district);
     __attribute__((transaction_safe)) District* findDistrict(TM_ARGDECL int64_t w_id, int64_t d_id);
 
     void insertCustomer(TM_ARGDECL const Customer& customer);
+    void insertCustomerSingleThread(const Customer& customer);
     __attribute__((transaction_safe)) Customer* findCustomer(TM_ARGDECL int64_t w_id, int64_t d_id, int64_t c_id);
     // Finds all customers that match (w_id, d_id, *, c_last), taking the n/2th one (rounded up).
     Customer* findCustomerByName(int64_t w_id, int64_t d_id, const char* c_last);
 
     // Stores order in the database. Returns a pointer to the database's tuple.
     __attribute__((transaction_safe)) Order* insertOrder(TM_ARGDECL const Order& order);
+    Order* insertOrderSingleThread(const Order& order);
     __attribute__((transaction_safe)) Order* findOrder(TM_ARGDECL int64_t w_id, int64_t d_id, int64_t o_id);
     __attribute__((transaction_safe)) Order* findLastOrderByCustomer(TM_ARGDECL int64_t w_id, int64_t d_id, int64_t c_id);
 
     // Stores orderline in the database. Returns a pointer to the database's tuple.
     OrderLine* insertOrderLine(TM_ARGDECL const OrderLine& orderline);
+    OrderLine* insertOrderLineSingleThread(const OrderLine& orderline);
     __attribute__((transaction_safe)) OrderLine* findOrderLine(TM_ARGDECL int64_t w_id, int64_t d_id, int64_t o_id, int64_t number);
 
     // Creates a new order in the database. Returns a pointer to the database's tuple.
     __attribute__((transaction_safe)) NewOrder* insertNewOrder(TM_ARGDECL int64_t w_id, int64_t d_id, int64_t o_id);
+    NewOrder* insertNewOrderSingleThread(int64_t w_id, int64_t d_id, int64_t o_id);
     NewOrder* findNewOrder(TM_ARGDECL int64_t w_id, int64_t d_id, int64_t o_id);
 
     static const int KEYS_PER_INTERNAL = 8;

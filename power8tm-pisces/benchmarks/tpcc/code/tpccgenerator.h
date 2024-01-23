@@ -25,6 +25,7 @@ public:
 
     // Generates num_items items and inserts them into tables.
     void makeItemsTable(TM_ARGDECL TPCCTables* tables);
+    void makeItemsTableSingleThread(TPCCTables* tables);
 
     // Fills warehouse with random data according to the TPC-C specification 4.3.3.1.
     void generateWarehouse(int32_t id, Warehouse* warehouse);
@@ -48,13 +49,16 @@ public:
 
     // Generates stock rows for w_id.
     void makeStock(TM_ARGDECL TPCCTables* tables, int32_t w_id);
+    void makeStockSingleThread(TPCCTables* tables, int32_t w_id);
 
     // Generates one warehouse and all related rows.
     void makeWarehouse(TM_ARGDECL TPCCTables* tables, int32_t w_id);
+    void makeWarehouseSingleThread(TPCCTables* tables, int32_t w_id);
 
     // Generates one warehouse and related rows, except stock.
     // TODO: This exists to support partitioning. Does this make sense?
     void makeWarehouseWithoutStock(TM_ARGDECL TPCCTables* tables, int32_t w_id);
+    void makeWarehouseWithoutStockSingleThread(TPCCTables* tables, int32_t w_id);
 
 private:
     tpcc::RandomGenerator* random_;

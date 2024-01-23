@@ -65,6 +65,35 @@ BPlusTree()
   // when innerPool and leafPool are destroyed.
 }
 
+void insert(KEY key, VALUE value) {
+  //GCC warns that this may be used uninitialized, even though that is untrue.
+  InsertionResult result = {KEY(), 0, 0};
+  bool was_split;
+  unsigned long d = depth;
+  if (d == 0) {
+    //The root is a leaf node
+    void *temp_node = root;
+    was_split = leaf_insert(reinterpret_cast < LeafNode * >(temp_node), key, value, &result);
+  } else {
+    //The root is an inner node
+    void *temp_node = root;
+    was_split = inner_insert(reinterpret_cast < InnerNode * >(temp_node), d, key, value, &result);
+  }
+  if (was_split) {
+    //The old root was splitted in two parts.
+    // We have to create a new root pointing to them
+    void *temp_node_2 = new_inner_node();
+    InnerNode *rootProxy = reinterpret_cast < InnerNode * >(temp_node_2);
+
+    rootProxy->num_keys = 1;
+    rootProxy->keys[0] = result.key;
+    rootProxy->children[0] = result.left;
+    rootProxy->children[1] = result.right;
+    depth = ++d;
+    root = rootProxy;
+  }
+}
+
   // Inserts a pair (key, value). If there is a previous pair with
   // the same key, the old value is overwritten with the new one.
 __attribute__((transaction_safe)) void
@@ -173,11 +202,10 @@ fast_find(
         *value = temp_value;
       if (temp_value)
         return true;
-      else return false;
     }
   }
-  else
-    return false;
+  
+  return false;
 }
 
 __attribute__((transaction_safe)) bool
@@ -513,6 +541,17 @@ struct InsertionResult {
         void* right;
 };
 
+static unsigned leaf_position_for(const KEY & key, const KEY * keys, unsigned long num_keys) {
+  //Simple linear search.Faster for small values of N or M
+  unsigned k = 0;
+  intptr_t temp_key = keys[k];
+  while ((k < num_keys) && (temp_key < key)) {
+    ++k;
+    temp_key = keys[k];
+  }
+  return k;
+}
+
 // Returns the position where 'key' should be inserted in a leaf node
 // that has the given keys.
 static unsigned fast_leaf_position_for(TM_ARGDECL const KEY& key, const KEY* keys,
@@ -575,6 +614,16 @@ static unsigned slow_leaf_position_for(TM_ARGDECL const KEY& key, const KEY* key
         */
 }
 
+static inline unsigned inner_position_for(const KEY & key, const KEY * keys, unsigned long num_keys) {
+  unsigned k = 0;
+  intptr_t temp_key = keys[k];
+  while ((k < num_keys) && ((temp_key < key) || (temp_key == key))) {
+    ++k;
+    temp_key = keys[k];
+  }
+  return k;
+}
+
 // Returns the position where 'key' should be inserted in an inner node
 // that has the given keys.
 static inline unsigned fast_inner_position_for(TM_ARGDECL const KEY& key, const KEY* keys,unsigned long num_keys) {
@@ -603,6 +652,43 @@ static inline unsigned slow_inner_position_for(TM_ARGDECL const KEY& key, const 
         // Binary search is faster when N or M is > 100,
         // but the cost of the division renders it useless
         // for smaller values of N or M.
+}
+
+bool leaf_insert(LeafNode * node, KEY & key, VALUE & value, InsertionResult * result) {
+  bool was_split = false;
+  //Simple linear search
+  unsigned long num_keys = node->num_keys;
+  unsigned i = leaf_position_for(key, node->keys, num_keys);
+  if (num_keys >= M) {
+    //The node was full.We must split it
+    unsigned treshold = (M + 1) / 2;
+    LeafNode *new_sibling = new_leaf_node();
+    new_sibling->num_keys = num_keys - treshold;
+    for (unsigned j = 0; j < new_sibling->num_keys; ++j) {
+      intptr_t temp_key = node->keys[treshold + j];
+      new_sibling->keys[j] = temp_key;
+      VALUE temp_value = (VALUE) node->values[treshold + j];
+      new_sibling->values[j] = temp_value;
+    }
+    node->num_keys = treshold;
+
+    if (i < treshold) {
+      //Inserted element goes to left sibling
+      leaf_insert_nonfull(node, key, value, i);
+    } else {
+      //Inserted element goes to right sibling
+      leaf_insert_nonfull(new_sibling, key, value, i - treshold);
+    }
+    //Notify the parent about the split
+    was_split = true;
+    result->key = new_sibling->keys[0];
+    result->left = node;
+    result->right = new_sibling;
+  } else {
+    //The node was not full
+    leaf_insert_nonfull(node, key, value, i);
+  }
+  return was_split;
 }
 
 
@@ -801,6 +887,45 @@ fast_inner_insert(
   return was_split;
 }
 
+bool inner_insert(InnerNode * node, unsigned long current_depth, KEY & key, VALUE & value, InsertionResult * result){
+  //Early split if node is full.
+  // This is not the canonical algorithm for B + trees,
+  //but it is simpler and does not break the definition.
+  bool was_split = false;
+  unsigned long num_keys = node->num_keys;
+  if (num_keys >= N) {
+    //Split
+    unsigned treshold = (N + 1) / 2;
+    InnerNode *new_sibling = new_inner_node();
+    new_sibling->num_keys = num_keys - treshold;
+    for (unsigned i = 0; i < new_sibling->num_keys; ++i) {
+      intptr_t temp_key = node->keys[treshold + i];
+      new_sibling->keys[i] = temp_key;
+      new_sibling->children[i] = node->children[treshold + i];
+    }
+    new_sibling->children[new_sibling->num_keys] = node->children[num_keys];
+
+    node->num_keys = treshold - 1;
+    //Set up the return variable
+    was_split = true;
+    intptr_t temp_key_2 = node->keys[treshold - 1];
+
+    result->key = temp_key_2;
+    result->left = node;
+    result->right = new_sibling;
+    //Now insert in the appropriate sibling
+    if (key < result->key) {
+      inner_insert_nonfull(node, current_depth, key, value);
+    } else {
+      inner_insert_nonfull(new_sibling, current_depth, key, value);
+    }
+  } else {
+    //No split
+    inner_insert_nonfull(node, current_depth, key, value);
+  }
+  return was_split;
+}
+
 __attribute__((transaction_safe)) bool
 slow_inner_insert(
   TM_ARGDECL
@@ -898,47 +1023,127 @@ fast_inner_insert_nonfull(
 } // else the current node is not affected
 }
 
-__attribute__((transaction_safe)) void slow_inner_insert_nonfull(TM_ARGDECL InnerNode* node, unsigned long current_depth, KEY& key,VALUE& value) {
-// Simple linear search
-unsigned long num_keys = SLOW_PATH_SHARED_READ(node->num_keys);
-unsigned index= slow_inner_position_for(TM_ARG key, node->keys,num_keys);
-// GCC warns that this may be used uninitialized, even though that is untrue.
-InsertionResult result = { KEY(), 0, 0 };
-bool was_split;
-if( current_depth-1 == 0 ) {
-  // The children are leaf nodes
-  void* temp_node = SLOW_PATH_SHARED_READ_P(node->children[index]);
-  was_split= slow_leaf_insert(TM_ARG reinterpret_cast<LeafNode*>(temp_node), key, value, &result);
-} else {
-  // The children are inner nodes
-  void* temp_node = SLOW_PATH_SHARED_READ_P(node->children[index]);
-  InnerNode* child= reinterpret_cast<InnerNode*>(temp_node);
-  was_split= slow_inner_insert(TM_ARG  child, current_depth-1, key, value,&result);
-}
-if( was_split ) {
-  if( index == num_keys ) {
-  // Insertion at the rightmost key
-  SLOW_PATH_SHARED_WRITE(node->keys[index],result.key);
-  SLOW_PATH_SHARED_WRITE_P(node->children[index], result.left);
-  SLOW_PATH_SHARED_WRITE_P(node->children[index+1], result.right);
-  SLOW_PATH_SHARED_WRITE(node->num_keys,++num_keys);
-} else {
-  // Insertion not at the rightmost key
-  void* temp_node_2 = SLOW_PATH_SHARED_READ_P(node->children[num_keys]);
-  SLOW_PATH_SHARED_WRITE_P(node->children[num_keys+1],temp_node_2);
-  for(unsigned i=num_keys; i!=index; --i) {
-    void* temp_node_3 = SLOW_PATH_SHARED_READ_P(node->children[i-1]);
-    SLOW_PATH_SHARED_WRITE_P(node->children[i], temp_node_3);
-    intptr_t temp_key_2 = SLOW_PATH_SHARED_READ(node->keys[i-1]);
-    SLOW_PATH_SHARED_WRITE(node->keys[i],temp_key_2);
+static void leaf_insert_nonfull(LeafNode * node, KEY & key, VALUE & value, unsigned index) {
+  intptr_t temp_key = node->keys[index];
+  if (temp_key == key) {
+    //We are inserting a duplicate value.
+    // Simply overwrite the old one
+    VALUE temp_value = (VALUE) value;
+    node->values[index] = temp_value;
+  } else {
+    unsigned long num_keys = node->num_keys;
+
+    //The key we are inserting is unique
+    for (unsigned i = num_keys; i > index; --i) {
+      intptr_t temp_key_2 = node->keys[i - 1];
+
+      node->keys[i] = temp_key_2;
+      VALUE temp_value_2 = (VALUE) node->values[i - 1];
+
+      node->values[i] = temp_value_2;
+    }
+    node->num_keys = ++num_keys;
+    //node->num_keys++;
+    node->keys[index] = key;
+    VALUE temp_value_3 = (VALUE) value;
+
+    node->values[index] = temp_value_3;
   }
-  SLOW_PATH_SHARED_WRITE_P(node->children[index], result.left);
-  SLOW_PATH_SHARED_WRITE_P(node->children[index+1], result.right);
-  SLOW_PATH_SHARED_WRITE(node->keys[index],result.key);
-  SLOW_PATH_SHARED_WRITE(node->num_keys,++num_keys);
 }
-} // else the current node is not affected
+
+__attribute__((transaction_safe)) void slow_inner_insert_nonfull(TM_ARGDECL InnerNode* node, unsigned long current_depth, KEY& key,VALUE& value) {
+  // Simple linear search
+  unsigned long num_keys = SLOW_PATH_SHARED_READ(node->num_keys);
+  unsigned index= slow_inner_position_for(TM_ARG key, node->keys,num_keys);
+  // GCC warns that this may be used uninitialized, even though that is untrue.
+  InsertionResult result = { KEY(), 0, 0 };
+  bool was_split;
+  if( current_depth-1 == 0 ) {
+    // The children are leaf nodes
+    void* temp_node = SLOW_PATH_SHARED_READ_P(node->children[index]);
+    was_split= slow_leaf_insert(TM_ARG reinterpret_cast<LeafNode*>(temp_node), key, value, &result);
+  } else {
+    // The children are inner nodes
+    void* temp_node = SLOW_PATH_SHARED_READ_P(node->children[index]);
+    InnerNode* child= reinterpret_cast<InnerNode*>(temp_node);
+    was_split= slow_inner_insert(TM_ARG  child, current_depth-1, key, value,&result);
+  }
+  if( was_split ) {
+      if( index == num_keys ) {
+      // Insertion at the rightmost key
+      SLOW_PATH_SHARED_WRITE(node->keys[index],result.key);
+      SLOW_PATH_SHARED_WRITE_P(node->children[index], result.left);
+      SLOW_PATH_SHARED_WRITE_P(node->children[index+1], result.right);
+      SLOW_PATH_SHARED_WRITE(node->num_keys,++num_keys);
+    } else {
+      // Insertion not at the rightmost key
+      void* temp_node_2 = SLOW_PATH_SHARED_READ_P(node->children[num_keys]);
+      SLOW_PATH_SHARED_WRITE_P(node->children[num_keys+1],temp_node_2);
+      for(unsigned i=num_keys; i!=index; --i) {
+        void* temp_node_3 = SLOW_PATH_SHARED_READ_P(node->children[i-1]);
+        SLOW_PATH_SHARED_WRITE_P(node->children[i], temp_node_3);
+        intptr_t temp_key_2 = SLOW_PATH_SHARED_READ(node->keys[i-1]);
+        SLOW_PATH_SHARED_WRITE(node->keys[i],temp_key_2);
+      }
+      SLOW_PATH_SHARED_WRITE_P(node->children[index], result.left);
+      SLOW_PATH_SHARED_WRITE_P(node->children[index+1], result.right);
+      SLOW_PATH_SHARED_WRITE(node->keys[index],result.key);
+      SLOW_PATH_SHARED_WRITE(node->num_keys,++num_keys);
+    }
+  } // else the current node is not affected
 }
+
+
+void inner_insert_nonfull(InnerNode * node, unsigned long current_depth, KEY & key, VALUE & value) {
+  //Simple linear search
+  unsigned long num_keys = node->num_keys;
+  unsigned index = inner_position_for(key, node->keys, num_keys);
+  //GCC warns that this may be used uninitialized, even though that is untrue.
+  InsertionResult result = {
+    KEY(), 0, 0
+  };
+  bool was_split;
+
+  if (current_depth - 1 == 0) {
+    //The children are leaf nodes
+    void *temp_node = node->children[index];
+
+    was_split = leaf_insert(reinterpret_cast < LeafNode * >(temp_node), key, value, &result);
+  } else {
+    //The children are inner nodes
+    void *temp_node = node->children[index];
+    InnerNode *child = reinterpret_cast < InnerNode * >(temp_node);
+
+    was_split = inner_insert(child, current_depth - 1, key, value, &result);
+  }
+  if (was_split) {
+    if (index == num_keys) {
+      //Insertion at the rightmost key
+      node->keys[index] = result.key;
+      node->children[index] = result.left;
+      node->children[index + 1] = result.right;
+      node->num_keys = ++num_keys;
+    } else {
+      //Insertion not at the rightmost key
+      void *temp_node_2 = node->children[num_keys];
+
+      node->children[num_keys + 1] = temp_node_2;
+      for (unsigned i = num_keys; i != index; --i) {
+        void *temp_node_3 = node->children[i - 1];
+
+        node->children[i] = temp_node_3;
+        intptr_t temp_key_2 = node->keys[i - 1];
+
+        node->keys[i] = temp_key_2;
+      }
+      node->children[index] = result.left;
+      node->children[index + 1] = result.right;
+      node->keys[index] = result.key;
+      node->num_keys = ++num_keys;
+    }
+  } // else the current node is not affected
+}
+
 
 typedef AlignedMemoryAllocator<NODE_ALIGNMENT> AlignedAllocator;
 

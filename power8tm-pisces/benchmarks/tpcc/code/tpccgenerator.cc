@@ -76,6 +76,18 @@ void TPCCGenerator::makeItemsTable(TM_ARGDECL TPCCTables* tables) {
     }
 }
 
+void TPCCGenerator::makeItemsTableSingleThread(TPCCTables* tables) {
+    // Select 10% of the rows to be marked "original"
+    set<int> original_rows = selectUniqueIds(random_, num_items_/10, 1, num_items_);
+
+    for (int i = 1; i <= num_items_; ++i) {
+        Item* item = new Item;
+        bool is_original = original_rows.find(i) != original_rows.end();
+        generateItem(i, is_original, item);
+        tables->insertItemSingleThread(item);
+    }
+}
+
 static float makeTax(tpcc::RandomGenerator* random) {
     assert(Warehouse::MIN_TAX == District::MIN_TAX);
     assert(Warehouse::MAX_TAX == District::MAX_TAX);
@@ -232,9 +244,26 @@ void TPCCGenerator::makeStock(TM_ARGDECL TPCCTables* tables, int32_t w_id) {
     }
 }
 
+void TPCCGenerator::makeStockSingleThread(TPCCTables* tables, int32_t w_id) {
+    // Select 10% of the stock to be marked "original"
+    set<int> selected_rows = selectUniqueIds(random_, num_items_/10, 1, num_items_);
+
+    for (int i = 1; i <= num_items_; ++i) {
+        Stock s;
+        bool is_original = selected_rows.find(i) != selected_rows.end();
+        generateStock(i, w_id, is_original, &s);
+        tables->insertStockSingleThread(s);
+    }
+}
+
 void TPCCGenerator::makeWarehouse(TM_ARGDECL TPCCTables* tables, int32_t w_id) {
     makeStock(TM_ARG tables, w_id);
     makeWarehouseWithoutStock(TM_ARG tables, w_id);
+}
+
+void TPCCGenerator::makeWarehouseSingleThread(TPCCTables* tables, int32_t w_id) {
+    makeStockSingleThread(tables, w_id);
+    makeWarehouseWithoutStockSingleThread(tables, w_id);
 }
 
 void TPCCGenerator::makeWarehouseWithoutStock(TM_ARGDECL TPCCTables* tables, int32_t w_id) {
@@ -281,6 +310,56 @@ void TPCCGenerator::makeWarehouseWithoutStock(TM_ARGDECL TPCCTables* tables, int
             if (new_order) {
                 // This is a new order: make one for it
                 tables->insertNewOrder(TM_ARG w_id, d_id, o_id);
+            }
+        }
+        delete[] permutation;
+    }
+}
+
+void TPCCGenerator::makeWarehouseWithoutStockSingleThread(TPCCTables* tables, int32_t w_id) {
+    Warehouse w;
+    generateWarehouse(w_id, &w);
+    tables->insertWarehouseSingleThread(w);
+
+    for (int d_id = 1; d_id <= districts_per_warehouse_; ++d_id) {
+        District d;
+        generateDistrict(d_id, w_id, &d);
+        tables->insertDistrictSingleThread(d);
+
+        // Select 10% of the customers to have bad credit
+        set<int> selected_rows = selectUniqueIds(random_, customers_per_district_/10, 1,
+                customers_per_district_);
+        for (int c_id = 1; c_id <= customers_per_district_; ++c_id) {
+            Customer c;
+            bool bad_credit = selected_rows.find(c_id) != selected_rows.end();
+            generateCustomer(c_id, d_id, w_id, bad_credit, &c);
+            tables->insertCustomerSingleThread(c);
+
+            History h;
+            generateHistory(c_id, d_id, w_id, &h);
+        }
+
+        // TODO: TPC-C 4.3.3.1. says that this should be a permutation of [1, 3000]. But since it is
+        // for a c_id field, it seems to make sense to have it be a permutation of the customers.
+        // For the "real" thing this will be equivalent
+        int* permutation = random_->makePermutation(1, customers_per_district_);
+        for (int o_id = 1; o_id <= customers_per_district_; ++o_id) {
+            // The last new_orders_per_district_ orders are new
+            bool new_order = customers_per_district_ - new_orders_per_district_ < o_id;
+            Order o;
+            generateOrder(o_id, permutation[o_id-1], d_id, w_id, new_order, &o);
+            tables->insertOrderSingleThread(o);
+
+            // Generate each OrderLine for the order
+            for (int ol_number = 1; ol_number <= o.o_ol_cnt; ++ol_number) {
+                OrderLine line;
+                generateOrderLine(ol_number, o_id, d_id, w_id, new_order, &line);
+                tables->insertOrderLineSingleThread(line);
+            }
+
+            if (new_order) {
+                // This is a new order: make one for it
+                tables->insertNewOrderSingleThread(w_id, d_id, o_id);
             }
         }
         delete[] permutation;

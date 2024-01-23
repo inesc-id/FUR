@@ -215,15 +215,15 @@ int main(int argc, char** argv)
   clock->getDateTimestamp(now);
   printf("num items: %d", Item::NUM_ITEMS);
   int64_t begin = clock->getMicroseconds();
-  int ro = 1;
-  TM_BEGIN(ro);
+  int ro = 0;
+  // TM_BEGIN(ro);
   local_exec_mode = 2;
   TPCCGenerator generator(random, now, Item::NUM_ITEMS, District::NUM_PER_WAREHOUSE,
   Customer::NUM_PER_DISTRICT, NewOrder::INITIAL_NUM_PER_DISTRICT);
-  generator.makeItemsTable(TM_ARG tables);
+  generator.makeItemsTableSingleThread(tables);
   for (int i = 0; i < num_warehouses; ++i)
-    generator.makeWarehouse(TM_ARG tables, i+1);
-  TM_END();
+    generator.makeWarehouseSingleThread(tables, i+1);
+  // TM_END();
   int64_t end = clock->getMicroseconds();
   printf("%ld ms\n", (end - begin + 500)/1000);
 

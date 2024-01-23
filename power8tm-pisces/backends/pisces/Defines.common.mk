@@ -7,7 +7,7 @@
 
 CC       := gcc
 CFLAGS   += -pthread
-CFLAGS   += -O2 -g -std=c++11 
+CFLAGS   += -std=c++11 -O2 #-O0 -g
 CFLAGS   += -I$(LIB)
 CPP      := g++
 CPPFLAGS += $(CFLAGS)

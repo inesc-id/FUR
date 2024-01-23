@@ -685,6 +685,26 @@ __attribute__((transaction_safe)) static T* insert_tm(TM_ARGDECL BPlusTree<int64
     return copy;
 }
 
+template <typename T>
+__attribute__((transaction_safe)) static T* insert(
+  BPlusTree<int64_t, T*, TPCCTables::KEYS_PER_INTERNAL, TPCCTables::KEYS_PER_LEAF> *tree,
+  int64_t                                                                           key,
+  const T                                                                          &item
+) {
+  T* copy;
+  // if (freedValues[sizeof(T)].empty()) {
+
+  copy = (T*) P_MALLOC(sizeof(T));
+  
+  // } else {
+  //   copy = (T*) freedValues[sizeof(T)].back();
+  //   freedValues[sizeof(T)].pop_back();
+  // }
+  tm_memcpy(copy, &item, sizeof(T));
+  tree->insert(key, copy);
+  return copy;
+}
+
 /*template <typename T>
 __attribute__((transaction_safe))  static T* find(const BPlusTree<int64_t, T*, TPCCTables::KEYS_PER_INTERNAL, TPCCTables::KEYS_PER_LEAF>& tree, int64_t key) {
     T* output = NULL;
@@ -744,6 +764,10 @@ __attribute__((transaction_safe)) Item* TPCCTables::findItem(TM_ARGDECL int64_t 
 void TPCCTables::insertWarehouse(TM_ARGDECL const Warehouse& w) {
     insert_tm(TM_ARG &warehouses_, w.w_id, w);
 }
+void TPCCTables::insertWarehouseSingleThread(const Warehouse& w)
+{
+  insert(&warehouses_, w.w_id, w);
+}
 __attribute__((transaction_safe)) Warehouse* TPCCTables::findWarehouse(TM_ARGDECL int64_t id) {
     return find_tm(TM_ARG warehouses_, id);
 }
@@ -755,6 +779,12 @@ __attribute__((transaction_safe)) static int64_t makeStockKey(int64_t w_id, int6
 void TPCCTables::insertStock(TM_ARGDECL const Stock& stock) {
     insert_tm(TM_ARG &stock_, makeStockKey(stock.s_w_id, stock.s_i_id), stock);
 }
+
+void TPCCTables::insertStockSingleThread(const Stock& stock)
+{
+  insert(&stock_, makeStockKey(stock.s_w_id, stock.s_i_id), stock);
+}
+
 Stock* TPCCTables::findStock(TM_ARGDECL int64_t w_id, int64_t s_id) {
     return find_tm(TM_ARG stock_, makeStockKey(w_id, s_id));
 }
@@ -765,6 +795,11 @@ __attribute__((transaction_safe))  static int64_t makeDistrictKey(int64_t w_id, 
 
 void TPCCTables::insertDistrict(TM_ARGDECL const District& district) {
     insert_tm(TM_ARG &districts_, makeDistrictKey(district.d_w_id, district.d_id), district);
+}
+
+void TPCCTables::insertDistrictSingleThread(const District& district)
+{
+  insert(&districts_, makeDistrictKey(district.d_w_id, district.d_id), district);
 }
 
 __attribute__((transaction_safe)) District* TPCCTables::findDistrict(TM_ARGDECL int64_t w_id, int64_t d_id) {
@@ -781,6 +816,14 @@ void TPCCTables::insertCustomer(TM_ARGDECL const Customer& customer) {
     assert(customers_by_name_.find(c) == customers_by_name_.end());
     customers_by_name_.insert(c);
 }
+
+void TPCCTables::insertCustomerSingleThread(const Customer& customer)
+{
+  Customer* c = insert(&customers_, makeCustomerKey(customer.c_w_id, customer.c_d_id, customer.c_id), customer);
+  assert(customers_by_name_.find(c) == customers_by_name_.end());
+  customers_by_name_.insert(c);
+}
+
 __attribute__((transaction_safe)) Customer* TPCCTables::findCustomer(TM_ARGDECL int64_t w_id, int64_t d_id, int64_t c_id) {
     return find_tm(TM_ARG customers_, makeCustomerKey(w_id, d_id, c_id));
 }
@@ -858,6 +901,15 @@ __attribute__((transaction_safe)) Order* TPCCTables::insertOrder(TM_ARGDECL cons
     return tuple;
 }
 
+Order* TPCCTables::insertOrderSingleThread(const Order& order)
+{
+  Order* tuple = insert(&orders_, makeOrderKey(order.o_w_id, order.o_d_id, order.o_id), order);
+  // Secondary index based on customer id
+  int64_t key = makeOrderByCustomerKey(order.o_w_id, order.o_d_id, order.o_c_id, order.o_id);
+  orders_by_customer_.insert(key, tuple);
+  return tuple;
+}
+
 
 __attribute__((transaction_safe)) Order* TPCCTables::findOrder(TM_ARGDECL int64_t w_id, int64_t d_id, int64_t o_id) {
     return find_tm(TM_ARG orders_, makeOrderKey(w_id, d_id, o_id));
@@ -877,6 +929,12 @@ __attribute__((transaction_safe)) Order* TPCCTables::findLastOrderByCustomer(TM_
     return order;
 }
 
+void TPCCTables::insertItemSingleThread(Item* item)
+{
+  items_.insert(item->i_id, item);
+}
+
+
 __attribute__((transaction_safe)) static int64_t makeOrderLineKey(int64_t w_id, int64_t d_id, int64_t o_id, int64_t number) {
     // TODO: This may be bad for locality since o_id is in the most significant position. However,
     // Order status fetches all rows for one (w_id, d_id, o_id) tuple, so it may be fine,
@@ -895,6 +953,14 @@ OrderLine* TPCCTables::insertOrderLine(TM_ARGDECL const OrderLine& orderline) {
     int64_t key = makeOrderLineKey(
             orderline.ol_w_id, orderline.ol_d_id, orderline.ol_o_id, orderline.ol_number);
     return insert_tm(TM_ARG &orderlines_, key, orderline);
+}
+
+OrderLine* TPCCTables::insertOrderLineSingleThread(const OrderLine& orderline)
+{
+  int64_t key = makeOrderLineKey(
+    orderline.ol_w_id, orderline.ol_d_id, orderline.ol_o_id, orderline.ol_number
+  );
+  return insert(&orderlines_, key, orderline);
 }
 
 __attribute__((transaction_safe)) OrderLine* TPCCTables::findOrderLine(TM_ARGDECL int64_t w_id, int64_t d_id, int64_t o_id, int64_t number) {
@@ -930,6 +996,18 @@ __attribute__((transaction_safe)) NewOrder* TPCCTables::insertNewOrder(TM_ARGDEC
     else
       neworders_.fast_insert(TM_ARG key, neworder);
     return neworder;
+}
+
+NewOrder* TPCCTables::insertNewOrderSingleThread(int64_t w_id, int64_t d_id, int64_t o_id)
+{
+  NewOrder* neworder = (NewOrder*) TM_MALLOC(sizeof(NewOrder));
+  neworder->no_w_id = w_id;
+  neworder->no_d_id = d_id;
+  neworder->no_o_id = o_id;
+
+  int64_t key = makeNewOrderKey(neworder->no_w_id, neworder->no_d_id, neworder->no_o_id);
+  neworders_.insert(key, neworder);
+  return neworder;
 }
 
 NewOrder* TPCCTables::findNewOrder(TM_ARGDECL int64_t w_id, int64_t d_id, int64_t o_id) {
