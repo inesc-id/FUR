@@ -362,8 +362,8 @@ READ_TIMESTAMP(end_time);
   printf(\
 "Total sum time: %lu\n" \
 "Total commit time: %lu\n" \
-"Total abort time (update txs): %lu\n" \
-"Total abort time (RO txs): %lu\n" \
+"Total-abort-upd-tx-time: %lu\n" \
+"Total-abort-ro-tx-time: %lu\n" \
 "Total wait time: %lu\n" \
 "Total sus time: %lu\n" \
 "Total flush time: %lu\n" \
