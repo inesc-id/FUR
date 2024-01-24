@@ -38,7 +38,7 @@ static volatile __thread uint64_t timeTX_ro = 0;
 static volatile __thread uint64_t ro_durability_wait_time = 0;
 static volatile __thread uint64_t dur_commit_time = 0;
 
-static __thread int readonly_tx;
+__thread int readonly_tx;
 
 static volatile __thread uint64_t countUpdCommitPhases = 0;
 static volatile __thread uint64_t countROCommitPhases = 0;
@@ -111,19 +111,21 @@ void state_gather_profiling_info_pcwm(int threadId)
   __sync_fetch_and_add(&inc_dur_commit_time, dur_commit_time);
   __sync_fetch_and_add(&inc_ro_durability_wait_time, ro_durability_wait_time);
   __sync_fetch_and_add(&timeSGL_global, timeSGL);
-  __sync_fetch_and_add(&timeAbortedTX_global, timeAbortedTX);
+  __sync_fetch_and_add(&timeAbortedTX_global, timeAbortedUpdTX);
+  __sync_fetch_and_add(&timeAbortedTX_global, timeAbortedROTX);
 
-  stats_array[threadId].htm_commits = countUpdCommitPhases;
-  stats_array[threadId].read_commits = countROCommitPhases;
+  stats_array[threadId].htm_commits = countUpdCommitPhases + countROCommitPhases;
   stats_array[threadId].flush_time = timeFlushing;
   stats_array[threadId].tx_time_upd_txs = timeTX_upd;
   stats_array[threadId].tx_time_ro_txs = timeTX_ro;
   stats_array[threadId].dur_commit_time = dur_commit_time;
   stats_array[threadId].readonly_durability_wait_time = ro_durability_wait_time;
-  stats_array[threadId].abort_time = timeAbortedTX;
+  stats_array[threadId].time_aborted_upd_txs = timeAbortedUpdTX;
+  stats_array[threadId].time_aborted_ro_txs = timeAbortedROTX;
 
   timeSGL = 0;
-  timeAbortedTX = 0;
+  timeAbortedUpdTX = 0;
+  timeAbortedROTX = 0;
   timeTX_upd = 0;
   timeTX_ro = 0;
   dur_commit_time = 0;
@@ -279,7 +281,7 @@ static inline void smart_close_log_pcwm(uint64_t marker, uint64_t *marker_pos)
 
 void on_after_htm_commit_pcwm(int threadId)
 {
-  if (readonly_tx)
+  if (writeLogStart == writeLogEnd)
     INC_PERFORMANCE_COUNTER(timeTotalTS1, timeAfterTXTS1, timeTX_ro);
   else
     INC_PERFORMANCE_COUNTER(timeTotalTS1, timeAfterTXTS1, timeTX_upd);

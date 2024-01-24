@@ -238,7 +238,7 @@
   rwmb();\
   long myOldActiveState = ts_state[q_args.tid].value; \
   UPDATE_STATE(INACTIVE);\
-  stats_array[q_args.tid].read_commits++;\
+  stats_array[q_args.tid].nontx_commits++;\
   \ 
   long num_threads = global_numThread; \
   long index;\

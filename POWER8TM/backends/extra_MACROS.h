@@ -101,7 +101,9 @@ typedef struct padded_pointer {
 typedef struct padded_statistics {
     unsigned long total_time;   //Total execution time (entire benchmark)
     unsigned long wait_time;    //Inner wait loop of isolation wait (ROT_QUIESCENCE_WAIT)
-    unsigned long read_commits; //#commits of read-only txs
+    unsigned long nontx_commits; 
+    unsigned long stm_commits; 
+    unsigned long gl_commits;
     unsigned long htm_commits;  //#commits of htm txs
     unsigned long htm_conflict_aborts;
     unsigned long htm_self_conflicts;
@@ -121,9 +123,9 @@ typedef struct padded_statistics {
     unsigned long rot_persistent_aborts;
     unsigned long rot_capacity_aborts;
     unsigned long rot_other_aborts;
-    unsigned long gl_commits;
     unsigned long commit_time;    //time from htmBegin to htmCommit
-    unsigned long abort_time;
+    unsigned long time_aborted_upd_txs;
+    unsigned long time_aborted_ro_txs;
     unsigned long sus_time;       //time from htmSuspend to htmResume (contains Isolation wait)
     unsigned long flush_time;     //time to flush redo log entries (in Dumbo, exclusing time to issue flush inside sus-res)
     unsigned long dur_commit_time;     //time from persistent redo logs until the tx is durable (and can return)
@@ -132,6 +134,7 @@ typedef struct padded_statistics {
     unsigned long tx_time_ro_txs;
     char suffixPadding[CACHE_LINE_SIZE];
 } __attribute__((aligned(CACHE_LINE_SIZE))) padded_statistics_t;
+
 
 typedef struct readset_item {
   long* addr;
@@ -442,7 +445,7 @@ else /* handles warp around case */ \
     loc_var.rot_status = 0; \
     loc_var.rot_budget--; \
     READ_TIMESTAMP(end_tx); \
-    stats_array[loc_var.tid].abort_time += end_tx - start_tx;\
+    stats_array[loc_var.tid].time_aborted_upd_txs += end_tx - start_tx;\
 		if ( __TM_conflict(&(loc_var.TM_buff)) ) \
     { \
       stats_array[loc_var.tid].rot_conflict_aborts ++; \
@@ -550,7 +553,8 @@ else /* handles warp around case */ \
   stats_array[0].total_time = _end_ts - _start_ts;\
   unsigned long wait_time = 0; \
   unsigned long total_time = 0; \
-  unsigned long read_commits = 0; \
+  unsigned long stm_commits = 0; \
+  unsigned long nontx_commits = 0; \
   unsigned long htm_commits = 0; \
   unsigned long htm_conflict_aborts = 0; \
   unsigned long htm_user_aborts = 0; \
@@ -572,7 +576,8 @@ else /* handles warp around case */ \
   unsigned long rot_other_aborts = 0; \
   unsigned long gl_commits = 0; \
   unsigned long commit_time = 0; \
-  unsigned long abort_time = 0; \
+  unsigned long time_aborted_upd_txs = 0; \
+  unsigned long time_aborted_ro_txs = 0; \
   unsigned long sus_time = 0; \
   unsigned long flush_time = 0; \
   unsigned long dur_commit_time = 0; \
@@ -584,7 +589,8 @@ else /* handles warp around case */ \
   { \
     wait_time += stats_array[i].wait_time; \
     total_time += stats_array[i].total_time; \
-    read_commits += stats_array[i].read_commits; \
+    stm_commits += stats_array[i].stm_commits; \
+    nontx_commits += stats_array[i].nontx_commits; \
     htm_commits += stats_array[i].htm_commits; \
     htm_conflict_aborts += stats_array[i].htm_conflict_aborts; \
     htm_user_aborts += stats_array[i].htm_user_aborts; \
@@ -612,12 +618,14 @@ else /* handles warp around case */ \
     readonly_durability_wait_time += stats_array[i].readonly_durability_wait_time; \
     tx_time_upd_txs += stats_array[i].tx_time_upd_txs; \
     tx_time_ro_txs += stats_array[i].tx_time_ro_txs; \
-    abort_time += stats_array[i].abort_time; \
+    time_aborted_upd_txs += stats_array[i].time_aborted_upd_txs; \
+    time_aborted_ro_txs += stats_array[i].time_aborted_ro_txs; \
   } \
   printf(\
 "Total sum time: %lu\n" \
 "Total commit time: %lu\n" \
-"Total abort time: %lu\n" \
+"Total abort time (update txs): %lu\n" \
+"Total abort time (RO txs): %lu\n" \
 "Total wait time: %lu\n" \
 "Total sus time: %lu\n" \
 "Total flush time: %lu\n" \
@@ -626,10 +634,11 @@ else /* handles warp around case */ \
 "Total upd tx time: %lu\n" \
 "Total RO tx time: %lu\n" \
 "Total commits: %lu\n" \
-  "\tRead commits: %lu\n" \
+  "\tNon-tx commits: %lu\n" \
   "\tHTM commits:  %lu\n" \
   "\tROT commits:  %lu\n" \
   "\tGL commits: %lu\n" \
+  "\tSTM commits:  %lu\n" \
 "Total aborts: %lu\n" \
   "\tHTM conflict aborts:  %lu\n" \
     "\t\tHTM self aborts:  %lu\n" \
@@ -650,7 +659,8 @@ else /* handles warp around case */ \
   "\tROT other aborts:  %lu\n", \
   total_time, \
   commit_time, \
-  abort_time, \
+  time_aborted_upd_txs, \
+  time_aborted_ro_txs, \
   wait_time, \
   sus_time, \
   flush_time, \
@@ -658,11 +668,12 @@ else /* handles warp around case */ \
   readonly_durability_wait_time, \
   tx_time_upd_txs, \
   tx_time_ro_txs, \
-  read_commits+htm_commits+rot_commits+gl_commits, \
-  read_commits, \
+  nontx_commits+htm_commits+rot_commits+gl_commits+stm_commits, \
+  nontx_commits, \
   htm_commits, \
   rot_commits, \
   gl_commits, \
+  stm_commits, \
   htm_conflict_aborts+htm_user_aborts+htm_capacity_aborts+htm_other_aborts+rot_conflict_aborts+rot_user_aborts+rot_capacity_aborts+rot_other_aborts, \
   htm_conflict_aborts, \
   htm_self_conflicts, \

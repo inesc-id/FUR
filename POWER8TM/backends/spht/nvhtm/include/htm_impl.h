@@ -11,7 +11,10 @@
 #define AFTER_ABORT(tid, budget, status) \
   if (!isCraftySet || (isCraftySet && !crafty_isValidate)) {\
     MEASURE_TS(timeAbortedTX_TS2); \
-    INC_PERFORMANCE_COUNTER(timeAbortedTX_TS1, timeAbortedTX_TS2, timeAbortedTX); \
+    if (readonly_tx) \
+      INC_PERFORMANCE_COUNTER(timeAbortedTX_TS1, timeAbortedTX_TS2, timeAbortedROTX); \
+    else \
+      INC_PERFORMANCE_COUNTER(timeAbortedTX_TS1, timeAbortedTX_TS2, timeAbortedUpdTX); \
     timeAbortedTX_TS1 = timeAbortedTX_TS2; \
   } \
   on_htm_abort(tid)

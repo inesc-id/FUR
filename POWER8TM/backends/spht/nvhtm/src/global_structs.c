@@ -81,7 +81,8 @@ uint64_t timeSGL_global = 0;
 
 __thread uint64_t timeAbortedTX_TS1 = 0;
 __thread uint64_t timeAbortedTX_TS2 = 0;
-__thread uint64_t timeAbortedTX = 0;
+__thread uint64_t timeAbortedUpdTX = 0;
+__thread uint64_t timeAbortedROTX = 0;
 uint64_t timeAbortedTX_global = 0;
 
 volatile __thread uint64_t timeAfterTXSuc = 0;

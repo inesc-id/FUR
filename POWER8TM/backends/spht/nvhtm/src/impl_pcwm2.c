@@ -82,10 +82,13 @@ void state_gather_profiling_info_pcwm2(int threadId)
   __sync_fetch_and_add(&incFlushing, timeFlushing);
   __sync_fetch_and_add(&incScanning, timeScanning);
   __sync_fetch_and_add(&incTXTime_upd, timeTX_upd);
-  __sync_fetch_and_add(&timeAbortedTX_global, timeAbortedTX);
+  __sync_fetch_and_add(&timeAbortedTX_global, timeAbortedUpdTX);
+  __sync_fetch_and_add(&timeAbortedTX_global, timeAbortedROTX);
+
 
   timeSGL = 0;
-  timeAbortedTX = 0;
+  timeAbortedUpdTX = 0;
+  timeAbortedROTX = 0;
   timeTX_upd = 0;
   timeAfterTXSuc = 0;
   timeWaiting = 0;

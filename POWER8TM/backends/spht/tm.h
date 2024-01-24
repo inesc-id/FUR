@@ -185,6 +185,9 @@
 # define IS_LOCKED(lock)        *((volatile int*)(&lock)) != 0
 
 extern int isCraftySet; // need flag for crafty
+
+extern __thread int readonly_tx;
+
 #define TM_BEGIN_EXT(id,ro) TM_BEGIN(ro)
 # define TM_BEGIN(ro) \
   NV_HTM_BEGIN(HTM_SGL_tid, ro) \

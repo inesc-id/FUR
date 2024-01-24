@@ -94,7 +94,9 @@ void state_gather_profiling_info_crafty(int threadId)
   __sync_fetch_and_add(&incValidationHTMTXs, validationHTMTXs);
   __sync_fetch_and_add(&incValidationHTMAborts, validationHTMAborts);
   __sync_fetch_and_add(&timeSGL_global, timeSGL);
-  __sync_fetch_and_add(&timeAbortedTX_global, timeAbortedTX);
+  __sync_fetch_and_add(&timeAbortedTX_global, timeAbortedUpdTX);
+  __sync_fetch_and_add(&timeAbortedTX_global, timeAbortedROTX);
+
 
   countCommitPhases = 0;
   startCommitPhase = 0;
@@ -113,7 +115,8 @@ void state_gather_profiling_info_crafty(int threadId)
   validationHTMTXs = 0;
   validationHTMAborts = 0;
   timeSGL = 0;
-  timeAbortedTX = 0;
+  timeAbortedUpdTX = 0;
+  timeAbortedROTX = 0;
 }
 
 void state_fprintf_profiling_info_crafty(char *filename)

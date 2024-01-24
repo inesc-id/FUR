@@ -164,7 +164,7 @@
 		else if(__TM_conflict(&TM_buff)) \
     { \
       READ_TIMESTAMP(end_tx); \
-      stats_array[local_thread_id].abort_time += end_tx - start_tx;\
+      stats_array[local_thread_id].time_aborted_upd_txs += end_tx - start_tx;\
       stats_array[local_thread_id].rot_conflict_aborts++; \
 			if (__TM_is_self_conflict(&TM_buff)) \
         stats_array[local_thread_id].rot_self_conflicts++; \
@@ -184,7 +184,7 @@
     } \
     else if (__TM_user_abort(&TM_buff)) { \
       READ_TIMESTAMP(end_tx); \
-      stats_array[local_thread_id].abort_time += end_tx - start_tx;\
+      stats_array[local_thread_id].time_aborted_upd_txs += end_tx - start_tx;\
       \
       stats_array[local_thread_id].rot_user_aborts ++; \
       rot_status = 0; \
@@ -192,7 +192,7 @@
     } \
     else if(__TM_capacity_abort(&TM_buff)){ \
       READ_TIMESTAMP(end_tx); \
-      stats_array[local_thread_id].abort_time += end_tx - start_tx;\
+      stats_array[local_thread_id].time_aborted_upd_txs += end_tx - start_tx;\
       \
 			rot_status = 0; \
 			stats_array[local_thread_id].rot_capacity_aborts ++; \
@@ -201,7 +201,7 @@
 		} \
     else{ \
       READ_TIMESTAMP(end_tx); \
-      stats_array[local_thread_id].abort_time += end_tx - start_tx;\
+      stats_array[local_thread_id].time_aborted_upd_txs += end_tx - start_tx;\
 			rot_status = 0; \
       rot_budget--; \
 			stats_array[local_thread_id].rot_other_aborts ++; \
@@ -340,7 +340,7 @@ extern uint64_t *SI_wait_spins;
   stats_array[q_args.tid].tx_time_ro_txs += end_tx - start_tx;\
   rwmb();\
   UPDATE_STATE(INACTIVE);\
-  stats_array[local_thread_id].read_commits++;\
+  stats_array[local_thread_id].nontx_commits++;\
   \
 }\ 
   

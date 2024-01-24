@@ -113,7 +113,8 @@ void state_gather_profiling_info_crafty(int threadId)
   validationHTMTXs = 0;
   validationHTMAborts = 0;
   timeSGL = 0;
-  timeAbortedTX = 0;
+  timeAbortedUpdTX = 0;
+  timeAbortedROTX = 0;
 }
 
 void state_fprintf_profiling_info_crafty(char *filename)

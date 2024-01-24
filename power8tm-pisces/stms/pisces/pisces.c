@@ -217,8 +217,7 @@ volatile long isolation_wait_timeTally = 0;
 volatile long ro_tx_timeTally = 0;
 volatile long upd_tx_timeTally = 0;
 volatile long abort_timeTally = 0;
-volatile long upd_commitsTally = 0;
-volatile long ro_commitsTally = 0;
+volatile long stm_commitsTally = 0;
 
 
 volatile long ReadOverflowTally  = 0;
@@ -324,10 +323,47 @@ READ_TIMESTAMP(end_time);
 
   
 
-printf(\
+// printf(\
+// "Total sum time: %lu\n" \
+// "Total commit time: %lu\n" \
+// "Total abort time: %lu\n" \
+// "Total wait time: %lu\n" \
+// "Total sus time: %lu\n" \
+// "Total flush time: %lu\n" \
+// "Total dur_commit time: %lu\n" \
+// "Total RO_dur_wait time: %lu\n" \
+// "Total upd tx time: %lu\n" \
+// "Total RO tx time: %lu\n" \
+// "Total commits: %lu\n" \
+//   "\tRead commits: %lu\n" \
+//   "\tHTM commits:  %lu\n" \
+//   "\tROT commits:  %lu\n" \
+//   "\tGL commits: %lu\n" \
+// "Total aborts: %lu\n" \
+//   "\tHTM conflict aborts:  %lu\n" \
+//     "\t\tHTM self aborts:  %lu\n" \
+//     "\t\tHTM trans aborts:  %lu\n" \
+//     "\t\tHTM non-trans aborts:  %lu\n" \
+//   "\tHTM user aborts :  %lu\n" \
+//   "\tHTM capacity aborts:  %lu\n" \
+//     "\t\tHTM persistent aborts:  %lu\n" \
+//   "\tHTM other aborts:  %lu\n" \
+//   "\tROT conflict aborts:  %lu\n" \
+//     "\t\tROT self aborts:  %lu\n" \
+//     "\t\tROT trans aborts:  %lu\n" \
+//     "\t\tROT non-trans aborts:  %lu\n" \
+//     "\t\tROT other conflict aborts:  %lu\n" \
+//   "\tROT user aborts:  %lu\n" \
+//   "\tROT capacity aborts:  %lu\n" \
+//     "\t\tROT persistent aborts:  %lu\n" \
+//   "\tROT other aborts:  %lu\n", \
+
+
+  printf(\
 "Total sum time: %lu\n" \
 "Total commit time: %lu\n" \
-"Total abort time: %lu\n" \
+"Total abort time (update txs): %lu\n" \
+"Total abort time (RO txs): %lu\n" \
 "Total wait time: %lu\n" \
 "Total sus time: %lu\n" \
 "Total flush time: %lu\n" \
@@ -336,10 +372,11 @@ printf(\
 "Total upd tx time: %lu\n" \
 "Total RO tx time: %lu\n" \
 "Total commits: %lu\n" \
-  "\tRead commits: %lu\n" \
+  "\tNon-tx commits: %lu\n" \
   "\tHTM commits:  %lu\n" \
   "\tROT commits:  %lu\n" \
   "\tGL commits: %lu\n" \
+  "\tSTM commits:  %lu\n" \
 "Total aborts: %lu\n" \
   "\tHTM conflict aborts:  %lu\n" \
     "\t\tHTM self aborts:  %lu\n" \
@@ -361,6 +398,7 @@ printf(\
   0,
   0,
   abort_timeTally,
+  0, //in pisces, RO never abort
   0,
   isolation_wait_timeTally,
   flush_timeTally,
@@ -368,11 +406,12 @@ printf(\
   ro_wait_timeTally,
   upd_tx_timeTally,
   ro_tx_timeTally,
-  upd_commitsTally+ro_commitsTally, 
-  ro_commitsTally,
-  upd_commitsTally, 
+  stm_commitsTally, 
+  0,
+  0, 
   0,
   0,
+  stm_commitsTally,
   AbortTally, 
   AbortTally,
   0,
@@ -441,8 +480,8 @@ TxFreeThread (Thread* t)
     AtomicAdd((volatile intptr_t*)((void*)(&upd_tx_timeTally)),         t->upd_tx_time);
     AtomicAdd((volatile intptr_t*)((void*)(&abort_timeTally)),         t->abort_time);
 
-    AtomicAdd((volatile intptr_t*)((void*)(&upd_commitsTally)),         t->upd_commits);
-    AtomicAdd((volatile intptr_t*)((void*)(&ro_commitsTally)),         t->ro_commits);
+    AtomicAdd((volatile intptr_t*)((void*)(&stm_commitsTally)),         t->upd_commits);
+    AtomicAdd((volatile intptr_t*)((void*)(&stm_commitsTally)),         t->ro_commits);
 
     AtomicAdd((volatile intptr_t*)((void*)(&AbortTally)),         t->Aborts);
 
