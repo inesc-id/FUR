@@ -583,7 +583,7 @@ __attribute__((transaction_safe)) static int64_t makeNewOrderKey(int64_t w_id, i
 
 void TPCCTables::delivery(TM_ARGDECL int64_t warehouse_id, int64_t carrier_id, const char* now,
         std::vector<DeliveryOrderInfo>* orders, TPCCUndo** undo) {
-    //~ printf("delivery %d %d %s\n", warehouse_id, carrier_id, now);
+    // printf("delivery %d %d %s\n", warehouse_id, carrier_id, now);
 
 /*    __transaction_atomic { */
     // FIXME(nmld): transaction block here
@@ -594,6 +594,7 @@ void TPCCTables::delivery(TM_ARGDECL int64_t warehouse_id, int64_t carrier_id, c
             // Find and remove the lowest numbered order for the district
 
             int64_t key = makeNewOrderKey(warehouse_id, d_id, 1);
+            key = key *1000000; //JOAO DEBUG (otherwise, delivery was rarely picking up new orders)
             NewOrder* neworder;
             int64_t foundKey = -1;
 	    if(local_exec_mode == 1 || local_exec_mode == 3){

@@ -24,13 +24,19 @@ if __name__ == "__main__":
 #   params.set_params("-p", [4], True)
 #   params.set_params("-r", [8], True)
   
-  # From SPHT paper
+  # # From SPHT paper
+  # params.set_params("-s", [0], True)
+  # params.set_params("-o", [0], True)
+  # params.set_params("-p", [95], True)
+  # params.set_params("-r", [2], True)
+  # params.set_params("-d", [3], True)
+
+# Misc configurations:
   params.set_params("-s", [0], True)
   params.set_params("-o", [0], True)
-  params.set_params("-p", [95], True)
-  params.set_params("-r", [2], True)
-  params.set_params("-d", [3], True)
-
+  params.set_params("-p", [0], True)
+  params.set_params("-r", [100], True)
+  params.set_params("-d", [0], True)
 
   # params.set_params("-s", [4, 8], True) # to pass more than 1 combination of values
   # params.set_params("-d", [4, 4], True)
@@ -77,7 +83,7 @@ if __name__ == "__main__":
     "ureads-p8tm": "ureads-p8tm"
   }
   
-  data_folder = "data-tpcc-spht-mix"
+  data_folder = "data-tpcc-neworder"
 
   datasets_thr = {}
   datasets_aborts = {}
