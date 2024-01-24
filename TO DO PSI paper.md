@@ -1,6 +1,11 @@
-- rbtree com random seeds distintas, val partilhado entre iterações
+- testes: tpcc, rbtree, linked list  (tamanhos iguais aos usados com rbtree/hashmap)
+- selecionar quais casos a pôr no artigo (em reunião)
+- Melhorias aos stacked bars de commits/aborts:
+    - profiles: só spht e dumbo, juntar também abort time (e SGL time?)
+    - só incluir spht e dumbo?
+    - OK commits devem incluir read commits tb. retirar #aborts? Ficaria só non-tx commits, htm commits, rot commits, sgl commits.
+    - eliminar os plots de tipos de aborts? ou reduzir os tipos de aborts a: tx, non-tx e capacity (tal como no si-htm)?
 
-- testes com linked list com tamanhos iguais aos usados com rbtree/hashmap
 
 - implementar variantes psi para breakdown
     . basta variantes sem as 2 primeiras otimizacoes
@@ -10,24 +15,21 @@
 
 - implementar dumbo-readers
 
-- pisces, o grande mistério: com tpcc 100%updates, Pisces tem desempenho péssimo. Mas com hashmap 100% updates, escala até 64 threads com isolation wait menor que dumbo. PORQUÊ?
-
-- mistério com SPHT com algumas operações do tpcc: parece não conseguir qq speedup, em contraste com htm.
-
-Melhorias aos stacked bars de commits/aborts:
-- só incluir spht e dumbo?
-- commits devem incluir read commits tb. retirar #aborts? Ficaria só non-tx commits, htm commits, rot commits, sgl commits.
-- eliminar os plots de tipos de aborts? ou reduzir os tipos de aborts a: tx, non-tx e capacity (tal como no si-htm)?
+- Debug - MISTÉRIOS:
+    - capacity aborts muito raros no spht/htm.
+    - pisces, o grande mistério: com tpcc 100%updates, Pisces tem desempenho péssimo. Mas com hashmap 100% updates, escala até 64 threads com isolation wait menor que dumbo. PORQUÊ?
+    - mistério com SPHT com algumas operações do tpcc: parece não conseguir qq speedup, em contraste com htm.
 
 
 
-- adicionar escrita unlogged no hashmap (e, mais tarde, no tpcc)
+MENOS PRIORITÁRIO:
+- adicionar escrita unlogged no hashmap, rbtree (e, mais tarde, no tpcc)
 - no PSI, comentar READ_TIMESTAMP (para ganhar algum desempenho)
-- Nos plots, Pisces "HTM commits" -> "STM commits"
-- nas stats, falta abort time (psi, spht, etc)
 - Latency profile: replicar para spht-ll
 
 
+
+MISC ANTIGO:
 
 s: 100% updates, 1 write (***mas a tx era lançada com ro=1! corrigi para ro=0***)          Pisces continua bem pior [MISTÉRIO]
 d: 99.9% readonly (1 updTx per warehouse, 6-18 writes)  competitivo mas pisces pior
@@ -50,3 +52,4 @@ exploração 18-jan para ter um mix completo:
 
 FEITO:
 - TPCC: populate new orders primeiro, antes de testes single-op
+- Nos plots, Pisces "HTM commits" -> "STM commits"

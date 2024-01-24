@@ -34,7 +34,7 @@ if __name__ == "__main__":
   # a benchmark (allows to compare with "exotic" implementations).
   locations = [
     "../POWER8TM/benchmarks/datastructures",
-    # "../POWER8TM/benchmarks/datastructures",
+    "../POWER8TM/benchmarks/datastructures",
     # "../POWER8TM/benchmarks/datastructures",
     # "../POWER8TM/benchmarks/datastructures",
     # "../power8tm-pisces/benchmarks/datastructures",
@@ -47,13 +47,13 @@ if __name__ == "__main__":
   # "backends" list with the position in the "locations" list)
   backends = [
     # "psi",
-    "psi-strong",
-    # "spht",
+    # "psi-strong",
+    "spht",
     # "spht-log-linking",
     # "pisces",
     # "htm-sgl",
     # "htm-sgl-sr",
-    # "si-htm",
+    "si-htm",
     # "ureads-strong",
     # "ureads-p8tm"
   ]
@@ -132,37 +132,41 @@ if __name__ == "__main__":
           # Adds a bar plot for number of abort. The last argument is a dictionary with the label
           # and the the data from the dataset (use a lambda function to calculate).
           ds.add_stack("Commits vs Aborts", "Count", {
-            "ROT-commits": lambda e: e["rot-commits"] if "rot-commits" in e else 0,
-            "HTM-commits": lambda e: e["htm-commits"],
-            "SGL-commits": lambda e: e["gl-commits"],
+            "read-only commits": lambda e: e["read-commits"],
+            "ROT commits": lambda e: e["rot-commits"],
+            "HTM commits": lambda e: e["htm-commits"],
+            "SGL commits": lambda e: e["gl-commits"],
             "aborts": lambda e: e["total-aborts"]
           })
 
           # Adds a bar plot for the abort type.
           ds.add_stack("Abort types", "Nb. aborts", {
-            "conflict-transactional": lambda e: e["confl-trans"] + e["rot-trans-aborts"],
-            "conflict-non-transactional": lambda e: e["confl-non-trans"] + e["rot-non-trans-aborts"],
-            "self": lambda e: e["confl-self"] + e["rot-self-aborts"],
+            "tx conflict": lambda e: e["confl-trans"] + e["rot-trans-aborts"],
+            "non-tx conflict": lambda e: e["confl-non-trans"] + e["rot-non-trans-aborts"],
             "capacity": lambda e: e["capac-aborts"] + e["rot-capac-aborts"],
-            "persistent": lambda e: e["persis-aborts"] + e["rot-persis-aborts"],
-            "user": lambda e: e["user-aborts"] + e["rot-user-aborts"],
-            "other": lambda e: e["other-aborts"] + e["rot-other-aborts"]
+            "other": lambda e: e["other-aborts"] + e["rot-other-aborts"] + e["confl-self"] + e["rot-self-aborts"] + e["user-aborts"] + e["rot-user-aborts"],
           })
 
-          # Adds a bar plot for the profile information for upd txs
+          # Adds a bar plot for the profile information.
           def divByNumUpdTxs(e, attr):
-            return (e[attr] / (e["total-upd-tx-time"]))
-          ds.add_stack("Latency profile (update txs)", "Time (relative to tx. processing time)", {
-            "tx proc.": lambda e: divByNumUpdTxs(e, "total-upd-tx-time"),
+            if (e["htm-commits"]+e["rot-commits"] == 0).any():
+              return 0
+            else:
+              return (e[attr] / (e["htm-commits"]+e["rot-commits"]))
+          ds.add_stack("Latency profile (update txs)", "Time (clock ticks)", {
+            "processing committed txs.": lambda e: divByNumUpdTxs(e, "total-upd-tx-time"),
             "isolation wait": lambda e: divByNumUpdTxs(e, "total-sus-time"),
             "redo log flush": lambda e: divByNumUpdTxs(e, "total-flush-time"),
-            "durability wait": lambda e: divByNumUpdTxs(e, "total-dur-commit-time")
+            "durability wait": lambda e: divByNumUpdTxs(e, "total-dur-commit-time"),
           })
 
-          # Adds a bar plot for the profile information for read-only txs
+          # Adds a bar plot for the profile information.
           def divByNumROTxs(e, attr):
-            return (e[attr] / (e["total-ro-tx-time"]))
-          ds.add_stack("Latency profile (read-only txs)", "Time (relative to tx. processing time)", {
+            if (e["read-commits"] == 0).any():
+              return 0
+            else:
+              return (e[attr] / (e["read-commits"]))
+          ds.add_stack("Latency profile (read-only txs)", "Time (clock ticks)", {
             "tx proc.": lambda e: divByNumROTxs(e, "total-ro-tx-time"),
             "durability wait": lambda e: divByNumROTxs(e, "total-ro-dur-wait-time")
           })

@@ -96,7 +96,7 @@ if __name__ == "__main__":
           backend,
           f"{data_folder}/{backend}-s{sample}"
         )
-      data.run_sample(params) # TODO: not running samples
+      # data.run_sample(params) # TODO: not running samples
       parser = Parser(f"{data_folder}/{backend}-s{sample}")
       parser.parse_all(f"{data_folder}/{backend}-s{sample}.csv")
     lst_each = params.list_for_each_param(["-s", "-d", "-o", "-p", "-r"])
@@ -117,22 +117,21 @@ if __name__ == "__main__":
         # breakpoint()
         return True if x in [2, 8, 16, 24, 32, 64] else False
           
+      
       ds.add_stack("Commits vs Aborts", "Count", {
-            "ROT-commits": lambda e: e["rot-commits"] if "rot-commits" in e else 0,
-            "HTM-commits": lambda e: e["htm-commits"],
-            "SGL-commits": lambda e: e["gl-commits"],
+            "read-only commits": lambda e: e["read-commits"],
+            "ROT commits": lambda e: e["rot-commits"],
+            "HTM commits": lambda e: e["htm-commits"],
+            "SGL commits": lambda e: e["gl-commits"],
             "aborts": lambda e: e["total-aborts"]
           })
 
       # Adds a bar plot for the abort type.
       ds.add_stack("Abort types", "Nb. aborts", {
-        "conflict-transactional": lambda e: e["confl-trans"] + e["rot-trans-aborts"],
-        "conflict-non-transactional": lambda e: e["confl-non-trans"] + e["rot-non-trans-aborts"],
-        "self": lambda e: e["confl-self"] + e["rot-self-aborts"],
+        "tx conflict": lambda e: e["confl-trans"] + e["rot-trans-aborts"],
+        "non-tx conflict": lambda e: e["confl-non-trans"] + e["rot-non-trans-aborts"],
         "capacity": lambda e: e["capac-aborts"] + e["rot-capac-aborts"],
-        "persistent": lambda e: e["persis-aborts"] + e["rot-persis-aborts"],
-        "user": lambda e: e["user-aborts"] + e["rot-user-aborts"],
-        "other": lambda e: e["other-aborts"] + e["rot-other-aborts"]
+        "other": lambda e: e["other-aborts"] + e["rot-other-aborts"] + e["confl-self"] + e["rot-self-aborts"] + e["user-aborts"] + e["rot-user-aborts"],
       })
 
       # Adds a bar plot for the profile information.
@@ -142,10 +141,10 @@ if __name__ == "__main__":
         else:
           return (e[attr] / (e["htm-commits"]+e["rot-commits"]))
       ds.add_stack("Latency profile (update txs)", "Time (clock ticks)", {
-        "tx proc.": lambda e: divByNumUpdTxs(e, "total-upd-tx-time"),
+        "processing committed txs.": lambda e: divByNumUpdTxs(e, "total-upd-tx-time"),
         "isolation wait": lambda e: divByNumUpdTxs(e, "total-sus-time"),
         "redo log flush": lambda e: divByNumUpdTxs(e, "total-flush-time"),
-        "durability wait": lambda e: divByNumUpdTxs(e, "total-dur-commit-time")
+        "durability wait": lambda e: divByNumUpdTxs(e, "total-dur-commit-time"),
       })
 
       # Adds a bar plot for the profile information.
@@ -159,23 +158,6 @@ if __name__ == "__main__":
         "durability wait": lambda e: divByNumROTxs(e, "total-ro-dur-wait-time")
       })
       
-      # ds.add_stack("Commits vs Aborts", "Count", {
-      #   "ROT-commits": lambda e: e["rot-commits"] if "rot-commits" in e else 0,
-      #   "HTM-commits": lambda e: e["htm-commits"],
-      #   "SGL-commits": lambda e: e["gl-commits"],
-      #   "aborts": lambda e: e["total-aborts"]
-      # }, filter_x_fn = filter_threads)
-
-
-      # ds.add_stack("Abort types", "Nb. aborts", {
-      #   "conflict-transactional": lambda e: e["confl-trans"],
-      #   "conflict-non-transactional": lambda e: e["confl-non-trans"],
-      #   "self": lambda e: e["confl-self"],
-      #   "capacity": lambda e: e["capac-aborts"],
-      #   "persistent": lambda e: e["persis-aborts"],
-      #   "user": lambda e: e["user-aborts"],
-      #   "other": lambda e: e["other-aborts"]
-      # }, filter_x_fn = filter_threads)
       datasets_thr[(s,d,o,p,r)] += [ds]
     
   for u,v in datasets_thr.items():
