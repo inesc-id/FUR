@@ -120,7 +120,7 @@ int64_t TPCCTables::stockLevel(TM_ARGDECL int64_t warehouse_id, int64_t district
 /*    __transaction_atomic { */
     // FIXME(nmld): transaction block here
     //TM_THREAD_ENTER();
-     int ro = 1;
+     int ro = 0;
     TM_BEGIN(ro);
         District* d = findDistrict(TM_ARG warehouse_id, district_id);
 	//printf("address of d is %p\n",d);
@@ -151,14 +151,14 @@ int64_t TPCCTables::stockLevel(TM_ARGDECL int64_t warehouse_id, int64_t district
                 }
             }
         }
-	if(stock_quantity>0){
-    if(local_exec_mode == 1 || local_exec_mode == 3){
-	SLOW_PATH_SHARED_WRITE(stock->s_w_id,1);
-    }
-    else{
-    	FAST_PATH_SHARED_WRITE(stock->s_w_id,1);
-    }
-  }
+// 	if(stock_quantity>0){
+//     if(local_exec_mode == 1 || local_exec_mode == 3){
+// 	SLOW_PATH_SHARED_WRITE(stock->s_w_id,1);
+//     }
+//     else{
+//     	FAST_PATH_SHARED_WRITE(stock->s_w_id,1);
+//     }
+//   }
   TM_END();
   //TM_THREAD_EXIT();
 	/*if(stock_quantity>0)
