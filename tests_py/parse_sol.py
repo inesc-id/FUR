@@ -19,8 +19,9 @@ class Parser:
     catch_param["pisces-aborts"] = re.compile(r"\s*Starts=(\d+) Aborts=(\d+)")
     catch_param["total-commits"] = re.compile(r"\s*Total (commits):\s+(\d+)")
     catch_param["htm-commits"] = re.compile(r"\s*HTM (commits):\s+(\d+)")
-    catch_param["read-commits"] = re.compile(r"\s*Read (commits):\s+(\d+)")
+    catch_param["nontx-commits"] = re.compile(r"\s*Non-tx (commits):\s+(\d+)")
     catch_param["rot-commits"] = re.compile(r"\s*ROT (commits):\s+(\d+)")
+    catch_param["stm-commits"] = re.compile(r"\s*STM (commits):\s+(\d+)")
     catch_param["gl-commits"] = re.compile(r"\s*GL (commits):\s+(\d+)")
     catch_param["total-aborts"] = re.compile(r"\s*Total (aborts):\s+(\d+)")
     catch_param["confl-aborts"] = re.compile(r"\s*HTM conflict (aborts):\s+(\d+)")
@@ -42,7 +43,6 @@ class Parser:
     catch_param["rot-other-aborts"] = re.compile(r"\s*ROT other (aborts):\s+(\d+)")
     catch_param["total-sum-time"] = re.compile(r"\s*Total sum (time):\s+(\d+)")
     catch_param["total-commit-time"] = re.compile(r"\s*Total commit (time):\s+(\d+)")
-    catch_param["total-abort-time"] = re.compile(r"\s*Total abort (time):\s+(\d+)")
     catch_param["total-wait-time"] = re.compile(r"\s*Total wait (time):\s+(\d+)")
     catch_param["total-sus-time"] = re.compile(r"\s*Total sus (time):\s+(\d+)")
     catch_param["total-flush-time"] = re.compile(r"\s*Total flush (time):\s+(\d+)")
@@ -50,6 +50,9 @@ class Parser:
     catch_param["total-ro-dur-wait-time"] = re.compile(r"\s*Total RO_dur_wait (time):\s+(\d+)")
     catch_param["total-upd-tx-time"] = re.compile(r"\s*Total upd tx (time):\s+(\d+)")
     catch_param["total-ro-tx-time"] = re.compile(r"\s*Total RO tx (time):\s+(\d+)")
+    catch_param["total-abort-upd-tx-time"] = re.compile(r"\s*Total abort-upd (time):\s+(\d+)")
+    catch_param["total-abort-ro-tx-time"] = re.compile(r"\s*Total abort-ro (time):\s+(\d+)")
+
     o = {}
     with open(file, "r") as f:
       for l in f.readlines():

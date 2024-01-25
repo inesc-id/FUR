@@ -4,7 +4,6 @@
 // before include
 //#define HTM_SGL_INIT_BUDGET /* default */20
 
-#define HTM_SGL_INIT_BUDGET 10
 #include "htm_retry_template.h"
 
 #undef AFTER_ABORT

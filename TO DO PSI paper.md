@@ -1,3 +1,10 @@
+
+
+- RO dur wait do PSI mais alta que do SPHT, mesmo com 0% updates (rbtree, 10M items). Ver quantos spins são gastos à espera. Tentar perceber se é efeito de cache invalidation.
+- erro python quando junto aborted times nos profile plots (ver com daniel)
+
+
+
 - testes: tpcc, rbtree, linked list  (tamanhos iguais aos usados com rbtree/hashmap)
 - selecionar quais casos a pôr no artigo (em reunião)
 - Melhorias aos stacked bars de commits/aborts:
@@ -6,6 +13,8 @@
     - OK commits devem incluir read commits tb. retirar #aborts? Ficaria só non-tx commits, htm commits, rot commits, sgl commits.
     - eliminar os plots de tipos de aborts? ou reduzir os tipos de aborts a: tx, non-tx e capacity (tal como no si-htm)?
 
+
+- no dumbo, no release_write_lock, possível otimização: caso redo log vazio, saltar a quiescence wait.
 
 - implementar variantes psi para breakdown
     . basta variantes sem as 2 primeiras otimizacoes

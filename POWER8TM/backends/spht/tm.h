@@ -169,7 +169,7 @@
   stats_array[i].htm_capacity_aborts = HTM_get_status_count(HTM_CAPACITY, NULL); \
   stats_array[i].htm_other_aborts = HTM_get_status_count(HTM_OTHER, NULL); \
   stats_array[i].htm_user_aborts = HTM_get_status_count(HTM_EXPLICIT, NULL); \
-  stats_array[i].gl_commits = HTM_get_status_count(HTM_EXPLICIT, NULL); \
+  stats_array[i].gl_commits = HTM_get_status_count(HTM_FALLBACK, NULL); \
   __atomic_fetch_add(&stats_nbSuccess,  HTM_get_status_count(HTM_SUCCESS, NULL),  __ATOMIC_SEQ_CST); \
   __atomic_fetch_add(&stats_nbAbort,    HTM_get_status_count(HTM_ABORT, NULL),    __ATOMIC_SEQ_CST); \
   __atomic_fetch_add(&stats_nbConfl,    HTM_get_status_count(HTM_CONFLICT, NULL), __ATOMIC_SEQ_CST); \

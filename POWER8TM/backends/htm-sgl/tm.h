@@ -103,6 +103,7 @@
 			 tle_budget--; \
                          /*SPEND_BUDGET(&tle_budget); */\
 			 stats_array[local_thread_id].htm_persistent_aborts++; \
+                         stats_array[local_thread_id].htm_capacity_aborts++;  /*assuming that persistent aborts is a subclass of capacity*/ \
 		} \
 		else if(__TM_conflict(&TM_buff)){ \
                         stats_array[local_thread_id].htm_conflict_aborts++; \

@@ -8,9 +8,12 @@ extern "C"
 {
 #endif
 
+
+
 #ifndef HTM_SGL_INIT_BUDGET
-#define HTM_SGL_INIT_BUDGET 20
+#define HTM_SGL_INIT_BUDGET 10
 #endif /* HTM_SGL_INIT_BUDGET */
+
 
 extern long contar_tx;
 
@@ -104,7 +107,7 @@ extern __thread int64_t HTM_SGL_errors[HTM_NB_ERRORS];
             BEFORE_HTM_BEGIN(HTM_SGL_tid, HTM_SGL_budget); \
             if (START_TRANSACTION(HTM_SGL_status)) { \
                 UPDATE_BUDGET(HTM_SGL_tid, HTM_SGL_budget, HTM_SGL_status); \
-                /*printf("budget:%d\n",*HTM_SGL_var_addr)*/;\
+                /*printf("budget:%d\n",HTM_SGL_budget);*/\
                 AFTER_ABORT(HTM_SGL_tid, HTM_SGL_budget, HTM_SGL_status); \
                 continue; \
             } \
