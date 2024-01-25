@@ -54,9 +54,9 @@ extern __thread long nbTransactions;
         failCommitPhase++; \
       } \
     } \
-    MEASURE_TS(timeTotalTS1); \
     on_before_htm_begin(_threadId, (int) ro); \
     HTM_SGL_begin(); \
+    MEASURE_TS(timeTotalTS1); \
 //
 
 #define NV_HTM_END(_threadId) \
