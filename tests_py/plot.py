@@ -79,15 +79,14 @@ class LinesPlot:
       if l > 0:
         fix_dataset += [d]
 
-    f = self.figsize
-    fig, axs = plt.subplots(figsize=(f[0]*nb_stacks, f[1]), nrows=1, ncols=nb_stacks)
+    width = 0.83 # / len(fix_dataset)
+    offset = 0.005
     datasets_idx = {}
     plots_idx = {}
     stacked_bar_idx = {}
-    i = 0
-    for d in fix_dataset:
-      datasets_idx[d.name] = i
-      i += 1
+    for idx,d in enumerate(fix_dataset):
+      # breakpoint()
+      datasets_idx[d.name] = idx
       j = 0
       for s_title, ss in d.y_stack.items():
         plots_idx[s_title[0]] = j
@@ -98,14 +97,27 @@ class LinesPlot:
           stacked_bar_idx[sn] = {"idx": k, "color": cmap(k)}
           k += 1
 
-    width = 0.83 / len(fix_dataset)
-    offset = 0.005
-    for d in fix_dataset:
-      for s_title, ss in d.y_stack.items():
+    # fig, axs = plt.subplots(figsize=(f[0]*nb_stacks, f[1]), nrows=1, ncols=nb_stacks)
+    # i = 0
+    # for d in fix_dataset:
+    first = fix_dataset[0] # TODO: some problem with the organization
+    idx = 0
+
+    for s_title, ss in first.y_stack.items():
+      f = self.figsize
+      fig, axs = plt.subplots(figsize=(f[0], f[1]), nrows=1, ncols=1)
+      # print(s_title)
+      axs.set_title(f"{self.title}\n{s_title[0]}")
+      axs.margins(x=0)
+      axs.set_ylabel(s_title[1])
+
+      for d in fix_dataset:
         bottom = np.array([0 for _ in d.x_param.transpose()])
         for sn, sy in ss.items():
+          # breakpoint()
           i = datasets_idx[d.name]
-          j = plots_idx[s_title[0]]
+          # print(d.name, sn)
+          # j = plots_idx[s_title[0]]
           triple = [(np.average(x),np.average(y),np.std(y)) for x,y in zip(d.x_param.transpose(), sy.transpose())]
           tripleF = triple
           if not d.filter_x_fn is None:
@@ -123,24 +135,20 @@ class LinesPlot:
           # breakpoint() # TODO: there is some division by 0
           if i == 0: # print label
             # breakpoint()
-            axs[j].bar(xs, ys, width, yerr = y_err, label=sn, bottom=bottom, color=stacked_bar_idx[sn]["color"])
-            axs[j].legend()
+            axs.bar(xs, ys, width, yerr = y_err, label=sn, bottom=bottom, color=stacked_bar_idx[sn]["color"])
+            axs.legend()
           else:
-            axs[j].bar(xs, ys, width, yerr = y_err, bottom=bottom, color=stacked_bar_idx[sn]["color"])
+            axs.bar(xs, ys, width, yerr = y_err, bottom=bottom, color=stacked_bar_idx[sn]["color"])
           bottom = bottom + ys
         for x,y in zip(xs,bottom):
-          axs[j].annotate(d.name, (x, y), textcoords="offset points", xytext=(0,10), ha='center', rotation=90)
+          axs.annotate(d.name, (x, y), textcoords="offset points", xytext=(0,10), ha='center', rotation=90)
           break
-        if i == 0:
-          axs[j].set_title(f"{self.title}\n{s_title[0]}")
-          axs[j].set_xticks(np.array([k for k in range(len(x_array))]))
-          axs[j].margins(x=0)
-          axs[j].set_xticklabels([int(x) for x in x_array])
-          axs[j].set_xlabel(d.x_label)
-          axs[j].set_ylabel(s_title[1])
-        j += 1
-      i += 1
-    # plt.tight_layout()
-    plt.savefig(f"stack_{self.filename}")
-    fig.clear()
-    plt.close()
+        axs.set_xlabel(d.x_label)
+        axs.set_xticks(np.array([k for k in range(len(x_array))]))
+        axs.set_xticklabels([int(x) for x in x_array])
+
+      # plt.tight_layout()
+      plt.savefig(f"stack_{idx}_{self.filename}")
+      fig.clear()
+      plt.close()
+      idx += 1
