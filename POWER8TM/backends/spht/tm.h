@@ -161,10 +161,10 @@
   TM_THREAD_EXIT_PROFILE(); \
   int i = local_thread_id; \
   /* stats_array[i].htm_commits = HTM_get_status_count(HTM_SUCCESS, NULL); */\
-  stats_array[i].htm_conflict_aborts = HTM_get_status_count(HTM_CONFLICT, NULL); \
   stats_array[i].htm_self_conflicts = HTM_get_status_count(HTM_SELF, NULL); \
   stats_array[i].htm_trans_conflicts = HTM_get_status_count(HTM_TRANS, NULL); \
   stats_array[i].htm_nontrans_conflicts = HTM_get_status_count(HTM_NON_TRANS, NULL); \
+  stats_array[i].htm_conflict_aborts = stats_array[i].htm_self_conflicts + stats_array[i].htm_trans_conflicts + stats_array[i].htm_nontrans_conflicts; \
   stats_array[i].htm_persistent_aborts = HTM_get_status_count(HTM_PERSISTENT, NULL); \
   stats_array[i].htm_capacity_aborts = HTM_get_status_count(HTM_CAPACITY, NULL); \
   stats_array[i].htm_other_aborts = HTM_get_status_count(HTM_OTHER, NULL); \
