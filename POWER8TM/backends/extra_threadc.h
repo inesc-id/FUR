@@ -34,8 +34,9 @@ __thread volatile long start_sus;
 __thread volatile long end_sus;
 __thread volatile long start_flush;
 __thread volatile long end_flush;
-__thread volatile long start_wait2;
-__thread volatile long end_wait2;
+// __thread volatile long start_wait2;
+// __thread volatile long end_wait2;
+
 
 uint64_t  **log_per_thread;
 uint64_t  **log_pointer;

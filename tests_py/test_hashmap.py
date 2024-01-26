@@ -18,7 +18,7 @@ if __name__ == "__main__":
   # Here set the possible values for each parameter (pass a list with valid values).
   # Note the experiment will run all possible combinations of arguments.
   params.set_params("-u", [1,10,50])
-  params.set_params("-b", [1, 32])
+  params.set_params("-b", [512, 50000])
   # params.set_params("-d", [2000])
   params.set_params("-d", [600000])
   params.set_params("-i", [50000, 200000, 800000])
@@ -39,7 +39,7 @@ if __name__ == "__main__":
     "../POWER8TM/benchmarks/datastructures",
     # "../POWER8TM/benchmarks/datastructures",
     "../power8tm-pisces/benchmarks/datastructures",
-    "../POWER8TM/benchmarks/datastructures",
+    # "../POWER8TM/benchmarks/datastructures",
     # "../POWER8TM/benchmarks/datastructures",
     # "../POWER8TM/benchmarks/datastructures",
     # "../POWER8TM/benchmarks/datastructures",
@@ -50,9 +50,8 @@ if __name__ == "__main__":
     "psi",
     "psi-strong",
     "spht",
-    # "spht-log-linking",
     "pisces",
-    "htm-sgl",
+    # "htm-sgl",
     # "htm-sgl-sr",
     # "si-htm",
     # "ureads-strong",
@@ -76,7 +75,7 @@ if __name__ == "__main__":
   # IMPORTANT: set the name of the dataset here, this folder needs to be
   # empty when taking new samples (else it can overwrite/append the stdout
   # of the new samples with the stdout of the old samples).
-  data_folder = "dataH1H2_test"
+  data_folder = "data-hashmap"
 
   datasets_thr = {}
   datasets_aborts = {}
@@ -131,44 +130,50 @@ if __name__ == "__main__":
             {"-u": u, "-i": i, "-b": b}
           )
 
-           ds.add_stack("Commits vs Aborts", "Count", {
-            "read-only commits": lambda e: e["read-commits"],
-            "ROT commits": lambda e: e["rot-commits"],
-            "HTM commits": lambda e: e["htm-commits"],
-            "SGL commits": lambda e: e["gl-commits"],
-            "aborts": lambda e: e["total-aborts"]
+           # Adds a bar plot for the abort type.          
+          ds.add_stack("Abort types", "Percentage of txs", {
+            "tx conflict": lambda e: (e["confl-trans"] + e["rot-trans-aborts"])/(e["total-commits"]+e["total-aborts"]),
+            "non-tx conflict": lambda e: (e["confl-non-trans"] + e["rot-non-trans-aborts"])/(e["total-commits"]+e["total-aborts"]),
+            "capacity": lambda e: (e["capac-aborts"] + e["rot-capac-aborts"])/(e["total-commits"]+e["total-aborts"]),
+            "other": lambda e: (e["other-aborts"] + e["rot-other-aborts"] + e["confl-self"] + e["rot-self-aborts"] + e["user-aborts"] + e["rot-user-aborts"])/(e["total-commits"]+e["total-aborts"]),
           })
 
-          # Adds a bar plot for the abort type.
-          ds.add_stack("Abort types", "Nb. aborts", {
-            "tx conflict": lambda e: e["confl-trans"] + e["rot-trans-aborts"],
-            "non-tx conflict": lambda e: e["confl-non-trans"] + e["rot-non-trans-aborts"],
-            "capacity": lambda e: e["capac-aborts"] + e["rot-capac-aborts"],
-            "other": lambda e: e["other-aborts"] + e["rot-other-aborts"] + e["confl-self"] + e["rot-self-aborts"] + e["user-aborts"] + e["rot-user-aborts"],
-          })
 
+          ds.add_stack("Types of committed transactions", "Percentage of committed txs", {
+              "non-tx commits": lambda e: (e["nontx-commits"])/(e["total-commits"]),
+              "ROT commits": lambda e: (e["rot-commits"])/(e["total-commits"]),
+              "HTM commits": lambda e: (e["htm-commits"])/(e["total-commits"]),
+              "SGL commits": lambda e: (e["gl-commits"])/(e["total-commits"]),
+              "STM commits": lambda e: (e["stm-commits"])/(e["total-commits"]),
+            })
+          
           # Adds a bar plot for the profile information.
-          def divByNumUpdTxs(e, attr):
-            if (e["htm-commits"]+e["rot-commits"] == 0).any():
+          def divByUpdTxtime(e, attr):
+            if (e["total-upd-tx-time"] == 0).any():
               return 0
             else:
-              return (e[attr] / (e["htm-commits"]+e["rot-commits"]))
+              return (e[attr])
           ds.add_stack("Latency profile (update txs)", "Time (clock ticks)", {
-            "processing committed txs.": lambda e: divByNumUpdTxs(e, "total-upd-tx-time"),
-            "isolation wait": lambda e: divByNumUpdTxs(e, "total-sus-time"),
-            "redo log flush": lambda e: divByNumUpdTxs(e, "total-flush-time"),
-            "durability wait": lambda e: divByNumUpdTxs(e, "total-dur-commit-time"),
+            "processing committed txs.": lambda e: divByUpdTxtime(e, "total-upd-tx-time"),
+            "isolation wait": lambda e: divByUpdTxtime(e, "total-sus-time"),
+            "redo log flush": lambda e: divByUpdTxtime(e, "total-flush-time"),
+            "durability wait": lambda e: divByUpdTxtime(e, "total-dur-commit-time"),
+            # TODO
+            # "proc. aborted txs": lambda e: divByUpdTxtime(e, "total-abort-upd-tx-time")
           })
 
           # Adds a bar plot for the profile information.
-          def divByNumROTxs(e, attr):
-            if (e["read-commits"] == 0).any():
+          def divByROTxtime(e, attr):
+            if (e["total-ro-tx-time"] == 0).any():
               return 0
             else:
-              return (e[attr] / (e["read-commits"]))
+              return (e[attr])
+              # return (e[attr] / (e["total-ro-tx-time"]))
           ds.add_stack("Latency profile (read-only txs)", "Time (clock ticks)", {
-            "tx proc.": lambda e: divByNumROTxs(e, "total-ro-tx-time"),
-            "durability wait": lambda e: divByNumROTxs(e, "total-ro-dur-wait-time")
+            "proc. committed txs": lambda e: divByROTxtime(e, "total-ro-tx-time"),
+            "durability wait": lambda e: divByROTxtime(e, "total-ro-dur-wait-time"),
+            # TODO
+            # "proc. aborted txs": lambda e: divByROTxtime(e, "total-abort-ro-tx-time")
           })
 
 
@@ -179,7 +184,7 @@ if __name__ == "__main__":
   for u,v in datasets_thr.items():
     for i,z in v.items():
       for b,w in z.items():
-        lines_plot = LinesPlot(f"{u}% updates, {i/1000}k initial items", f"thr_{u}upds_{i}items_{b}buckets.pdf", figsize=(8, 4))
+        lines_plot = LinesPlot(f"{u}% updates, {i/1000}k initial items", f"hashmap_thr_{u}upds_{i}items_{b}buckets.pdf", figsize=(8, 4))
         
         # throughput plot
         lines_plot.plot(w)

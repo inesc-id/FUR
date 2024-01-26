@@ -175,60 +175,67 @@
 //
 //
 # define RELEASE_WRITE_LOCK(){ \
-	if(loc_var.exec_mode == 1) \
+  if(loc_var.exec_mode == 1) \
   { \
-	  __TM_suspend(); \
-    READ_TIMESTAMP(start_sus);\
-    stats_array[q_args.tid].tx_time_upd_txs += start_sus - start_tx;\
-    __thread long myOldActiveState = ts_state[q_args.tid].value; \
-    UPDATE_TS_STATE(NON_DURABLE); /* committing rot*/ \
-    order_ts[q_args.tid].value = atomicInc();\
-    QUIESCENCE_CALL_ROT();  \
-    rmb(); \
-    READ_TIMESTAMP(end_sus);\
-    stats_array[q_args.tid].sus_time += end_sus - start_sus;\
-	  __TM_resume(); \
-		__TM_end(); \
-    READ_TIMESTAMP(end_tx); \
-    stats_array[q_args.tid].commit_time += end_tx - start_tx;\
-    /* flush_log_commit_marker( \
-      loc_var.mylogpointer, \
-      order_ts[q_args.tid].value, \
-      loc_var.mylogstart, \
-      loc_var.mylogend \
-    ); */ \
-    if (((start_flush - q_args.start_wait_time)/delay_per_cache_line) < max_cache_line[q_args.tid].value) \
-    {\
-      READ_TIMESTAMP(start_flush);\
-      emulate_pm_slowdown_foreach_line(  /* 0); */ \
-      max_cache_line[q_args.tid].value /* computed number of cache-lines to flush*/ \
-      - ((q_args.end_wait_time - q_args.start_wait_time)/delay_per_cache_line) /* discount of the wait phase */ );\
-      READ_TIMESTAMP(end_flush);\
-      stats_array[q_args.tid].flush_time += end_flush-start_flush;\
+    if (loc_var.numLoggedWrites == 0) {\
+      __TM_end(); \
+      RELEASE_READ_LOCK(); \
     }\
-    long num_threads = global_numThread; \
-    READ_TIMESTAMP(start_wait2);\
-    for(int index=0; index < num_threads; index++) \
-    { \
-      if(index == q_args.tid) \
-        continue; \
-      while(get_state(dur_state[index].value) == NON_DURABLE && get_ts_from_state(ts_state[index].value) < get_ts_from_state(myOldActiveState)) \
-      { cpu_relax(); } \
+    else { \
+      __TM_suspend(); \
+      READ_TIMESTAMP(start_sus);\
+      stats_array[q_args.tid].tx_time_upd_txs += start_sus - start_tx;\
+      __thread long myOldActiveState = ts_state[q_args.tid].value; \
+      UPDATE_TS_STATE(NON_DURABLE); /* committing rot*/ \
+      order_ts[q_args.tid].value = atomicInc();\
+      QUIESCENCE_CALL_ROT();  \
+      rmb(); \
+      READ_TIMESTAMP(end_sus);\
+      stats_array[q_args.tid].sus_time += end_sus - start_sus;\
+      __TM_resume(); \
+      __TM_end(); \
+      READ_TIMESTAMP(end_tx); \
+      stats_array[q_args.tid].commit_time += end_tx - start_tx;\
+      /* flush_log_commit_marker( \
+        loc_var.mylogpointer, \
+        order_ts[q_args.tid].value, \
+        loc_var.mylogstart, \
+        loc_var.mylogend \
+      ); */ \
+      if (((start_flush - q_args.start_wait_time)/delay_per_cache_line) < max_cache_line[q_args.tid].value) \
+      {\
+        READ_TIMESTAMP(start_flush);\
+        emulate_pm_slowdown_foreach_line(  /* 0); */ \
+        max_cache_line[q_args.tid].value /* computed number of cache-lines to flush*/ \
+        - ((q_args.end_wait_time - q_args.start_wait_time)/delay_per_cache_line) /* discount of the wait phase */ );\
+        READ_TIMESTAMP(end_flush);\
+        stats_array[q_args.tid].flush_time += end_flush-start_flush;\
+      }\
+      long num_threads = global_numThread; \
+      READ_TIMESTAMP(loc_var.start_wait2);\
+      for(int index=0; index < num_threads; index++) \
+      { \
+        if(index == q_args.tid) \
+          continue; \
+        while(get_state(dur_state[index].value) == NON_DURABLE && get_ts_from_state(ts_state[index].value) < get_ts_from_state(myOldActiveState)) \
+        { cpu_relax(); } \
+      } \
+      SEQL_START(order_ts[q_args.tid].value, q_args.tid, ((uint64_t)(loc_var.mylogpointer_snapshot - loc_var.mylogstart))); \
+      SEQL_COMMIT(order_ts[q_args.tid].value, (loc_var.mylogpointer - loc_var.mylogstart)); \
+      READ_TIMESTAMP(loc_var.end_wait2); \
+      stats_array[q_args.tid].dur_commit_time += loc_var.end_wait2 - loc_var.start_wait2; \
+      UPDATE_STATE(INACTIVE); /* inactive rot*/ \
+      stats_array[q_args.tid].rot_commits++; \
+      /*printf("release_write_lock numWrites=%d (ou %d)\n", numLoggedWrites, max_cache_line[q_args.tid].value);*/\
     } \
-    SEQL_START(order_ts[q_args.tid].value, q_args.tid, ((uint64_t)(loc_var.mylogpointer_snapshot - loc_var.mylogstart))); \
-    SEQL_COMMIT(order_ts[q_args.tid].value, (loc_var.mylogpointer - loc_var.mylogstart)); \
-    READ_TIMESTAMP(end_wait2); \
-    stats_array[q_args.tid].dur_commit_time += end_wait2 - start_wait2; \
-		UPDATE_STATE(INACTIVE); /* inactive rot*/ \
-		stats_array[q_args.tid].htm_commits++; \
-	} \
-	else \
+  }\
+  else \
   { \
     order_ts[q_args.tid].value = global_order_ts++; \
     rmb(); \
-		UNLOCK(single_global_lock); \
-		stats_array[q_args.tid].gl_commits++; \
-	} \
+    UNLOCK(single_global_lock); \
+    stats_array[q_args.tid].gl_commits++; \
+  } \
   assert(single_global_lock!=q_args.tid+1);\
 };
 
@@ -242,7 +249,7 @@
   \ 
   long num_threads = global_numThread; \
   long index;\
-  READ_TIMESTAMP(start_wait2);\
+  READ_TIMESTAMP(loc_var.start_wait2);\
   /*int spins = 0; */\
   for(index=0; index < num_threads; index++) \
   { \
@@ -252,8 +259,8 @@
     { cpu_relax(); /*spins ++;*/} \
 	} \
   /*printf("RO spins = %d\n", spins); */\
-  READ_TIMESTAMP(end_wait2);\
-  stats_array[q_args.tid].readonly_durability_wait_time += end_wait2-start_wait2;\
+  READ_TIMESTAMP(loc_var.end_wait2);\
+  stats_array[q_args.tid].readonly_durability_wait_time += loc_var.end_wait2-loc_var.start_wait2;\
 } \
 
 //-------------------------------------------------------------------------------
@@ -273,7 +280,7 @@
 #define FAST_PATH_SHARED_READ_D(var)               var
 #define FAST_PATH_SHARED_READ_F(var)               var
 
-#define SHARED_WRITE(var, val) ({var = val; write_in_log(loc_var.mylogpointer,&(var),val,loc_var.mylogstart,loc_var.mylogend); var;})
+#define SHARED_WRITE(var, val) ({var = val; loc_var.numLoggedWrites++; write_in_log(loc_var.mylogpointer,&(var),val,loc_var.mylogstart,loc_var.mylogend); var;})
 # define FAST_PATH_SHARED_WRITE(var, val)   SHARED_WRITE(var, val)
 # define FAST_PATH_SHARED_WRITE_P(var, val) SHARED_WRITE(var, val)
 # define FAST_PATH_SHARED_WRITE_D(var, val) SHARED_WRITE(var, val)

@@ -47,11 +47,11 @@ if __name__ == "__main__":
   #params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60, 62, 64])
   nb_samples = 1
   locations = [
+    "../POWER8TM/benchmarks/tpcc",
+    "../POWER8TM/benchmarks/tpcc",
+    "../POWER8TM/benchmarks/tpcc",
     "../power8tm-pisces/benchmarks/tpcc",
-    "../POWER8TM/benchmarks/tpcc",
-    "../POWER8TM/benchmarks/tpcc",
-    "../POWER8TM/benchmarks/tpcc",
-    "../POWER8TM/benchmarks/tpcc",
+    # "../POWER8TM/benchmarks/tpcc",
     # "../POWER8TM/benchmarks/tpcc",
     # "../POWER8TM/benchmarks/tpcc",
     # "../POWER8TM/benchmarks/tpcc",
@@ -59,11 +59,11 @@ if __name__ == "__main__":
   # The backend name goes here (don't forget to match the position in the
   # "backends" list with the position in the "locations" list)
   backends = [
-    "pisces",
     "psi",
     "psi-strong",
     "spht",
-    "htm-sgl",
+    "pisces",
+    # "htm-sgl",
     # "htm-sgl-sr",
     # "si-htm",
     # "ureads-strong",
@@ -96,7 +96,7 @@ if __name__ == "__main__":
           backend,
           f"{data_folder}/{backend}-s{sample}"
         )
-      #data.run_sample(params) # TODO: not running samples
+      data.run_sample(params) # TODO: not running samples
       parser = Parser(f"{data_folder}/{backend}-s{sample}")
       parser.parse_all(f"{data_folder}/{backend}-s{sample}.csv")
     lst_each = params.list_for_each_param(["-s", "-d", "-o", "-p", "-r"])
@@ -117,44 +117,50 @@ if __name__ == "__main__":
         # breakpoint()
         return True if x in [2, 8, 16, 24, 32, 64] else False
           
-      ds.add_stack("Commits vs Aborts", "Count", {
-            "read-only commits": lambda e: e["read-commits"],
-            "ROT commits": lambda e: e["rot-commits"],
-            "HTM commits": lambda e: e["htm-commits"],
-            "SGL commits": lambda e: e["gl-commits"],
-            "aborts": lambda e: e["total-aborts"]
-          })
-
-      # Adds a bar plot for the abort type.
-      ds.add_stack("Abort types", "Nb. aborts", {
-        "tx conflict": lambda e: e["confl-trans"] + e["rot-trans-aborts"],
-        "non-tx conflict": lambda e: e["confl-non-trans"] + e["rot-non-trans-aborts"],
-        "capacity": lambda e: e["capac-aborts"] + e["rot-capac-aborts"],
-        "other": lambda e: e["other-aborts"] + e["rot-other-aborts"] + e["confl-self"] + e["rot-self-aborts"] + e["user-aborts"] + e["rot-user-aborts"],
+      # Adds a bar plot for the abort type.          
+      ds.add_stack("Abort types", "Percentage of txs", {
+        "tx conflict": lambda e: (e["confl-trans"] + e["rot-trans-aborts"])/(e["total-commits"]+e["total-aborts"]),
+        "non-tx conflict": lambda e: (e["confl-non-trans"] + e["rot-non-trans-aborts"])/(e["total-commits"]+e["total-aborts"]),
+        "capacity": lambda e: (e["capac-aborts"] + e["rot-capac-aborts"])/(e["total-commits"]+e["total-aborts"]),
+        "other": lambda e: (e["other-aborts"] + e["rot-other-aborts"] + e["confl-self"] + e["rot-self-aborts"] + e["user-aborts"] + e["rot-user-aborts"])/(e["total-commits"]+e["total-aborts"]),
       })
 
+
+      ds.add_stack("Types of committed transactions", "Percentage of committed txs", {
+          "non-tx commits": lambda e: (e["nontx-commits"])/(e["total-commits"]),
+          "ROT commits": lambda e: (e["rot-commits"])/(e["total-commits"]),
+          "HTM commits": lambda e: (e["htm-commits"])/(e["total-commits"]),
+          "SGL commits": lambda e: (e["gl-commits"])/(e["total-commits"]),
+          "STM commits": lambda e: (e["stm-commits"])/(e["total-commits"]),
+        })
+      
       # Adds a bar plot for the profile information.
-      def divByNumUpdTxs(e, attr):
-        if (e["htm-commits"]+e["rot-commits"] == 0).any():
+      def divByUpdTxtime(e, attr):
+        if (e["total-upd-tx-time"] == 0).any():
           return 0
         else:
-          return (e[attr] / (e["htm-commits"]+e["rot-commits"]))
+          return (e[attr])
       ds.add_stack("Latency profile (update txs)", "Time (clock ticks)", {
-        "processing committed txs.": lambda e: divByNumUpdTxs(e, "total-upd-tx-time"),
-        "isolation wait": lambda e: divByNumUpdTxs(e, "total-sus-time"),
-        "redo log flush": lambda e: divByNumUpdTxs(e, "total-flush-time"),
-        "durability wait": lambda e: divByNumUpdTxs(e, "total-dur-commit-time"),
+        "processing committed txs.": lambda e: divByUpdTxtime(e, "total-upd-tx-time"),
+        "isolation wait": lambda e: divByUpdTxtime(e, "total-sus-time"),
+        "redo log flush": lambda e: divByUpdTxtime(e, "total-flush-time"),
+        "durability wait": lambda e: divByUpdTxtime(e, "total-dur-commit-time"),
+        # TODO
+        # "proc. aborted txs": lambda e: divByUpdTxtime(e, "total-abort-upd-tx-time")
       })
 
       # Adds a bar plot for the profile information.
-      def divByNumROTxs(e, attr):
-        if (e["read-commits"] == 0).any():
+      def divByROTxtime(e, attr):
+        if (e["total-ro-tx-time"] == 0).any():
           return 0
         else:
-          return (e[attr] / (e["read-commits"]))
+          return (e[attr])
+          # return (e[attr] / (e["total-ro-tx-time"]))
       ds.add_stack("Latency profile (read-only txs)", "Time (clock ticks)", {
-        "tx proc.": lambda e: divByNumROTxs(e, "total-ro-tx-time"),
-        "durability wait": lambda e: divByNumROTxs(e, "total-ro-dur-wait-time")
+        "proc. committed txs": lambda e: divByROTxtime(e, "total-ro-tx-time"),
+        "durability wait": lambda e: divByROTxtime(e, "total-ro-dur-wait-time"),
+        # TODO
+        # "proc. aborted txs": lambda e: divByROTxtime(e, "total-abort-ro-tx-time")
       })
       
       datasets_thr[(s,d,o,p,r)] += [ds]

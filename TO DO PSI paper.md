@@ -1,4 +1,6 @@
 
+- retirar htm dos resultados
+- 
 
 - RO dur wait do PSI mais alta que do SPHT, mesmo com 0% updates (rbtree, 10M items). Ver quantos spins são gastos à espera. Tentar perceber se é efeito de cache invalidation.
 - erro python quando junto aborted times nos profile plots (ver com daniel)
@@ -15,6 +17,7 @@
 
 
 - no dumbo, no release_write_lock, possível otimização: caso redo log vazio, saltar a quiescence wait.
+Além disso, separar esse txtime como ro tx time.
 
 - implementar variantes psi para breakdown
     . basta variantes sem as 2 primeiras otimizacoes
@@ -35,7 +38,7 @@ MENOS PRIORITÁRIO:
 - adicionar escrita unlogged no hashmap, rbtree (e, mais tarde, no tpcc)
 - no PSI, comentar READ_TIMESTAMP (para ganhar algum desempenho)
 - Latency profile: replicar para spht-ll
-
+- contagem de cache lines para flush asinc (código do Daniel) parece dar sempre 0
 
 
 MISC ANTIGO:

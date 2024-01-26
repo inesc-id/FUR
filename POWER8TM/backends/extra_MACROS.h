@@ -90,6 +90,10 @@ typedef struct tx_local_vars {
   volatile int exec_mode;
   volatile long ts1;
   volatile long ts2;
+  //TODO: for consistency, every other thread-local var declared below should be moved here
+  volatile long start_wait2;
+  volatile long end_wait2;
+  volatile int numLoggedWrites;
   char suffixPadding[CACHE_LINE_SIZE];
 } __attribute__((aligned(CACHE_LINE_SIZE))) tx_local_vars_t;
 
@@ -181,8 +185,9 @@ extern __thread volatile long start_sus;
 extern __thread volatile long end_sus;
 extern __thread volatile long start_flush;
 extern __thread volatile long end_flush;
-extern __thread volatile long start_wait2;
-extern __thread volatile long end_wait2;
+// extern __thread volatile long start_wait2;
+// extern __thread volatile long end_wait2;
+
 
 void
 my_tm_startup(int numThread);
@@ -211,8 +216,8 @@ my_tm_thread_enter();
   _temp=_temp & first_2bits_zero;\
   _temp = (((long) state)<<62)|_temp;\
   ts_state[q_args.tid].value=_temp;\
-  if (state == NON_DURABLE) \
-    dur_state[q_args.tid].value=_temp;\
+  /*if (state == NON_DURABLE) \
+    dur_state[q_args.tid].value=_temp;*/\
 }\
 
 
@@ -223,8 +228,8 @@ my_tm_thread_enter();
   _temp=_temp>>2;\
   _temp = (((long) state)<<62)|_temp;\
   ts_state[q_args.tid].value=_temp;\
-  if (get_state(dur_state[q_args.tid].value) == NON_DURABLE) \
-    dur_state[q_args.tid].value=_temp;\
+  /*if (get_state(dur_state[q_args.tid].value) == NON_DURABLE) \
+    dur_state[q_args.tid].value=_temp;*/\
 }\
 
 #define flush_log_commit_marker(ptr,ts,start,end)\
@@ -420,6 +425,7 @@ else /* handles warp around case */ \
 //Begin ROT
 # define USE_ROT() \
 { \
+  loc_var.numLoggedWrites = 0;\
 	loc_var.rot_budget = ROT_RETRIES; \
 	WAIT( IS_LOCKED(single_global_lock) ); \
 	while ( loc_var.rot_budget > 0 ) \

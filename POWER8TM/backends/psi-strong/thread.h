@@ -142,8 +142,8 @@ extern __thread volatile long start_sus;
 extern __thread volatile long end_sus;
 extern __thread volatile long start_flush;
 extern __thread volatile long end_flush;
-extern __thread volatile long start_wait2;
-extern __thread volatile long end_wait2;
+// extern __thread volatile long start_wait2;
+// extern __thread volatile long end_wait2;
 
 #define bit63one 0x8000000000000000lu
 #define isbit63one(ts) ((ts & bit63one)==bit63one)
