@@ -1,10 +1,20 @@
+- implementar dumbo-readers
+    OK begin ro: non-tx, status = active
+    OK quiescence on SGL
+    OK commit ro: non-tx, status = inactive
+    OK quiescence wait
+    ok?- HTM_SGL_vars e loc_vars
+    - latency stats
+    - writers must advertise non-durable when starting, inactive after durable
+    - self aborts só com 1 thread (retirar htmbegin e ver se quiescence é chamada 2x)
+    - thread-id (aproveitar do spht)
 
-- retirar htm dos resultados
-- 
 
-- RO dur wait do PSI mais alta que do SPHT, mesmo com 0% updates (rbtree, 10M items). Ver quantos spins são gastos à espera. Tentar perceber se é efeito de cache invalidation.
+- on_after_htm_commit e onbeforehtmcommit devem ser chamados no htm_retry_template só em caso de HTM (não em SGL). Isto deve corrigir a stat de #commits vs #sgl do spht
+
 - erro python quando junto aborted times nos profile plots (ver com daniel)
 
+- READ_TIMESTAMP(start_sus); devia estar antes do suspend. stats_array[q_args.tid].tx_time_upd_txs += ... idem.
 
 
 - testes: tpcc, rbtree, linked list  (tamanhos iguais aos usados com rbtree/hashmap)
@@ -25,7 +35,7 @@ Além disso, separar esse txtime como ro tx time.
     . a 3ª otimizacao afeta apenas o log replayer, logo não é relevante na tx processing
     . na analise de log replayer, dizer que a solucao com scans corresponde ao spht estudato; o spht com log linking teria overhead de X (referir números do artigo do SPHT)
 
-- implementar dumbo-readers
+
 
 - Debug - MISTÉRIOS:
     - capacity aborts muito raros no spht/htm.

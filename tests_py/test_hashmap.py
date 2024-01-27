@@ -17,16 +17,16 @@ if __name__ == "__main__":
 
   # Here set the possible values for each parameter (pass a list with valid values).
   # Note the experiment will run all possible combinations of arguments.
-  params.set_params("-u", [1,10,50])
-  params.set_params("-b", [512, 50000])
+  params.set_params("-u", [0, 1, 10])
+  params.set_params("-b", [512])
   # params.set_params("-d", [2000])
   params.set_params("-d", [600000])
-  params.set_params("-i", [50000, 200000, 800000])
+  params.set_params("-i", [50000, 200000])
   # params.set_params("-i", [1000])
   params.set_params("-r", [2000000])
   # params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32])
   #params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60, 62, 64])
-  params.set_params("-n", [1, 4, 8, 16, 32, 64])
+  params.set_params("-n", [4, 8, 32])
 
   # Set the number of times each run is repeated (for average/stardard deviation computation).
   nb_samples = 1
@@ -34,11 +34,11 @@ if __name__ == "__main__":
   # Set the location of the benchmark here. Each backend needs to be associated with
   # a benchmark (allows to compare with "exotic" implementations).
   locations = [
-    "../POWER8TM/benchmarks/datastructures",
+    # "../POWER8TM/benchmarks/datastructures",
     "../POWER8TM/benchmarks/datastructures",
     "../POWER8TM/benchmarks/datastructures",
     # "../POWER8TM/benchmarks/datastructures",
-    "../power8tm-pisces/benchmarks/datastructures",
+    # "../power8tm-pisces/benchmarks/datastructures",
     # "../POWER8TM/benchmarks/datastructures",
     # "../POWER8TM/benchmarks/datastructures",
     # "../POWER8TM/benchmarks/datastructures",
@@ -47,10 +47,11 @@ if __name__ == "__main__":
   # The backend name goes here (don't forget to match the position in the
   # "backends" list with the position in the "locations" list)
   backends = [
-    "psi",
-    "psi-strong",
+    # "psi",
+    # "psi-strong",
     "spht",
-    "pisces",
+    "spht-dumbo-readers",
+    # "pisces",
     # "htm-sgl",
     # "htm-sgl-sr",
     # "si-htm",
@@ -66,6 +67,7 @@ if __name__ == "__main__":
     "htm-sgl" : "HTM",
     "htm-sgl-sr" : "HTM+sus",
     "spht" : "SPHT",
+    "spht-dumbo-readers" : "SPHT+DUMBO readers",
     "spht-log-linking" : "SPHT-LL",
     "si-htm" : "SI-TM",
     "ureads-strong": "ureads-strong", 
