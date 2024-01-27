@@ -225,7 +225,7 @@
       READ_TIMESTAMP(loc_var.end_wait2); \
       stats_array[q_args.tid].dur_commit_time += loc_var.end_wait2 - loc_var.start_wait2; \
       UPDATE_STATE(INACTIVE); /* inactive rot*/ \
-      stats_array[q_args.tid].rot_commits++; \
+      stats_array[q_args.tid].htm_commits++; \
       /*printf("release_write_lock numWrites=%d (ou %d)\n", numLoggedWrites, max_cache_line[q_args.tid].value);*/\
     } \
   }\
