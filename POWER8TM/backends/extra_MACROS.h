@@ -210,14 +210,16 @@ my_tm_thread_enter();
 
 
 # define UPDATE_TS_STATE(state){\
+/*printf ("UPDATE_TS_STATE\n");*/\
   assert(state == ACTIVE || state == NON_DURABLE); \
   static __thread long _temp;\
   READ_TIMESTAMP(_temp);\
   _temp=_temp & first_2bits_zero;\
   _temp = (((long) state)<<62)|_temp;\
   ts_state[q_args.tid].value=_temp;\
-  /*if (state == NON_DURABLE) \
-    dur_state[q_args.tid].value=_temp;*/\
+  /*printf("UPDATE_TS_STATE tid=%d value=%d\n", q_args.tid, _temp);*/\  
+  if (state == NON_DURABLE) \
+    dur_state[q_args.tid].value=_temp;\
 }\
 
 
@@ -228,9 +230,19 @@ my_tm_thread_enter();
   _temp=_temp>>2;\
   _temp = (((long) state)<<62)|_temp;\
   ts_state[q_args.tid].value=_temp;\
-  /*if (get_state(dur_state[q_args.tid].value) == NON_DURABLE) \
-    dur_state[q_args.tid].value=_temp;*/\
+  if (get_state(dur_state[q_args.tid].value) == NON_DURABLE) \
+    dur_state[q_args.tid].value=_temp;\
 }\
+
+# define SET_NON_DUR_STATE_RESTRICTED(state){\
+  assert(state == NON_DURABLE); \
+  static __thread long _temp;\
+  READ_TIMESTAMP(_temp);\
+  _temp=_temp & first_2bits_zero;\
+  _temp = (((long) state)<<62)|_temp;\
+  dur_state[q_args.tid].value=_temp;\
+}\
+
 
 #define flush_log_commit_marker(ptr,ts,start,end)\
   *(ptr)=bit63one | ts; \
