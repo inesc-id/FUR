@@ -240,8 +240,10 @@ void on_before_htm_begin_pcwm(int threadId, int ro)
 
 void on_htm_abort_pcwm(int threadId)
 {
-  if (!readonly_tx)
-    __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, rdtsc(), __ATOMIC_RELEASE);
+  /*debug*/
+  __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, onesBit63(0), __ATOMIC_RELEASE);
+  // if (!readonly_tx)
+  //   __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, rdtsc(), __ATOMIC_RELEASE); /* TODO: debug: why? shouldn't it be infinity? */
 }
 
 void on_before_htm_write_8B_pcwm(int threadId, void *addr, uint64_t val)
@@ -308,9 +310,10 @@ void on_after_htm_commit_pcwm(int threadId)
       __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, onesBit63(readClockVal), __ATOMIC_RELEASE);
 
     /* RO durability wait (bug fix by Joao)*/
-    printf("will call RO_wait_for_durable_reads\n");
-    RO_wait_for_durable_reads(threadId, readClockVal);
-    printf("returned\n");
+    /* debug! */
+    // printf("will call RO_wait_for_durable_reads\n");
+    // RO_wait_for_durable_reads(threadId, readClockVal);
+    // printf("returned\n");
 
     goto ret;
   }
@@ -439,6 +442,10 @@ if (readonly_tx) {
   MEASURE_INC(countUpdCommitPhases);
 }
 
+/* TODO: this might not be needed for every case (it's just for safety) */
+__atomic_store_n(&gs_ts_array[threadId].pcwm.ts, onesBit63(0), __ATOMIC_RELEASE);
+
+
 #ifdef DETAILED_BREAKDOWN_PROFILING
   if (!is_readonly_tx) {
     uint64_t ts2;
@@ -453,6 +460,7 @@ if (readonly_tx) {
   }
 #endif
 
+// printf("gs_ts_array[%d].pcwm.ts = %lu\n", threadId, gs_ts_array[threadId].pcwm.ts);
   
 }
 
