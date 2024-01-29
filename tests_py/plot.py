@@ -103,7 +103,7 @@ class LinesPlot:
     first = fix_dataset[0] # TODO: some problem with the organization
     idx = 0
 
-    for s_title, ss in first.y_stack.items():
+    for s_title, _ in first.y_stack.items():
       f = self.figsize
       fig, axs = plt.subplots(figsize=(f[0], f[1]), nrows=1, ncols=1)
       # print(s_title)
@@ -113,7 +113,9 @@ class LinesPlot:
 
       for d in fix_dataset:
         bottom = np.array([0 for _ in d.x_param.transpose()])
-        for sn, sy in ss.items():
+        # breakpoint()
+        # (_, ss) = d.y_stack.items()
+        for sn, sy in d.y_stack[s_title].items(): #ss.items():
           # breakpoint()
           i = datasets_idx[d.name]
           # print(d.name, sn)
