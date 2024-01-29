@@ -50,6 +50,7 @@ if __name__ == "__main__":
     "../POWER8TM/benchmarks/tpcc",
     "../POWER8TM/benchmarks/tpcc",
     "../POWER8TM/benchmarks/tpcc",
+    "../POWER8TM/benchmarks/tpcc",
     # "../power8tm-pisces/benchmarks/tpcc",
     # "../POWER8TM/benchmarks/tpcc",
     # "../POWER8TM/benchmarks/tpcc",
@@ -62,6 +63,7 @@ if __name__ == "__main__":
     "psi",
     "psi-strong",
     "spht",
+    "spht-dumbo-readers",
     # "pisces", # TODO: i commented this one since pisces sometimes crashes; still, it should be included!
     # "htm-sgl",
     # "htm-sgl-sr",
@@ -78,6 +80,8 @@ if __name__ == "__main__":
     "htm-sgl" : "HTM",
     "htm-sgl-sr" : "HTM+sus",
     "spht" : "SPHT",
+    "spht-dumbo-readers" : "SPHT+DUMBO readers",
+    "spht-log-linking" : "SPHT-LL",
     "si-htm" : "SI-TM",
     "ureads-strong": "ureads-strong", 
     "ureads-p8tm": "ureads-p8tm"

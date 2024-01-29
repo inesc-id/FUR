@@ -49,17 +49,18 @@ extern __thread long nbTransactions;
   crafty_isValidate = 0; \
   while (1) { /* TODO: this needs to be in the same function (else screws the stack) */ \
     jmp_buf env; \
+    on_before_htm_begin(_threadId, (int) ro); \
     if (ro) {\
       RO_begin(); \
     }\
     else {\
-      on_before_htm_begin(_threadId, (int) ro); \
       HTM_SGL_begin(_threadId); \
     } \
     MEASURE_TS(timeTotalTS1); \
 //
 
 #define NV_HTM_END(_threadId) \
+  MEASURE_TS(timeAfterTXTS1); \
   if (ro) { \
     RO_commit();\
   } \
@@ -67,7 +68,6 @@ extern __thread long nbTransactions;
     /*onBeforeHtmCommit(_threadId); */\
     HTM_SGL_commit(); \
   } \
-  MEASURE_TS(timeAfterTXTS1); \
   /*if (!ro) on_after_htm_commit(_threadId); */\
   MEASURE_TS(timeTotalTS2); \
   INC_PERFORMANCE_COUNTER(timeTotalTS1, timeTotalTS2, timeTotal); \

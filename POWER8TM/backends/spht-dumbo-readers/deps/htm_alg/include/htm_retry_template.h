@@ -64,15 +64,15 @@ extern __thread int64_t HTM_SGL_errors[HTM_NB_ERRORS];
 #define EXIT_SGL(tid)  HTM_exit_fallback()
 #define AFTER_ABORT(tid, budget, status)  /* empty */
 
-#define BEFORE_HTM_BEGIN(tid, budget)  /* empty */
+#define BEFORE_HTM_BEGIN(tid, budget)  
 #define AFTER_HTM_BEGIN(tid, budget)   /* empty */
-#define BEFORE_SGL_BEGIN(tid)          /* empty */
-#define AFTER_SGL_BEGIN(tid)           QUIESCENCE_CALL_GL(tid)
+#define BEFORE_SGL_BEGIN(tid)          
+#define AFTER_SGL_BEGIN(tid)           
 
-#define BEFORE_HTM_COMMIT(tid, budget) QUIESCENCE_CALL_HTM(); onBeforeHtmCommit(tid);
-#define AFTER_HTM_COMMIT(tid, budget)  on_after_htm_commit(tid)
+#define BEFORE_HTM_COMMIT(tid, budget) 
+#define AFTER_HTM_COMMIT(tid, budget)  
 #define BEFORE_SGL_COMMIT(tid)         /* empty */
-#define AFTER_SGL_COMMIT(tid)          /* empty */
+#define AFTER_SGL_COMMIT(tid)          
 
 
 
@@ -104,15 +104,15 @@ extern __thread int64_t HTM_SGL_errors[HTM_NB_ERRORS];
     loc_var.tid = local_thread_id;\
     q_args.tid = local_thread_id;\
     q_args.num_threads = global_numThread;\
-    READ_TIMESTAMP(loc_var.ts1); \
     UPDATE_TS_STATE(ACTIVE); \
-    READ_TIMESTAMP(start_tx); \
     rmb(); \
     while (__atomic_load_n(HTM_SGL_var_addr, __ATOMIC_ACQUIRE) != -1) \
     { \
         UPDATE_STATE(INACTIVE); \
         rmb(); \
     }; \
+    READ_TIMESTAMP(start_tx); \
+    /*TODO: I believe we have to update(ACTIVE) after we found the SGL locked*/\
 } \
 
 #define HTM_SGL_begin(threadid) \
@@ -120,7 +120,7 @@ extern __thread int64_t HTM_SGL_errors[HTM_NB_ERRORS];
 loc_var.tid = local_thread_id;\
   q_args.tid = local_thread_id;\
   q_args.num_threads = global_numThread;\
-  printf("tid arg %d q_args.tid %d, num threads %d, q_args.num_threads %d\n", threadid, q_args.tid, global_numThread, q_args.num_threads);\
+  /*printf("tid arg %d q_args.tid %d, num threads %d, q_args.num_threads %d\n", threadid, q_args.tid, global_numThread, q_args.num_threads);*/\
     HTM_SGL_budget = HTM_SGL_INIT_BUDGET; /* HTM_get_budget(); */ \
     BEFORE_TRANSACTION(HTM_SGL_tid, HTM_SGL_budget); \
     while (1) { \
@@ -128,8 +128,13 @@ loc_var.tid = local_thread_id;\
         if (ENTER_HTM_COND(HTM_SGL_tid, HTM_SGL_budget)) { \
             CHECK_SGL_NOTX(); \
             BEFORE_HTM_BEGIN(HTM_SGL_tid, HTM_SGL_budget); \
+            SET_NON_DUR_STATE_RESTRICTED(NON_DURABLE);\
+            rwmb();\
+            /*printf("%d: will try to HTM begin\n", HTM_SGL_tid);*/\
             if (START_TRANSACTION(HTM_SGL_status)) { \
                 UPDATE_BUDGET(HTM_SGL_tid, HTM_SGL_budget, HTM_SGL_status); \
+                UPDATE_STATE(INACTIVE); \ 
+                rwmb();\
                 /*printf("budget:%d\n",HTM_SGL_budget);*/\
                 AFTER_ABORT(HTM_SGL_tid, HTM_SGL_budget, HTM_SGL_status); \
                 continue; \
@@ -138,13 +143,19 @@ loc_var.tid = local_thread_id;\
             AFTER_HTM_BEGIN(HTM_SGL_tid, HTM_SGL_budget); \
         } \
         else { \
+            /*printf("%d: will enter SGL\n", HTM_SGL_tid);*/\
             BEFORE_SGL_BEGIN(HTM_SGL_tid); \
+            UPDATE_STATE(INACTIVE); /* Conservative (I believe it this is redundant) */\
+            rmb(); \
             ENTER_SGL(HTM_SGL_tid); \
+            /*printf("got SGL (budget %d)\n", HTM_SGL_budget);*/\
+            QUIESCENCE_CALL_GL(tid);\
             AFTER_SGL_BEGIN(HTM_SGL_tid); \
         } \
         AFTER_BEGIN(HTM_SGL_tid, HTM_SGL_budget, HTM_SGL_status); \
         break; /* delete when using longjmp */ \
      } \
+     READ_TIMESTAMP(start_tx); \
 }
 
 
@@ -154,18 +165,19 @@ loc_var.tid = local_thread_id;\
   rwmb();\
   long myOldActiveState = ts_state[q_args.tid].value; \
   UPDATE_STATE(INACTIVE);\
+  rmb(); \
   stats_array[q_args.tid].nontx_commits++;\
   \ 
   READ_TIMESTAMP(loc_var.start_wait2);\
-  /*int spins = 0; */\
+  int spins = 0; \
   for(int index=0; index < global_numThread; index++) \
   { \
     if(index == q_args.tid) \
       continue; \
     while(get_state(dur_state[index].value) == NON_DURABLE && get_ts_from_state(dur_state[index].value) < get_ts_from_state(myOldActiveState)) \
-    { cpu_relax(); /*spins ++;*/} \
-	} \
-  /*printf("RO spins = %d\n", spins); */\
+    { cpu_relax(); /*spins++; if (spins%1000000==0) printf("RO-spinning (%d): dur_state: (%d, %d); state(%d,%d)%d<%d\n", q_args.tid, get_state(dur_state[0].value), get_state(dur_state[1].value), get_state(ts_state[0].value), get_state(ts_state[1].value),get_ts_from_state(dur_state[index].value), get_ts_from_state(myOldActiveState)); */} \
+  } \
+  /*if (spins>0) printf("RO spins = %d\n", spins); */\
   READ_TIMESTAMP(loc_var.end_wait2);\
   stats_array[q_args.tid].readonly_durability_wait_time += loc_var.end_wait2-loc_var.start_wait2;\
 } \
@@ -177,25 +189,37 @@ loc_var.tid = local_thread_id;\
     BEFORE_COMMIT(HTM_SGL_tid, HTM_SGL_budget, HTM_SGL_status); \
     if (IN_TRANSACTION(HTM_SGL_tid, HTM_SGL_budget, HTM_SGL_status)) { \
         BEFORE_HTM_COMMIT(HTM_SGL_tid, HTM_SGL_budget); \
+        QUIESCENCE_CALL_HTM(); \
+        onBeforeHtmCommit(HTM_SGL_tid); \
         COMMIT_TRANSACTION(HTM_SGL_tid, HTM_SGL_budget, HTM_SGL_status); \
+        /*printf("%d: HTM-committed\n", q_args.tid);*/\
+        on_after_htm_commit(HTM_SGL_tid); \
+        UPDATE_STATE(INACTIVE); \
+        rmb(); \
+        /*printf("%d: Now durable\n", q_args.tid);*/\
         AFTER_HTM_COMMIT(HTM_SGL_tid, HTM_SGL_budget); \
     } \
     else { \
         BEFORE_SGL_COMMIT(HTM_SGL_tid); \
         EXIT_SGL(HTM_SGL_tid); \
+        UPDATE_STATE(INACTIVE);\
         AFTER_SGL_COMMIT(HTM_SGL_tid); \
+        /*printf("%d: SGL-committed\n", q_args.tid);*/\
     } \
     AFTER_TRANSACTION(HTM_SGL_tid, HTM_SGL_budget); \
+    assert(get_state(ts_state[q_args.tid].value)==INACTIVE);\
 } \
 
 # define QUIESCENCE_CALL_GL(tid) \
 { \
+    assert(get_state(ts_state[q_args.tid].value)==INACTIVE);\
+    assert(get_state(dur_state[q_args.tid].value)==INACTIVE);\
 	int index;\
 	int num_threads = global_numThread; \
   for ( index=0; index < num_threads; index++ ) \
   { \
    /*wait for active threads*/  \
-    WAIT( (get_state(ts_state[index].value)) != INACTIVE ); \
+    while (get_state(ts_state[index].value) != INACTIVE ) {/*printf("QUIESCENCE_CALL_GL(%d): %d, %d\n", q_args.tid, get_state(ts_state[0].value), get_state(ts_state[1].value));*/} \
   } \
 };\
 // end QUIESCENCE_CALL_GL
@@ -231,36 +255,6 @@ loc_var.tid = local_thread_id;\
   stats_array[q_args.tid].sus_time += q_args.end_wait_time - q_args.start_wait_time; \
 }
 
-# define QUIESCENCE_CALL_HTM_bak(){ \
-    READ_TIMESTAMP(q_args.start_wait_time); \
-    stats_array[q_args.tid].tx_time_upd_txs += q_args.start_wait_time - start_tx; \
-	__TM_suspend(); \
-	for(q_args.index=0; q_args.index < q_args.num_threads; q_args.index++) \
-    { \
-	    if(q_args.index == q_args.tid) \
-            continue; \
-		q_args.temp = ts_state[q_args.index].value; \
-		q_args.state = get_state(q_args.temp); \
-		if (q_args.state == ACTIVE) \
-				state_snapshot[q_args.index] = q_args.temp; \
-		else \
-				state_snapshot[q_args.index] = 0; \
-    } \
-    for ( q_args.index = 0; q_args.index < q_args.num_threads; q_args.index++ ) \
-    { \
-	    if ( q_args.index == q_args.tid ) \
-            continue; \
-		if ( state_snapshot[q_args.index] != 0 ) \
-        { \
-			while ( ts_state[q_args.index].value == state_snapshot[q_args.index]) \
-                { cpu_relax(); } \
-		} \
-	} \
-  __TM_resume(); \
-  READ_TIMESTAMP(q_args.end_wait_time); \
-  stats_array[tid].wait_time += q_args.end_wait_time - q_args.start_wait_time; \
-  stats_array[q_args.tid].sus_time += q_args.end_wait_time - q_args.start_wait_time; \
-}; // end QUIESCENCE_CALL_HTM
 
 #define HTM_SGL_before_write(addr, val) /* empty */
 #define HTM_SGL_after_write(addr, val)  /* empty */

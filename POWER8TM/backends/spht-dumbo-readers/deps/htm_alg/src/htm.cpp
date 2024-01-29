@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <thread>
 #include <mutex>
+#include <stdio.h>
 
 #define LOCK(mtx) \
   while (!__sync_bool_compare_and_swap(&mtx, 0, 1)) PAUSE() \
@@ -85,6 +86,7 @@ void HTM_enter_fallback()
   // mtx.lock();
   while (__atomic_load_n(HTM_SGL_var_addr, __ATOMIC_ACQUIRE) != tid) {
     while (__atomic_load_n(HTM_SGL_var_addr, __ATOMIC_ACQUIRE) != -1) {
+      // printf("%d: waiting before acquiring SGL\n", tid);
       // PAUSE(); /*this was hurting performance, so I removed it*/ 
     }
     __sync_val_compare_and_swap(HTM_SGL_var_addr, -1, tid);

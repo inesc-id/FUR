@@ -116,10 +116,11 @@ void state_gather_profiling_info_pcwm(int threadId)
 
   stats_array[threadId].htm_commits = countUpdCommitPhases + countROCommitPhases;
   stats_array[threadId].flush_time = timeFlushing;
-  stats_array[threadId].tx_time_upd_txs = timeTX_upd;
-  stats_array[threadId].tx_time_ro_txs = timeTX_ro;
+  /* Joao: the code in htm_retry_sample.h is already collecting these directly on stats_array */
+  // stats_array[threadId].tx_time_upd_txs = timeTX_upd;
+  // stats_array[threadId].tx_time_ro_txs += timeTX_ro; 
+  // stats_array[threadId].readonly_durability_wait_time += ro_durability_wait_time;
   stats_array[threadId].dur_commit_time = dur_commit_time;
-  stats_array[threadId].readonly_durability_wait_time = ro_durability_wait_time;
   stats_array[threadId].time_aborted_upd_txs = timeAbortedUpdTX;
   stats_array[threadId].time_aborted_ro_txs = timeAbortedROTX;
 
@@ -232,6 +233,9 @@ void on_before_htm_begin_pcwm(int threadId, int ro)
   readonly_tx = ro;
   if (!readonly_tx)
     __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, rdtsc(), __ATOMIC_RELEASE);
+  else 
+    //For RO txs (which run non-transactionally), we set their ts to infinity
+    __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, onesBit63(readClockVal), __ATOMIC_RELEASE);
 }
 
 void on_htm_abort_pcwm(int threadId)
@@ -281,10 +285,10 @@ static inline void smart_close_log_pcwm(uint64_t marker, uint64_t *marker_pos)
 
 void on_after_htm_commit_pcwm(int threadId)
 {
-  if (writeLogStart == writeLogEnd)
-    INC_PERFORMANCE_COUNTER(timeTotalTS1, timeAfterTXTS1, timeTX_ro);
-  else
-    INC_PERFORMANCE_COUNTER(timeTotalTS1, timeAfterTXTS1, timeTX_upd);
+  // if (writeLogStart == writeLogEnd)
+  //   INC_PERFORMANCE_COUNTER(timeTotalTS1, timeAfterTXTS1, timeTX_ro);
+  // else
+  //   INC_PERFORMANCE_COUNTER(timeTotalTS1, timeAfterTXTS1, timeTX_upd);
 
   int didTheFlush = 0;
 
@@ -304,7 +308,9 @@ void on_after_htm_commit_pcwm(int threadId)
       __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, onesBit63(readClockVal), __ATOMIC_RELEASE);
 
     /* RO durability wait (bug fix by Joao)*/
+    printf("will call RO_wait_for_durable_reads\n");
     RO_wait_for_durable_reads(threadId, readClockVal);
+    printf("returned\n");
 
     goto ret;
   }

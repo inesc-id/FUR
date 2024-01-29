@@ -17,11 +17,11 @@ if __name__ == "__main__":
 
   # Here set the possible values for each parameter (pass a list with valid values).
   # Note the experiment will run all possible combinations of arguments.
-  params.set_params("-u", [0, 1, 10])
+  params.set_params("-u", [1])
   params.set_params("-b", [512])
   # params.set_params("-d", [2000])
   params.set_params("-d", [600000])
-  params.set_params("-i", [50000, 200000])
+  params.set_params("-i", [400000])
   # params.set_params("-i", [1000])
   params.set_params("-r", [2000000])
   # params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32])
@@ -34,11 +34,11 @@ if __name__ == "__main__":
   # Set the location of the benchmark here. Each backend needs to be associated with
   # a benchmark (allows to compare with "exotic" implementations).
   locations = [
-    # "../POWER8TM/benchmarks/datastructures",
     "../POWER8TM/benchmarks/datastructures",
     "../POWER8TM/benchmarks/datastructures",
     # "../POWER8TM/benchmarks/datastructures",
-    # "../power8tm-pisces/benchmarks/datastructures",
+    "../POWER8TM/benchmarks/datastructures",
+    "../power8tm-pisces/benchmarks/datastructures",
     # "../POWER8TM/benchmarks/datastructures",
     # "../POWER8TM/benchmarks/datastructures",
     # "../POWER8TM/benchmarks/datastructures",
@@ -47,11 +47,11 @@ if __name__ == "__main__":
   # The backend name goes here (don't forget to match the position in the
   # "backends" list with the position in the "locations" list)
   backends = [
-    # "psi",
-    # "psi-strong",
+    "psi",
+    "psi-strong",
     "spht",
-    "spht-dumbo-readers",
-    # "pisces",
+    # "spht-dumbo-readers",
+    "pisces",
     # "htm-sgl",
     # "htm-sgl-sr",
     # "si-htm",

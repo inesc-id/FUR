@@ -43,8 +43,9 @@ if __name__ == "__main__":
   locations = [
     "../POWER8TM/benchmarks/tpcc",
     "../POWER8TM/benchmarks/tpcc",
-    "../POWER8TM/benchmarks/tpcc",
-    "../power8tm-pisces/benchmarks/tpcc",
+    # "../POWER8TM/benchmarks/tpcc",
+    # "../POWER8TM/benchmarks/tpcc",
+    # "../power8tm-pisces/benchmarks/tpcc",
     # "../POWER8TM/benchmarks/tpcc",
     # "../POWER8TM/benchmarks/tpcc",
     # "../POWER8TM/benchmarks/tpcc",
@@ -53,10 +54,11 @@ if __name__ == "__main__":
   # The backend name goes here (don't forget to match the position in the
   # "backends" list with the position in the "locations" list)
   backends = [
-    "psi",
+    # "psi",
     "psi-strong",
-    "spht",
-    "pisces",
+    # "spht",
+    "spht-dumbo-readers",
+    # "pisces",
     # "htm-sgl",
     # "htm-sgl-sr",
     # "si-htm",
@@ -72,6 +74,8 @@ if __name__ == "__main__":
     "htm-sgl" : "HTM",
     "htm-sgl-sr" : "HTM+sus",
     "spht" : "SPHT",
+    "spht-dumbo-readers" : "SPHT+DUMBO readers",
+    "spht-log-linking" : "SPHT-LL",
     "si-htm" : "SI-TM",
     "ureads-strong": "ureads-strong", 
     "ureads-p8tm": "ureads-p8tm"

@@ -443,12 +443,10 @@ else /* handles warp around case */ \
 	while ( loc_var.rot_budget > 0 ) \
   { \
 		loc_var.rot_status = 1; \
-    READ_TIMESTAMP(loc_var.ts1); \
     UPDATE_TS_STATE(ACTIVE);\
 		rmb(); \
 		CONTINUE_LOOP_IF( IS_LOCKED(single_global_lock), \
     { \
-      READ_TIMESTAMP(loc_var.ts1); \
 			UPDATE_STATE(INACTIVE); /* inactive rot*/ \
 			rmb(); \
 			WAIT ( IS_LOCKED(single_global_lock) ); \
@@ -515,7 +513,6 @@ else /* handles warp around case */ \
 { \
 	while ( 1 ) \
   { \
-    READ_TIMESTAMP(loc_var.ts1); \
 		UPDATE_TS_STATE(ACTIVE); \
     READ_TIMESTAMP(start_tx); \
 		rmb(); \
