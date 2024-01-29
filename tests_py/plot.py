@@ -79,7 +79,7 @@ class LinesPlot:
       if l > 0:
         fix_dataset += [d]
 
-    width = 0.83 # / len(fix_dataset)
+    width = 0.83 / len(fix_dataset)
     offset = 0.005
     datasets_idx = {}
     plots_idx = {}
