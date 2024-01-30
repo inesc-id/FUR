@@ -34,7 +34,7 @@ class BackendDataset:
     self.y_label = y_label
     self.y_stack = {}
 
-  def add_stack(self, title, y_label, y_fns:dict[str,Callable], filter_x_fn:Optional[Callable[[Tuple[float,float,float]],bool]] = None):
+  def add_stack(self, title, y_label, y_fns:dict[str,Callable], filter_x_fn:Optional[Callable[[Tuple[float,float,float]],bool]] = None, is_percent=False):
     """
     Adds a stack to the stack plot.
     You can add an optional function fn((x,y,std_dev))->bool to discard points (when returning False).
@@ -43,14 +43,15 @@ class BackendDataset:
     y_stack = {}
     for lbl,fn in y_fns.items():
       y_stack[lbl] = np.array([[fn(s)] for s in self.samples])
-    self.y_stack[(title, y_label)] = y_stack
+    self.y_stack[(title, y_label, is_percent)] = y_stack
 
 class LinesPlot:
-  def __init__(self, title, filename, figsize=(5, 4)):
+  def __init__(self, title, filename, figsize=(5, 4), colors={}):
     print(f"LinesPlot title {title}")
     self.title = title
     self.filename = filename
     self.figsize = figsize
+    self.colors = colors
 
   def plot(self, datasets:list[BackendDataset]):
     fig, ax = plt.subplots(figsize=self.figsize, nrows=1, ncols=1)
@@ -63,6 +64,7 @@ class LinesPlot:
       ax.set_xlabel(d.x_label)
       ax.set_ylabel(d.y_label)
       ax.set_title(self.title)
+      ax.set_ylim(bottom=0)
       ax.legend()
     plt.tight_layout()
     plt.savefig(self.filename)
@@ -110,6 +112,7 @@ class LinesPlot:
       axs.set_title(f"{self.title}\n{s_title[0]}")
       axs.margins(x=0)
       axs.set_ylabel(s_title[1])
+      is_percent = s_title[2]
 
       for d in fix_dataset:
         bottom = np.array([0 for _ in d.x_param.transpose()])
@@ -118,9 +121,12 @@ class LinesPlot:
         for sn, sy in d.y_stack[s_title].items(): #ss.items():
           # breakpoint()
           i = datasets_idx[d.name]
-          # print(d.name, sn)
+          print(d.name, sn, "is_percent", is_percent)
           # j = plots_idx[s_title[0]]
-          triple = [(np.average(x),np.average(y),np.std(y)) for x,y in zip(d.x_param.transpose(), sy.transpose())]
+          if is_percent:
+            triple = [(np.average(x),np.average(y*100),np.std(y*100)) for x,y in zip(d.x_param.transpose(), sy.transpose())]
+          else:
+            triple = [(np.average(x),np.average(y),np.std(y)) for x,y in zip(d.x_param.transpose(), sy.transpose())]
           tripleF = triple
           if not d.filter_x_fn is None:
             tripleF = list(filter(d.filter_x_fn, triple))
@@ -135,12 +141,13 @@ class LinesPlot:
           # print("Y:", ys)
           # print("error:", y_error)
           # breakpoint() # TODO: there is some division by 0
+          color = self.colors[sn] if sn in self.colors else stacked_bar_idx[sn]["color"]
           if i == 0: # print label
             # breakpoint()
-            axs.bar(xs, ys, width, yerr = y_err, label=sn, bottom=bottom, color=stacked_bar_idx[sn]["color"])
+            axs.bar(xs, ys, width, yerr = y_err, label=sn, bottom=bottom, color=color)
             axs.legend()
           else:
-            axs.bar(xs, ys, width, yerr = y_err, bottom=bottom, color=stacked_bar_idx[sn]["color"])
+            axs.bar(xs, ys, width, yerr = y_err, bottom=bottom, color=color)
           bottom = bottom + ys
         for x,y in zip(xs,bottom):
           axs.annotate(d.name, (x, y), textcoords="offset points", xytext=(0,10), ha='center', rotation=90)
