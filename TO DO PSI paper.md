@@ -1,20 +1,7 @@
-- implementar dumbo-readers
-    OK begin ro: non-tx, status = active
-    OK quiescence on SGL
-    OK commit ro: non-tx, status = inactive
-    OK quiescence wait
-    ok?- HTM_SGL_vars e loc_vars
-    - latency stats
-    - writers must advertise non-durable when starting, inactive after durable
-    - self aborts só com 1 thread (retirar htmbegin e ver se quiescence é chamada 2x)
-    - thread-id (aproveitar do spht)
+- afinar parametros hashmap
+- rbtree: variar -o ?
+- correr bateria tpcc (durante a noite)
 
-
-- on_after_htm_commit e onbeforehtmcommit devem ser chamados no htm_retry_template só em caso de HTM (não em SGL). Isto deve corrigir a stat de #commits vs #sgl do spht
-
-- erro python quando junto aborted times nos profile plots (ver com daniel)
-
-- READ_TIMESTAMP(start_sus); devia estar antes do suspend. stats_array[q_args.tid].tx_time_upd_txs += ... idem.
 
 
 - testes: tpcc, rbtree, linked list  (tamanhos iguais aos usados com rbtree/hashmap)
@@ -49,6 +36,8 @@ MENOS PRIORITÁRIO:
 - no PSI, comentar READ_TIMESTAMP (para ganhar algum desempenho)
 - Latency profile: replicar para spht-ll
 - contagem de cache lines para flush asinc (código do Daniel) parece dar sempre 0
+- erro python quando junto aborted times nos profile plots (ver com daniel)
+- on_after_htm_commit e onbeforehtmcommit devem ser chamados no htm_retry_template só em caso de HTM (não em SGL). Isto deve corrigir a stat de #commits vs #sgl do spht
 
 
 MISC ANTIGO:
