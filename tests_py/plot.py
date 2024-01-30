@@ -55,12 +55,17 @@ class LinesPlot:
 
   def plot(self, datasets:list[BackendDataset]):
     fig, ax = plt.subplots(figsize=self.figsize, nrows=1, ncols=1)
+    map_c = {}
+    cmap = plt.cm.get_cmap("Paired", len(datasets)+5)
+    for i,d in enumerate(datasets):
+      map_c[d.name] = cmap(i)
     for i,d in enumerate(datasets):
       z = zip(d.x_param.transpose(), d.y_param.transpose())
       triple = [(np.average(x),np.average(y),np.std(y)) for x,y in z]
       triple.sort(key=lambda elem : elem[0]) # sort by X
       x_array, y_array, y_error = zip(*triple)
-      ax.errorbar(x_array, y_array, yerr = y_error, label=d.name, marker=markers[i])
+      color = self.colors[d.name] if d.name in self.colors else map_c[d.name]
+      ax.errorbar(x_array, y_array, yerr = y_error, label=d.name, marker=markers[i], color=color)
       ax.set_xlabel(d.x_label)
       ax.set_ylabel(d.y_label)
       ax.set_title(self.title)
