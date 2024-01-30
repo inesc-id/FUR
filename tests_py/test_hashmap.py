@@ -21,7 +21,7 @@ if __name__ == "__main__":
   params.set_params("-b", [512])
   # params.set_params("-d", [2000])
   params.set_params("-d", [6000000])
-  params.set_params("-i", [50000, 200000, 80000])
+  params.set_params("-i", [50000, 200000, 800000])
   # params.set_params("-i", [1000])
   params.set_params("-r", [2000000])
   # params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32])
