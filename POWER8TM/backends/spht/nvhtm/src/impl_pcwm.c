@@ -69,16 +69,7 @@ static uint64_t *upd_after_commit_count;
 #endif
 
 
-void install_bindings_pcwm()
-{
-  on_before_htm_begin  = on_before_htm_begin_pcwm;
-  on_htm_abort         = on_htm_abort_pcwm;
-  on_before_htm_write  = on_before_htm_write_8B_pcwm;
-  on_before_htm_commit = on_before_htm_commit_pcwm;
-  on_after_htm_commit  = on_after_htm_commit_pcwm;
 
-  wait_commit_fn = wait_commit_pcwm;
-}
 
 void init_stats_pcwm() {
   #ifdef DETAILED_BREAKDOWN_PROFILING
@@ -255,6 +246,7 @@ void on_before_htm_commit_pcwm(int threadId)
 
 static inline void smart_close_log_pcwm(uint64_t marker, uint64_t *marker_pos)
 {
+  // if (loc_var.exec_mode == 0) printf("will flush\n");
   intptr_t lastCL  = ((uintptr_t)(&write_log_thread[writeLogEnd]) >> 6) << 6;
   intptr_t firstCL = ((uintptr_t)(&write_log_thread[writeLogStart]) >> 6) << 6;
 
@@ -279,8 +271,27 @@ static inline void smart_close_log_pcwm(uint64_t marker, uint64_t *marker_pos)
   }
 }
 
+void on_before_sgl_commit_pcwm(int threadId) {
+  // printf("called on_before_sgl_commit (%d)\n", loc_var.exec_mode);
+  smart_close_log_pcwm(
+  /* commit value */ onesBit63(readClockVal),
+  /* marker position */ (uint64_t*)&(write_log_thread[writeLogEnd])
+  );
+  FENCE_PREV_FLUSHES();
+  //emulating durmarker flush
+  FLUSH_CL(&P_last_safe_ts->ts);
+  FENCE_PREV_FLUSHES();
+
+  //just to be safe
+  __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, onesBit63(0), __ATOMIC_RELEASE);
+
+  return ;
+}
+
 void on_after_htm_commit_pcwm(int threadId)
 {
+  // if (loc_var.exec_mode == 2) {printf("loc_var.exec_mode == 2"); return;} //In SGL commit, we don't need to do anything
+
   if (writeLogStart == writeLogEnd)
     INC_PERFORMANCE_COUNTER(timeTotalTS1, timeAfterTXTS1, timeTX_ro);
   else
@@ -520,4 +531,19 @@ int i;
     MEASURE_TS(timeWaitingTS2);
     INC_PERFORMANCE_COUNTER(timeWaitingTS1, timeWaitingTS2, timeWaiting);
   // }
+}
+
+
+
+
+void install_bindings_pcwm()
+{
+  on_before_htm_begin  = on_before_htm_begin_pcwm;
+  on_htm_abort         = on_htm_abort_pcwm;
+  on_before_htm_write  = on_before_htm_write_8B_pcwm;
+  on_before_htm_commit = on_before_htm_commit_pcwm;
+  on_after_htm_commit  = on_after_htm_commit_pcwm;
+  on_before_sgl_commit = on_before_sgl_commit_pcwm;
+
+  wait_commit_fn = wait_commit_pcwm;
 }

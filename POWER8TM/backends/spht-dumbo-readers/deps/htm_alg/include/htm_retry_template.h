@@ -71,7 +71,7 @@ extern __thread int64_t HTM_SGL_errors[HTM_NB_ERRORS];
 
 #define BEFORE_HTM_COMMIT(tid, budget) 
 #define AFTER_HTM_COMMIT(tid, budget)  
-#define BEFORE_SGL_COMMIT(tid)         /* empty */
+#define BEFORE_SGL_COMMIT(tid)   on_before_sgl_commit(tid)
 #define AFTER_SGL_COMMIT(tid)          
 
 

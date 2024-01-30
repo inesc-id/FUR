@@ -178,6 +178,7 @@ static const int EPOCH_TIMOUT = 32;
 /* extern */void(*on_before_htm_write)(int threadId, void *addr, uint64_t val);
 /* extern */void(*on_before_htm_commit)(int threadId);
 /* extern */void(*on_after_htm_commit)(int threadId);
+/* extern */void(*on_before_sgl_commit)(int threadId);
 /*extern */replay_log_next_entry_s(*log_replay_next_tx_search)();
 /*extern */uint64_t(*log_replay_next_tx_apply)(replay_log_next_entry_s curPtr);
 

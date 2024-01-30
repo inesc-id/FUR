@@ -231,6 +231,17 @@
   }\
   else \
   { \
+    /* flush redo log entries and durmarker (this is mostly copied from above)*/\
+    max_cache_line[q_args.tid].value = 0; \
+    q_args.logptr = loc_var.mylogpointer_snapshot;\
+    flush_log_entries( \
+      loc_var.mylogpointer, \
+      q_args.logptr, \
+      loc_var.mylogstart, \
+      loc_var.mylogend \
+    );\
+    SEQL_START(order_ts[q_args.tid].value, q_args.tid, ((uint64_t)(loc_var.mylogpointer_snapshot - loc_var.mylogstart))); \
+    SEQL_COMMIT(order_ts[q_args.tid].value, (loc_var.mylogpointer - loc_var.mylogstart)); \
     order_ts[q_args.tid].value = global_order_ts++; \
     rmb(); \
     UNLOCK(single_global_lock); \

@@ -6,8 +6,8 @@ from plot import LinesPlot, BackendDataset
 
 if __name__ == "__main__":
   params = BenchmarkParameters(["-w", "-m", "-s", "-d", "-o", "-p", "-r", "-n", "-t"])
-  params.set_params("-w", [32]) # nb warehouses
-  params.set_params("-m", [32]) # max nb warehouses (put the same as -w)
+  params.set_params("-w", [1]) # nb warehouses
+  params.set_params("-m", [1]) # max nb warehouses (put the same as -w)
   params.set_params("-t", [5])
   
   # From SI-HTM paper: mixed scenario
@@ -75,12 +75,12 @@ if __name__ == "__main__":
   # Label names in the plots
   name_map = {
     "psi" : "DUMBO-SI",
-    "psi-strong" : "DUMBO-Opa",
+    "psi-strong" : "DUMBO-opa",
     "pisces" : "Pisces",
     "htm-sgl" : "HTM",
     "htm-sgl-sr" : "HTM+sus",
     "spht" : "SPHT",
-    "spht-dumbo-readers" : "SPHT+DUMBO readers",
+    "spht-dumbo-readers" : "DUMBO-read",
     "spht-log-linking" : "SPHT-LL",
     "si-htm" : "SI-TM",
     "ureads-strong": "ureads-strong", 

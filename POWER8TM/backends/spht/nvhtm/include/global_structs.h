@@ -187,6 +187,7 @@ extern void(*on_before_htm_begin)(int threadId,int ro);
 extern void(*on_before_htm_write)(int threadId, void *addr, uint64_t val);
 extern void(*on_before_htm_commit)(int threadId);
 extern void(*on_after_htm_commit)(int threadId);
+extern void(*on_before_sgl_commit)(int threadId);
 
 typedef struct replay_log_next_entry_ replay_log_next_entry_s;
 extern replay_log_next_entry_s(*log_replay_next_tx_search)();

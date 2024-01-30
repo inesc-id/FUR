@@ -60,10 +60,10 @@ extern __thread long nbTransactions;
 //
 
 #define NV_HTM_END(_threadId) \
-  onBeforeHtmCommit(_threadId); \
-  HTM_SGL_commit(); \
+  /*onBeforeHtmCommit(_threadId); */\
   MEASURE_TS(timeAfterTXTS1); \
-  on_after_htm_commit(_threadId); \
+  HTM_SGL_commit(); \
+  /*on_after_htm_commit(_threadId); */\
   MEASURE_TS(timeTotalTS2); \
   INC_PERFORMANCE_COUNTER(timeTotalTS1, timeTotalTS2, timeTotal); \
   INC_PERFORMANCE_COUNTER(timeAfterTXTS1, timeTotalTS2, timeAfterTXSuc); \

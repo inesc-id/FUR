@@ -75,12 +75,12 @@ if __name__ == "__main__":
   # Label names in the plots
   name_map = {
     "psi" : "DUMBO-SI",
-    "psi-strong" : "DUMBO-Opa",
+    "psi-strong" : "DUMBO-opa",
     "pisces" : "Pisces",
     "htm-sgl" : "HTM",
     "htm-sgl-sr" : "HTM+sus",
     "spht" : "SPHT",
-    "spht-dumbo-readers" : "SPHT+DUMBO readers",
+    "spht-dumbo-readers" : "DUMBO-read",
     "spht-log-linking" : "SPHT-LL",
     "si-htm" : "SI-TM",
     "ureads-strong": "ureads-strong", 
