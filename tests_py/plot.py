@@ -34,7 +34,7 @@ class BackendDataset:
     self.y_label = y_label
     self.y_stack = {}
 
-  def add_stack(self, title, y_label, y_fns:dict[str,Callable], filter_x_fn:Optional[Callable[[Tuple[float,float,float]],bool]] = None, is_percent=False):
+  def add_stack(self, title, y_label, y_fns:dict[str,Callable], filter_x_fn:Optional[Callable[[Tuple[float,float,float]],bool]] = None, is_percent=False, label_size=0):
     """
     Adds a stack to the stack plot.
     You can add an optional function fn((x,y,std_dev))->bool to discard points (when returning False).
@@ -43,7 +43,7 @@ class BackendDataset:
     y_stack = {}
     for lbl,fn in y_fns.items():
       y_stack[lbl] = np.array([[fn(s)] for s in self.samples])
-    self.y_stack[(title, y_label, is_percent)] = y_stack
+    self.y_stack[(title, y_label, is_percent, label_size)] = y_stack
 
 class LinesPlot:
   def __init__(self, title, filename, figsize=(5, 4), colors={}):
@@ -111,6 +111,7 @@ class LinesPlot:
       # print(s_title)
       axs.set_title(f"{self.title}\n{s_title[0]}")
       axs.margins(x=0)
+      top_extra = s_title[3]
       axs.set_ylabel(s_title[1])
       is_percent = s_title[2]
 
@@ -121,7 +122,7 @@ class LinesPlot:
         for sn, sy in d.y_stack[s_title].items(): #ss.items():
           # breakpoint()
           i = datasets_idx[d.name]
-          print(d.name, sn, "is_percent", is_percent)
+          # print(d.name, sn, "is_percent", is_percent)
           # j = plots_idx[s_title[0]]
           if is_percent:
             triple = [(np.average(x),np.average(y*100),np.std(y*100)) for x,y in zip(d.x_param.transpose(), sy.transpose())]
@@ -150,11 +151,15 @@ class LinesPlot:
             axs.bar(xs, ys, width, yerr = y_err, bottom=bottom, color=color)
           bottom = bottom + ys
         for x,y in zip(xs,bottom):
-          axs.annotate(d.name, (x, y), textcoords="offset points", xytext=(0,10), ha='center', rotation=90)
+          axs.annotate(d.name, (x, y), textcoords="offset points", xytext=(0,4), ha='center', va='baseline', rotation=90)
           break
         axs.set_xlabel(d.x_label)
         axs.set_xticks(np.array([k for k in range(len(x_array))]))
         axs.set_xticklabels([int(x) for x in x_array])
+
+      bottom, top = axs.get_ylim()
+      # print("top", top, "top_extra", top_extra)
+      axs.set_ylim(top=top+top*top_extra, bottom=0)
 
       # plt.tight_layout()
       plt.savefig(f"stack_{idx}_{self.filename}")

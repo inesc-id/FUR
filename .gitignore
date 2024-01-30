@@ -3,8 +3,10 @@ plots_scripts/data
 tests_py/data*
 tests_py/__pycache__
 tests_py/*.pdf
+POWER8TM/benchmarks/tpcc/*.zip
 POWER8TM/replayer/plot/*.pdf
 POWER8TM/replayer/plot/replayer
+POWER8TM/replayer/plot/replayer_*
 POWER8TM/replayer/plot/__pycache__
 
 # use generate or fetch from somewhere else
