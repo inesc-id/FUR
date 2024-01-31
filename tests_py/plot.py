@@ -57,20 +57,23 @@ class LinesPlot:
     fig, ax = plt.subplots(figsize=self.figsize, nrows=1, ncols=1)
     map_c = {}
     cmap = plt.cm.get_cmap("Paired", len(datasets)+5)
+    max_y = 0
     for i,d in enumerate(datasets):
       map_c[d.name] = cmap(i)
     for i,d in enumerate(datasets):
       z = zip(d.x_param.transpose(), d.y_param.transpose())
       triple = [(np.average(x),np.average(y),np.std(y)) for x,y in z]
       triple.sort(key=lambda elem : elem[0]) # sort by X
+      max_y_aux = max([t[1] for t in triple])
+      max_y = max(max_y, max_y_aux)
       x_array, y_array, y_error = zip(*triple)
       color = self.colors[d.name] if d.name in self.colors else map_c[d.name]
       ax.errorbar(x_array, y_array, yerr = y_error, label=d.name, marker=markers[i], color=color)
       ax.set_xlabel(d.x_label)
       ax.set_ylabel(d.y_label)
       ax.set_title(self.title)
-      ax.set_ylim(bottom=0)
       ax.legend()
+    ax.set_ylim(bottom=0, top=max_y+0.04*max_y)
     plt.tight_layout()
     plt.savefig(self.filename)
     fig.clear()
