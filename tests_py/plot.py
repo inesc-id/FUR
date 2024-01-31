@@ -34,7 +34,7 @@ class BackendDataset:
     self.y_label = y_label
     self.y_stack = {}
 
-  def add_stack(self, title, y_label, y_fns:dict[str,Callable], filter_x_fn:Optional[Callable[[Tuple[float,float,float]],bool]] = None, is_percent=False, label_size=0):
+  def add_stack(self, title, y_label, y_fns:dict[str,Callable], filter_x_fn:Optional[Callable[[Tuple[float,float,float]],bool]] = None, is_percent=False, fix_100=False, label_size=0):
     """
     Adds a stack to the stack plot.
     You can add an optional function fn((x,y,std_dev))->bool to discard points (when returning False).
@@ -43,7 +43,7 @@ class BackendDataset:
     y_stack = {}
     for lbl,fn in y_fns.items():
       y_stack[lbl] = np.array([[fn(s)] for s in self.samples])
-    self.y_stack[(title, y_label, is_percent, label_size)] = y_stack
+    self.y_stack[(title, y_label, is_percent, label_size, fix_100)] = y_stack
 
 class LinesPlot:
   def __init__(self, title, filename, figsize=(5, 4), colors={}):
@@ -119,9 +119,10 @@ class LinesPlot:
       # print(s_title)
       axs.set_title(f"{self.title}\n{s_title[0]}")
       axs.margins(x=0)
-      top_extra = s_title[3]
-      axs.set_ylabel(s_title[1])
       is_percent = s_title[2]
+      top_extra = s_title[3]
+      fix_100 = s_title[4]
+      axs.set_ylabel(s_title[1])
 
       for d in fix_dataset:
         bottom = np.array([0 for _ in d.x_param.transpose()])
@@ -166,6 +167,8 @@ class LinesPlot:
         axs.set_xticklabels([int(x) for x in x_array])
 
       bottom, top = axs.get_ylim()
+      if is_percent and fix_100:
+        top = 100
       # print("top", top, "top_extra", top_extra)
       axs.set_ylim(top=top+top*top_extra, bottom=0)
 

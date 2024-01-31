@@ -130,7 +130,7 @@ if __name__ == "__main__":
           "SGL commit": lambda e: (e["gl-commits"])/(e["total-commits"]+e["total-aborts"]),
           "STM commit": lambda e: (e["stm-commits"])/(e["total-commits"]+e["total-aborts"]),
           "Abort": lambda e: (e["total-aborts"])/(e["total-commits"]+e["total-aborts"]),
-        }, is_percent=True)
+        }, is_percent=True, fix_100=True)
     
       def divByAborts(e, attr):
         if (e["total-aborts"] == 0).any():
@@ -143,7 +143,7 @@ if __name__ == "__main__":
         "non-tx conflict": lambda e: (divByAborts(e, "confl-non-trans") + divByAborts(e, "rot-non-trans-aborts")),
         "capacity": lambda e: (divByAborts(e, "capac-aborts") + divByAborts(e, "rot-capac-aborts")), 
         "other": lambda e: (divByAborts(e, "other-aborts") + divByAborts(e, "confl-self") + divByAborts(e, "rot-self-aborts") + divByAborts(e, "user-aborts") + divByAborts(e, "rot-user-aborts")), 
-      }, is_percent=True)
+      }, is_percent=True, fix_100=True)
 
       
       # Adds a bar plot for the profile information.
