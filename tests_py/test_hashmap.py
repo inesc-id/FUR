@@ -21,7 +21,7 @@ if __name__ == "__main__":
   params.set_params("-b", [512])
   # params.set_params("-d", [2000])
   params.set_params("-d", [6000000])
-  params.set_params("-i", [50000, 200000, 80000])
+  params.set_params("-i", [50000, 200000, 800000])
   # params.set_params("-i", [1000])
   params.set_params("-r", [2000000])
   # params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32])
@@ -48,10 +48,10 @@ if __name__ == "__main__":
   # "backends" list with the position in the "locations" list)
   backends = [
     "psi",
-    "psi-strong",
-    "spht",
-    "spht-dumbo-readers",
     "pisces",
+    "spht",
+    "psi-strong",
+    # "spht-dumbo-readers",
     # "htm-sgl",
     # "htm-sgl-sr",
     # "si-htm",
@@ -96,7 +96,7 @@ if __name__ == "__main__":
         )
       
       # This line starts the benchmark and tests all combinations parameters.
-      data.run_sample(params) # NOTE: comment if you already have the data and just want to refresh the plots.
+      # data.run_sample(params) # NOTE: comment if you already have the data and just want to refresh the plots.
 
       # Parses the stdout into a .csv that can be used for the plots.
       # Check the tests_py/parse_sol.py for the regular expressions that are catched in the stdout.
@@ -138,7 +138,7 @@ if __name__ == "__main__":
             "non-tx conflict": lambda e: (e["confl-non-trans"] + e["rot-non-trans-aborts"])/(e["total-commits"]+e["total-aborts"]),
             "capacity": lambda e: (e["capac-aborts"] + e["rot-capac-aborts"])/(e["total-commits"]+e["total-aborts"]),
             "other": lambda e: (e["other-aborts"] + e["rot-other-aborts"] + e["confl-self"] + e["rot-self-aborts"] + e["user-aborts"] + e["rot-user-aborts"])/(e["total-commits"]+e["total-aborts"]),
-          })
+          }, is_percent=True)
 
 
           ds.add_stack("Types of committed transactions", "Percentage of committed txs", {
@@ -147,7 +147,7 @@ if __name__ == "__main__":
               "HTM commits": lambda e: (e["htm-commits"])/(e["total-commits"]),
               "SGL commits": lambda e: (e["gl-commits"])/(e["total-commits"]),
               "STM commits": lambda e: (e["stm-commits"])/(e["total-commits"]),
-            })
+            }, is_percent=True)
           
           # Adds a bar plot for the profile information.
           def divByUpdTxtime(e, attr):
@@ -181,12 +181,15 @@ if __name__ == "__main__":
 
           datasets_thr[u][i][b] += [ds]
     
+  colors = {
+    "capacity": "#FF0000",
+  }
   # this for-loop does the actual plotting (in the previous ones we are just
   # setting up the data that we want to plot).
   for u,v in datasets_thr.items():
     for i,z in v.items():
       for b,w in z.items():
-        lines_plot = LinesPlot(f"{u}% updates, {i/1000}k initial items", f"hashmap_thr_{u}upds_{i}items_{b}buckets.pdf", figsize=(8, 4))
+        lines_plot = LinesPlot(f"{u}% updates, {i/1000}k initial items", f"hashmap_thr_{u}upds_{i}items_{b}buckets.pdf", figsize=(8, 4), colors=colors)
         
         # throughput plot
         lines_plot.plot(w)

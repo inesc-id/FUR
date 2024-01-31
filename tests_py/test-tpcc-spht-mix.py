@@ -94,7 +94,7 @@ if __name__ == "__main__":
           backend,
           f"{data_folder}/{backend}-s{sample}"
         )
-      data.run_sample(params) # TODO: not running samples
+      # data.run_sample(params) # TODO: not running samples
       parser = Parser(f"{data_folder}/{backend}-s{sample}")
       parser.parse_all(f"{data_folder}/{backend}-s{sample}.csv")
     lst_each = params.list_for_each_param(["-s", "-d", "-o", "-p", "-r"])
@@ -120,7 +120,7 @@ if __name__ == "__main__":
         "non-tx conflict": lambda e: (e["confl-non-trans"] + e["rot-non-trans-aborts"])/(e["total-commits"]+e["total-aborts"]),
         "capacity": lambda e: (e["capac-aborts"] + e["rot-capac-aborts"])/(e["total-commits"]+e["total-aborts"]),
         "other": lambda e: (e["other-aborts"] + e["rot-other-aborts"] + e["confl-self"] + e["rot-self-aborts"] + e["user-aborts"] + e["rot-user-aborts"])/(e["total-commits"]+e["total-aborts"]),
-      })
+      }, is_percent=True, label_size=0.4)
 
 
       ds.add_stack("Types of committed transactions", "Percentage of committed txs", {
@@ -129,7 +129,7 @@ if __name__ == "__main__":
           "HTM commits": lambda e: (e["htm-commits"])/(e["total-commits"]),
           "SGL commits": lambda e: (e["gl-commits"])/(e["total-commits"]),
           "STM commits": lambda e: (e["stm-commits"])/(e["total-commits"]),
-        })
+        }, is_percent=True, label_size=0.6)
       
       # Adds a bar plot for the profile information.
       def divByUpdTxtime(e, attr):
@@ -158,7 +158,7 @@ if __name__ == "__main__":
         "durability wait": lambda e: divByROTxtime(e, "total-ro-dur-wait-time"),
         # TODO
         # "proc. aborted txs": lambda e: divByROTxtime(e, "total-abort-ro-tx-time")
-      })
+      }, label_size=0.1)
       
       datasets_thr[(s,d,o,p,r)] += [ds]
     

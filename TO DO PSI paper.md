@@ -1,6 +1,17 @@
-- afinar parametros hashmap
-- rbtree: variar -o ?
-- correr bateria tpcc (durante a noite)
+neworder:
+- latency profile: nada do spht* em readonly
+- mais capacity aborts no spht* que dumbo*: será que spht está a somar cap+persistent?
+- dumbo-readers: STL HTM commits inferior a sPHT. (seré que tem a ver com eu ter comentado o tratamento de empty WR no commit?)
+- latency profile (upd): considerando o ponto 8threads, a relação de números em absoluto de tx time não é explicável; redo log flush quase invisível; dur wait spht muito superior à do dumbo-read; spht desaparece após 16T (provavelmente ficaria melhor se incluisse SGL time e abort time?).
+
+
+
+- no spht, persistent abort = 0...
+
+
+- correr tpcc-neworder-pisces e tpcc 1w
+
+
 
 
 

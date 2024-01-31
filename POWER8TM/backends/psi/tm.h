@@ -180,6 +180,9 @@
     if (loc_var.numLoggedWrites == 0) {\
       __TM_end(); \
       RELEASE_READ_LOCK(); \
+      /* TODO: avoid this ugly work around to have correct commit stats*/\
+      stats_array[q_args.tid].rot_commits++; \
+      stats_array[q_args.tid].nontx_commits--; \
     }\
     else { \
       __TM_suspend(); \
