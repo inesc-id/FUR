@@ -62,8 +62,8 @@ if __name__ == "__main__":
   backends = [
     "psi",
     "psi-strong",
-    "spht",
     "spht-dumbo-readers",
+    "spht",
     "pisces", # TODO: i commented this one since pisces sometimes crashes; still, it should be included!
     # "htm-sgl",
     # "htm-sgl-sr",
@@ -74,7 +74,7 @@ if __name__ == "__main__":
 # Label names in the plots
   name_map = {
     "psi" : "DUMBO-SI",
-    "psi-strong" : "DUMBO-opa",
+    "psi-strong" : "DUMBO-opaq",
     "spht-dumbo-readers" : "DUMBO-read",
     "spht" : "SPHT",
     "spht-log-linking" : "SPHT-LL",
@@ -88,7 +88,7 @@ if __name__ == "__main__":
   
   
   data_folder = "data-tpcc-neworder"
-  
+ 
   datasets_thr = {}
   datasets_aborts = {}
   for loc,backend in zip(locations,backends):
@@ -131,17 +131,19 @@ if __name__ == "__main__":
         }, is_percent=True)
     
       def divByAborts(e, attr):
-        if (e["total-aborts"] == 0).any():
-          return 0
-        else:
-          return (e[attr]/e["total-aborts"])
+        # if (e["total-aborts"] == 0).any():
+        #   return 0
+        # else:
+        return (e[attr]/(e["total-aborts"]+e["total-commits"]-e["gl-commits"]))
+
+                
       # Adds a bar plot for the abort type.          
       ds.add_stack("Abort types", "Percentage of aborts", {
         "tx conflict": lambda e: (divByAborts(e, "confl-trans") + divByAborts(e, "rot-trans-aborts")),
         "non-tx conflict": lambda e: (divByAborts(e, "confl-non-trans") + divByAborts(e, "rot-non-trans-aborts")),
         "capacity": lambda e: (divByAborts(e, "capac-aborts") + divByAborts(e, "rot-capac-aborts")), 
         "other": lambda e: (divByAborts(e, "other-aborts") + divByAborts(e, "confl-self") + divByAborts(e, "rot-self-aborts") + divByAborts(e, "user-aborts") + divByAborts(e, "rot-user-aborts")), 
-      }, is_percent=True)
+      }, is_percent=True, fix_100=True)
 
       
       # Adds a bar plot for the profile information.
@@ -178,9 +180,11 @@ if __name__ == "__main__":
   colors = {
     "SGL commit" : "#a83232",
     "Abort": "#404040", 
-    "DUMBO-opa" : "#000066",
+    "DUMBO-opaq" : "#000066",
     "DUMBO-SI" : "#0000e6",
     "DUMBO-read" : "#9999ff",
+    "Pisces" : "#77b300", 
+
   }
     
   for u,v in datasets_thr.items():

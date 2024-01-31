@@ -4,11 +4,7 @@ neworder:
 - latency profile (upd): considerando o ponto 8threads, a relação de números em absoluto de tx time não é explicável; redo log flush quase invisível; dur wait spht muito superior à do dumbo-read; spht desaparece após 16T (provavelmente ficaria melhor se incluisse SGL time e abort time?).
 
 
-
-
-- correr tpcc-neworder-pisces
 - profiles: incluir tempos sgl e abort
-- tpcc 1w
 
 
 
