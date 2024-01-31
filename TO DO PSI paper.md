@@ -1,22 +1,17 @@
 neworder:
 - latency profile: nada do spht* em readonly
-- mais capacity aborts no spht* que dumbo*: será que spht está a somar cap+persistent?
 - dumbo-readers: STL HTM commits inferior a sPHT. (seré que tem a ver com eu ter comentado o tratamento de empty WR no commit?)
 - latency profile (upd): considerando o ponto 8threads, a relação de números em absoluto de tx time não é explicável; redo log flush quase invisível; dur wait spht muito superior à do dumbo-read; spht desaparece após 16T (provavelmente ficaria melhor se incluisse SGL time e abort time?).
 
 
 
-- no spht, persistent abort = 0...
 
-
-- correr tpcc-neworder-pisces e tpcc 1w
-
-
+- correr tpcc-neworder-pisces
+- profiles: incluir tempos sgl e abort
+- tpcc 1w
 
 
 
-- testes: tpcc, rbtree, linked list  (tamanhos iguais aos usados com rbtree/hashmap)
-- selecionar quais casos a pôr no artigo (em reunião)
 - Melhorias aos stacked bars de commits/aborts:
     - profiles: só spht e dumbo, juntar também abort time (e SGL time?)
     - só incluir spht e dumbo?

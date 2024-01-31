@@ -65,17 +65,16 @@ if __name__ == "__main__":
     # "ureads-strong",
     # "ureads-p8tm"
   ]
-
-  # Label names in the plots
+# Label names in the plots
   name_map = {
     "psi" : "DUMBO-SI",
     "psi-strong" : "DUMBO-opa",
+    "spht-dumbo-readers" : "DUMBO-read",
+    "spht" : "SPHT",
+    "spht-log-linking" : "SPHT-LL",
     "pisces" : "Pisces",
     "htm-sgl" : "HTM",
     "htm-sgl-sr" : "HTM+sus",
-    "spht" : "SPHT",
-    "spht-dumbo-readers" : "DUMBO-read",
-    "spht-log-linking" : "SPHT-LL",
     "si-htm" : "SI-TM",
     "ureads-strong": "ureads-strong", 
     "ureads-p8tm": "ureads-p8tm"
@@ -83,6 +82,7 @@ if __name__ == "__main__":
   
   data_folder = "data-tpcc-spht-mix"
 
+  
   datasets_thr = {}
   datasets_aborts = {}
   for loc,backend in zip(locations,backends):
@@ -115,21 +115,28 @@ if __name__ == "__main__":
         # breakpoint()
         return True if x in [2, 8, 16, 24, 32, 64] else False
           
-      ds.add_stack("Abort types", "Percentage of txs", {
-        "tx conflict": lambda e: (e["confl-trans"] + e["rot-trans-aborts"])/(e["total-commits"]+e["total-aborts"]),
-        "non-tx conflict": lambda e: (e["confl-non-trans"] + e["rot-non-trans-aborts"])/(e["total-commits"]+e["total-aborts"]),
-        "capacity": lambda e: (e["capac-aborts"] + e["rot-capac-aborts"])/(e["total-commits"]+e["total-aborts"]),
-        "other": lambda e: (e["other-aborts"] + e["rot-other-aborts"] + e["confl-self"] + e["rot-self-aborts"] + e["user-aborts"] + e["rot-user-aborts"])/(e["total-commits"]+e["total-aborts"]),
-      }, is_percent=True, label_size=0.4)
+      ds.add_stack("Prob. of different outcomes for a transaction", "Percentage of started transactions", {
+          "non-tx commit": lambda e: (e["nontx-commits"])/(e["total-commits"]+e["total-aborts"]),
+          "ROT commit": lambda e: (e["rot-commits"])/(e["total-commits"]+e["total-aborts"]),
+          "HTM commit": lambda e: (e["htm-commits"])/(e["total-commits"]+e["total-aborts"]),
+          "SGL commit": lambda e: (e["gl-commits"])/(e["total-commits"]+e["total-aborts"]),
+          "STM commit": lambda e: (e["stm-commits"])/(e["total-commits"]+e["total-aborts"]),
+          "Abort": lambda e: (e["total-aborts"])/(e["total-commits"]+e["total-aborts"]),
+        }, is_percent=True)
+    
+      def divByAborts(e, attr):
+        if (e["total-aborts"] == 0).any():
+          return 0
+        else:
+          return (e[attr]/e["total-aborts"])
+      # Adds a bar plot for the abort type.          
+      ds.add_stack("Abort types", "Percentage of aborts", {
+        "tx conflict": lambda e: (divByAborts(e, "confl-trans") + divByAborts(e, "rot-trans-aborts")),
+        "non-tx conflict": lambda e: (divByAborts(e, "confl-non-trans") + divByAborts(e, "rot-non-trans-aborts")),
+        "capacity": lambda e: (divByAborts(e, "capac-aborts") + divByAborts(e, "rot-capac-aborts")), 
+        "other": lambda e: (divByAborts(e, "other-aborts") + divByAborts(e, "confl-self") + divByAborts(e, "rot-self-aborts") + divByAborts(e, "user-aborts") + divByAborts(e, "rot-user-aborts")), 
+      }, is_percent=True)
 
-
-      ds.add_stack("Types of committed transactions", "Percentage of committed txs", {
-          "non-tx commits": lambda e: (e["nontx-commits"])/(e["total-commits"]),
-          "ROT commits": lambda e: (e["rot-commits"])/(e["total-commits"]),
-          "HTM commits": lambda e: (e["htm-commits"])/(e["total-commits"]),
-          "SGL commits": lambda e: (e["gl-commits"])/(e["total-commits"]),
-          "STM commits": lambda e: (e["stm-commits"])/(e["total-commits"]),
-        }, is_percent=True, label_size=0.6)
       
       # Adds a bar plot for the profile information.
       def divByUpdTxtime(e, attr):
@@ -158,13 +165,21 @@ if __name__ == "__main__":
         "durability wait": lambda e: divByROTxtime(e, "total-ro-dur-wait-time"),
         # TODO
         # "proc. aborted txs": lambda e: divByROTxtime(e, "total-abort-ro-tx-time")
-      }, label_size=0.1)
+      })
       
       datasets_thr[(s,d,o,p,r)] += [ds]
+
+  colors = {
+    "SGL commit" : "#a83232",
+    "Abort": "#404040", 
+    "DUMBO-opa" : "#000066",
+    "DUMBO-SI" : "#0000e6",
+    "DUMBO-read" : "#9999ff",
+  }
     
   for u,v in datasets_thr.items():
     # print(u)
     # print(v)
-    lines_plot = LinesPlot(f"[-s, -d, -o, -p, -r] = {u}", f"tpcc_{u}.pdf", figsize=(8, 4))
+    lines_plot = LinesPlot(f"[-s, -d, -o, -p, -r] = {u}", f"tpcc_{u}.pdf", figsize=(8, 4), colors=colors)
     lines_plot.plot(v)
     lines_plot.plot_stack(v)
