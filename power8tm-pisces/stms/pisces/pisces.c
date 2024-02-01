@@ -97,6 +97,9 @@ struct _Thread {
     
     long tsBegin_for_stats;
 
+    int numStores;
+    int numLoads;
+
     // long snapshot;
     // unsigned long long rng;
     // unsigned long long xorrng [1];
@@ -531,6 +534,9 @@ txReset (Thread* Self)
     Self->inCritical = 0;
     MEMBARLDLD();
 
+    Self->numLoads = 0;
+    Self->numStores  = 0;
+
     READ_TIMESTAMP(Self->tsBegin_for_stats);
     //TODO: free locks and AVpairs, careful with gc rules of pisces
 
@@ -741,6 +747,8 @@ void assert_locked_wrset(Thread *self) {
 void
 TxStore (Thread* Self, volatile intptr_t* addr, intptr_t valu)
 {
+    Self->numStores ++;
+
     //lock_t *prev_lock = *(PSLOCK(addr));
     // assert_locked_wrset(Self);
     Thread *owner = *LOCK_OWNER(addr);
@@ -815,6 +823,7 @@ TxStore (Thread* Self, volatile intptr_t* addr, intptr_t valu)
 intptr_t
 TxLoad (Thread* Self, volatile intptr_t* addr)
 {
+    Self->numLoads ++;
     // assert_locked_wrset(Self);
 
     lock_t *l = get_locked_avpair(addr);
@@ -866,6 +875,9 @@ TxStart (Thread* Self, sigjmp_buf* envPtr)
     Self->startTS = LOCK->value;
     Self->endTS = -1;
 
+    Self->numLoads = 0;
+    Self->numStores  = 0;
+
     MEMBARLDLD();
 
     Self->envPtr= envPtr;
@@ -883,10 +895,7 @@ int
 TxCommit (Thread* Self)
 {
 
-    // if ((rand() % 100) < 50) {
-    //     TxAbort(Self);
-    //     assert(0);
-    // } 
+    // printf("Loads: %d, \tStores: %d \n", Self->numLoads, Self->numStores);
         
     unsigned long tBeforeCommit;
     READ_TIMESTAMP(tBeforeCommit);
