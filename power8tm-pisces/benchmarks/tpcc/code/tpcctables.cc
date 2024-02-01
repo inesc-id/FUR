@@ -594,7 +594,7 @@ void TPCCTables::delivery(TM_ARGDECL int64_t warehouse_id, int64_t carrier_id, c
             // Find and remove the lowest numbered order for the district
 
             int64_t key = makeNewOrderKey(warehouse_id, d_id, 1);
-            key = key *1000000; //JOAO DEBUG (otherwise, delivery was rarely picking up new orders)
+            key = key; // *1000000; //JOAO DEBUG (otherwise, delivery was rarely picking up new orders)
             NewOrder* neworder;
             int64_t foundKey = -1;
 	    if(local_exec_mode == 1 || local_exec_mode == 3){
