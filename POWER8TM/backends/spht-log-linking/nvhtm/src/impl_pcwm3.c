@@ -55,6 +55,8 @@ static volatile uint64_t incFlushing = 0;
 static volatile uint64_t incScanning = 0;
 static volatile uint64_t incTXTime_upd = 0;
 
+extern __thread uint64_t timeAbortedTX;
+
 void install_bindings_pcwm3()
 {
   on_before_htm_begin  = on_before_htm_begin_pcwm3;

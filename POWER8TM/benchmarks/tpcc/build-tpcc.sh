@@ -30,6 +30,7 @@ cp ../../backends/POWER_common.h code/
 cp ../../backends/extra_threadc.h code/
 cp ../../backends/seq_log.h code/
 
+echo "Copy from ../../backends/$backend"
 cp ../../backends/$backend/tm.h code/
 cp ../../backends/$backend/thread.c code/
 cp ../../backends/$backend/thread.h code/
@@ -42,6 +43,7 @@ cp ../../backends/$backend/Defines.common.mk .
 if [[ $backend == spht* || $backend == pstm ]] ; then
     rm lib/rdtsc.h
     mkdir lib/
+		echo "Copy from ../../backends/$backend/copy_spht.sh"
     bash ../../backends/$backend/copy_spht.sh $backend ./lib
 fi
 cd code;

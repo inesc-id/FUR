@@ -126,8 +126,8 @@ extern uint64_t timeSGL_global;
 
 extern __thread uint64_t timeAbortedTX_TS1;
 extern __thread uint64_t timeAbortedTX_TS2;
-extern __thread uint64_t timeAbortedUpdTX = 0;
-extern __thread uint64_t timeAbortedROTX = 0;
+extern __thread uint64_t timeAbortedUpdTX;
+extern __thread uint64_t timeAbortedROTX;
 extern uint64_t timeAbortedTX_global;
 
 extern volatile __thread uint64_t timeAfterTXSuc;

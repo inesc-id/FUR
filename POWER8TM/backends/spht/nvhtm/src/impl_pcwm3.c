@@ -224,7 +224,7 @@ static inline void scan_others(int threadId)
 
 // static __thread FILE *debug_log = NULL;
 
-static inline void smart_close_log_pcwm(uint64_t marker, uint64_t *marker_pos)
+static inline void smart_close_log_pcwm3(uint64_t marker, uint64_t *marker_pos)
 {
   intptr_t lastCL  = ((uintptr_t)(&write_log_thread[writeLogEnd]) >> 6) << 6;
   intptr_t firstCL = ((uintptr_t)(&write_log_thread[writeLogStart]) >> 6) << 6;
@@ -303,7 +303,7 @@ void on_after_htm_commit_pcwm3(int threadId)
 
   // int prevWriteLogEnd = writeLogEnd;
   // writeLogEnd = (writeLogEnd + 1) & (gs_appInfo->info.allocLogSize - 1); // needed
-  smart_close_log_pcwm(
+  smart_close_log_pcwm3(
     /* commit value */ -1,
     /* marker position */ (uint64_t*)&(write_log_thread[writeLogEnd])
   );

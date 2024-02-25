@@ -34,6 +34,7 @@
 #include "impl.h"
 #include "htm_impl.h"
 #include "threading.h"
+#include "impl_pcwm.h"
 
 
 #  define TM_ARG                         /* nothing */
@@ -186,7 +187,7 @@
 
 extern int isCraftySet; // need flag for crafty
 
-extern __thread int readonly_tx;
+extern __thread int PCWM_readonly_tx;
 
 #define TM_BEGIN_EXT(id,ro) TM_BEGIN(ro)
 # define TM_BEGIN(ro) \
@@ -210,10 +211,15 @@ extern __thread int readonly_tx;
 # define TM_SHARED_READ_P(var) (var)
 # define TM_SHARED_READ_D(var) (var)
 # define TM_SHARED_READ_F(var) (var)
-# define TM_SHARED_WRITE(var, val)   ({ onBeforeWrite(HTM_SGL_tid, &var, val); var = val; var;})
-# define TM_SHARED_WRITE_P(var, val) ({ onBeforeWrite(HTM_SGL_tid, &var, val); var = val; var;})
-# define TM_SHARED_WRITE_D(var, val) ({ onBeforeWrite(HTM_SGL_tid, &var, val); var = val; var;})
-# define TM_SHARED_WRITE_F(var, val) ({ onBeforeWrite(HTM_SGL_tid, &var, val); var = val; var;})
+
+// # define TM_SHARED_WRITE(var, val)   ({ onBeforeWrite(HTM_SGL_tid, &var, val); var = val; var;})
+// # define TM_SHARED_WRITE_P(var, val) ({ onBeforeWrite(HTM_SGL_tid, &var, val); var = val; var;})
+// # define TM_SHARED_WRITE_D(var, val) ({ onBeforeWrite(HTM_SGL_tid, &var, val); var = val; var;})
+// # define TM_SHARED_WRITE_F(var, val) ({ onBeforeWrite(HTM_SGL_tid, &var, val); var = val; var;})
+# define TM_SHARED_WRITE(var, val)   ({ MACRO_PCWM_on_before_htm_write_8B_pcwm(HTM_SGL_tid, &var, val); var = val; var;})
+# define TM_SHARED_WRITE_P(var, val) ({ MACRO_PCWM_on_before_htm_write_8B_pcwm(HTM_SGL_tid, &var, val); var = val; var;})
+# define TM_SHARED_WRITE_D(var, val) ({ MACRO_PCWM_on_before_htm_write_8B_pcwm(HTM_SGL_tid, &var, val); var = val; var;})
+# define TM_SHARED_WRITE_F(var, val) ({ MACRO_PCWM_on_before_htm_write_8B_pcwm(HTM_SGL_tid, &var, val); var = val; var;})
 
 // ----------------------------------------------
 #  define FAST_PATH_FREE(ptr)           free(ptr)

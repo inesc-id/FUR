@@ -7,6 +7,8 @@
 #define HTM_SGL_INIT_BUDGET 10
 #include "htm_retry_template.h"
 
+extern __thread uint64_t timeAbortedTX;
+
 #undef AFTER_ABORT
 #define AFTER_ABORT(tid, budget, status) \
   if (!isCraftySet || (isCraftySet && !crafty_isValidate)) {\

@@ -65,6 +65,7 @@ static volatile uint64_t incValidationHTMAborts = 0;
 static volatile uint64_t incStartCommitPhase = 0;
 static volatile uint64_t incFailCommitPhase = 0;
 static volatile uint64_t incSuccessCommitPhase = 0;
+extern __thread uint64_t timeAbortedTX;
 
 void install_bindings_crafty()
 {

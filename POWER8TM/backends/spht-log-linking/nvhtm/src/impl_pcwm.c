@@ -47,6 +47,8 @@ static volatile uint64_t incWaiting = 0;
 static volatile uint64_t incFlushing = 0;
 static volatile uint64_t incTXTime_upd = 0;
 
+extern __thread uint64_t timeAbortedTX;
+
 #ifdef DETAILED_BREAKDOWN_PROFILING
 /* Breakdown of the main stages (JOAO) */
 #define MAX_PROFILE_COUNT 10000

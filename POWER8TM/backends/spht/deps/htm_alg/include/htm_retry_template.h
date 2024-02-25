@@ -8,7 +8,7 @@ extern "C"
 {
 #endif
 
-extern void(*on_before_sgl_commit)(int threadId);
+// extern void(*on_before_sgl_commit)(int threadId);
 
 #ifndef HTM_SGL_INIT_BUDGET
 #define HTM_SGL_INIT_BUDGET 10
@@ -71,7 +71,7 @@ extern __thread int64_t HTM_SGL_errors[HTM_NB_ERRORS];
 
 #define BEFORE_HTM_COMMIT(tid, budget) /* empty */
 #define AFTER_HTM_COMMIT(tid, budget)  /* empty */
-#define BEFORE_SGL_COMMIT(tid)         on_before_sgl_commit(tid)
+#define BEFORE_SGL_COMMIT(tid)         /* on_before_sgl_commit(tid) */
 #define AFTER_SGL_COMMIT(tid)          /* empty */
 
 #define BEFORE_CHECK_BUDGET(budget) /* empty */
@@ -129,9 +129,9 @@ extern __thread int64_t HTM_SGL_errors[HTM_NB_ERRORS];
     BEFORE_COMMIT(HTM_SGL_tid, HTM_SGL_budget, HTM_SGL_status); \
     if (IN_TRANSACTION(HTM_SGL_tid, HTM_SGL_budget, HTM_SGL_status)) { \
         BEFORE_HTM_COMMIT(HTM_SGL_tid, HTM_SGL_budget); \
-         onBeforeHtmCommit(HTM_SGL_tid); \
+				/* onBeforeHtmCommit(HTM_SGL_tid); */ \
         COMMIT_TRANSACTION(HTM_SGL_tid, HTM_SGL_budget, HTM_SGL_status); \
-        on_after_htm_commit(HTM_SGL_tid); \
+        /* on_after_htm_commit(HTM_SGL_tid); */ \
         AFTER_HTM_COMMIT(HTM_SGL_tid, HTM_SGL_budget); \
     } \
     else { \

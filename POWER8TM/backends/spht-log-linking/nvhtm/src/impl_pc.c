@@ -37,6 +37,7 @@ static volatile uint64_t incTimeTotal = 0;
 static volatile uint64_t incAfterTx = 0;
 static volatile uint64_t incWaiting = 0;
 static volatile uint64_t incTXTime_upd= 0;
+extern __thread uint64_t timeAbortedTX;
 
 static inline void bitarray_clean(bit_array_t *bitArray)
 {
