@@ -133,10 +133,8 @@ smart_close_log_pcwm(
 	uint64_t *marker_pos
 ) {
   // if (loc_var.exec_mode == 0) printf("will flush\n");
-  intptr_t lastCL = ((uintptr_t)(&write_log_thread[PCWM_writeLogEnd]) >> 6)
-                    << 6;
-  intptr_t firstCL = ((uintptr_t)(&write_log_thread[PCWM_writeLogStart]) >> 6)
-                     << 6;
+  intptr_t lastCL = ((uintptr_t)(&write_log_thread[PCWM_writeLogEnd]) >> 6) << 6;
+  intptr_t firstCL = ((uintptr_t)(&write_log_thread[PCWM_writeLogStart]) >> 6) << 6;
 
   void *logStart = (void *)(write_log_thread + 0);
   void *logEnd = (void *)(write_log_thread + gs_appInfo->info.allocLogSize);

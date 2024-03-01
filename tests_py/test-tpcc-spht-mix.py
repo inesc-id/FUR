@@ -45,7 +45,8 @@ if __name__ == "__main__":
     "../POWER8TM/benchmarks/tpcc",
     "../POWER8TM/benchmarks/tpcc",
     "../POWER8TM/benchmarks/tpcc",
-    "../power8tm-pisces/benchmarks/tpcc",
+    "../POWER8TM/benchmarks/tpcc",
+    # "../power8tm-pisces/benchmarks/tpcc",
     # "../POWER8TM/benchmarks/tpcc",
     # "../POWER8TM/benchmarks/tpcc",
     # "../POWER8TM/benchmarks/tpcc",
@@ -58,7 +59,8 @@ if __name__ == "__main__":
     "psi-strong",
     "spht-dumbo-readers",
     "spht",
-    "pisces",
+    "spht-log-linking",
+    # "pisces",
     # "htm-sgl",
     # "htm-sgl-sr",
     # "si-htm",
@@ -94,7 +96,7 @@ if __name__ == "__main__":
           backend,
           f"{data_folder}/{backend}-s{sample}"
         )
-      # data.run_sample(params) # TODO: not running samples
+      data.run_sample(params) # TODO: not running samples
       parser = Parser(f"{data_folder}/{backend}-s{sample}")
       parser.parse_all(f"{data_folder}/{backend}-s{sample}.csv")
     lst_each = params.list_for_each_param(["-s", "-d", "-o", "-p", "-r"])

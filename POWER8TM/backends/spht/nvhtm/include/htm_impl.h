@@ -4,6 +4,7 @@
 // before include
 //#define HTM_SGL_INIT_BUDGET /* default */20
 
+#define HTM_SGL_INIT_BUDGET 10
 #include "htm_retry_template.h"
 #include "impl_pcwm.h"
 
@@ -39,12 +40,12 @@
 
 #undef AFTER_HTM_COMMIT
 #define AFTER_HTM_COMMIT(_tid, _budget) \
-	MACRO_PCWM_on_before_htm_commit_pcwm(_tid) /* on_after_htm_commit(HTM_SGL_tid); */ \
+	on_after_htm_commit_pcwm(_tid) /* on_after_htm_commit(HTM_SGL_tid); */ \
 //
 
 #undef BEFORE_SGL_COMMIT
 #define BEFORE_SGL_COMMIT(_tid) \
-	MACRO_PCWM_on_before_sgl_commit_pcwm(_tid) \
+	MACRO_PCWM2_on_before_sgl_commit_pcwm2(_tid) \
 //
 
 #endif /* HTM_IMPL_H_GUARD */

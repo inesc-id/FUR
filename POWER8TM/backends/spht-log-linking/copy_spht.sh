@@ -16,6 +16,7 @@ cp ../../backends/$1/nvhtm/include/containers.h $2
 cp ../../backends/$1/nvhtm/include/global_structs.h $2
 cp ../../backends/$1/nvhtm/include/impl.h $2
 cp ../../backends/$1/nvhtm/include/htm_impl.h $2
+cp ../../backends/$1/nvhtm/include/impl_pcwm2.h $2
 cp ../../backends/$1/nvhtm/include/spins.h $2
 
 cp ../../backends/$1/deps/input_handler/include/input_handler.h $2

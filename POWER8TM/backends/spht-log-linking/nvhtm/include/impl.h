@@ -55,15 +55,15 @@ extern __thread long nbTransactions;
       } \
     } \
     MEASURE_TS(timeTotalTS1); \
-    on_before_htm_begin(_threadId, (int) ro); \
+    PCWM2_readonly_tx = (int) ro; \
     HTM_SGL_begin(); \
 //
 
 #define NV_HTM_END(_threadId) \
-  onBeforeHtmCommit(_threadId); \
+  /* onBeforeHtmCommit(_threadId); */ /* This is called in HTM_impl.h BEFORE_HTM_COMMIT */ \
   HTM_SGL_commit(); \
   MEASURE_TS(timeAfterTXTS1); \
-  on_after_htm_commit(_threadId); \
+  /* on_after_htm_commit(_threadId); */ /* This is called in HTM_impl.h AFTER_HTM_COMMIT */ \
   MEASURE_TS(timeTotalTS2); \
   INC_PERFORMANCE_COUNTER(timeTotalTS1, timeTotalTS2, timeTotal); \
   INC_PERFORMANCE_COUNTER(timeAfterTXTS1, timeTotalTS2, timeAfterTXSuc); \
@@ -246,7 +246,7 @@ void replay_log_apply(); // run all
 //void on_before_htm_begin_pcwc(int threadId);
 //void on_before_htm_begin_pcwc2(int threadId);
 void on_before_htm_begin_pcwm(int threadId, int ro);
-void on_before_htm_begin_pcwm2(int threadId, int ro);
+// void on_before_htm_begin_pcwm2(int threadId, int ro);
 //void on_before_htm_begin_pcwm3(int threadId);
 void on_before_htm_begin_crafty(int threadId);
 void on_before_htm_begin_ccHTM(int threadId);
@@ -265,7 +265,7 @@ void on_htm_abort_PHTM(int threadId);
 //void on_htm_abort_pcwc(int threadId);
 //void on_htm_abort_pcwc2(int threadId);
 void on_htm_abort_pcwm(int threadId);
-void on_htm_abort_pcwm2(int threadId);
+// void on_htm_abort_pcwm2(int threadId);
 //void on_htm_abort_pcwm3(int threadId);
 void on_htm_abort_crafty(int threadId);
 //void on_htm_abort_lc(int threadId);
@@ -281,7 +281,7 @@ void on_before_htm_write_8B_PHTM(int threadId, void *addr, uint64_t val);
 //void on_before_htm_write_8B_pcwc(int threadId, void *addr, uint64_t val);
 //void on_before_htm_write_8B_pcwc2(int threadId, void *addr, uint64_t val);
 void on_before_htm_write_8B_pcwm(int threadId, void *addr, uint64_t val);
-void on_before_htm_write_8B_pcwm2(int threadId, void *addr, uint64_t val);
+// void on_before_htm_write_8B_pcwm2(int threadId, void *addr, uint64_t val);
 //void on_before_htm_write_8B_pcwm3(int threadId, void *addr, uint64_t val);
 void on_before_htm_write_8B_crafty(int threadId, void *addr, uint64_t val);
 //void on_before_htm_write_8B_lc(int threadId, void *addr, uint64_t val);
@@ -297,7 +297,7 @@ void on_before_htm_commit_PHTM(int threadId);
 //void on_before_htm_commit_pcwc(int threadId);
 //void on_before_htm_commit_pcwc2(int threadId);
 void on_before_htm_commit_pcwm(int threadId);
-void on_before_htm_commit_pcwm2(int threadId);
+// void on_before_htm_commit_pcwm2(int threadId);
 //void on_before_htm_commit_pcwm3(int threadId);
 void on_before_htm_commit_crafty(int threadId);
 //void on_before_htm_commit_lc(int threadId);
@@ -313,7 +313,7 @@ void on_after_htm_commit_PHTM(int threadId);
 //void on_after_htm_commit_pcwc(int threadId);
 //void on_after_htm_commit_pcwc2(int threadId);
 void on_after_htm_commit_pcwm(int threadId);
-void on_after_htm_commit_pcwm2(int threadId);
+// void on_after_htm_commit_pcwm2(int threadId); /* NOW INLINED! */
 //void on_after_htm_commit_pcwm3(int threadId);
 void on_after_htm_commit_crafty(int threadId);
 //void on_after_htm_commit_lc(int threadId);

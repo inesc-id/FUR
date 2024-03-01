@@ -1,7 +1,7 @@
 LIB      := ../lib
 
 CC       := gcc
-CFLAGS   += -std=c++11 -Wall -fpermissive  -g -O2 #-O2 # -DNDEBUG
+CFLAGS   += -std=c++11 -Wall -fpermissive  -ggdb3 #-O2 # -DNDEBUG
 CFLAGS   += -I $(LIB) -I .
 CPP      := g++
 CPPFLAGS += $(CFLAGS)

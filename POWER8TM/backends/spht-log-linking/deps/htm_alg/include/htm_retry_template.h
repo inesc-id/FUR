@@ -62,9 +62,9 @@ extern __thread int64_t HTM_SGL_errors[HTM_NB_ERRORS];
 #define AFTER_ABORT(tid, budget, status)  /* empty */
 
 #define BEFORE_HTM_BEGIN(tid, budget)  /* empty */
-#define AFTER_HTM_BEGIN(tid, budget)   /* empty */
+#define AFTER_HTM_BEGIN(tid, budget)   loc_var.exec_mode = 1;
 #define BEFORE_SGL_BEGIN(tid)          /* empty */
-#define AFTER_SGL_BEGIN(tid)           /* empty */
+#define AFTER_SGL_BEGIN(tid)           loc_var.exec_mode = 2;
 
 #define BEFORE_HTM_COMMIT(tid, budget) /* empty */
 #define AFTER_HTM_COMMIT(tid, budget)  /* empty */
