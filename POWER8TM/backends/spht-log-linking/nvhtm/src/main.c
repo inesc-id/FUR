@@ -621,7 +621,8 @@ int main(int argc, char **argv)
     __atomic_thread_fence(__ATOMIC_RELEASE);
     ts2 = rdtscp();
   }
-int i;
+	
+	int i;
   for (i = 0; i < NB_THREADS; ++i) {
     nbExecStates += count_txs[i];
   }

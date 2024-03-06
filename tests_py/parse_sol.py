@@ -89,5 +89,6 @@ class Parser:
       csvwriter = csv.writer(csvfile, delimiter='\t', quotechar='"', quoting=csv.QUOTE_MINIMAL)
       csvwriter.writerow(header)
       for l in lines:
+        # print(l)
         row = [l["params"][p] if p in l["params"] else l["eval"][p] for p in header]
         csvwriter.writerow(row)

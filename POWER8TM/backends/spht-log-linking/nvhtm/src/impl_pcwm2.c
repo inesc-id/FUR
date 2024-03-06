@@ -93,7 +93,7 @@ void state_gather_profiling_info_pcwm2(int threadId)
   __sync_fetch_and_add(&PCWM2_incTXTime_upd, PCWM2_timeTX_upd);
   __sync_fetch_and_add(&timeAbortedTX_global, PCWM2_timeAbortedTX);
 
-	printf("durability_RO_spins: %d\n", PCWM2_durability_RO_spins);
+	// printf("durability_RO_spins: %d\n", PCWM2_durability_RO_spins);
 
   timeSGL = 0;
   PCWM2_timeAbortedTX = 0;

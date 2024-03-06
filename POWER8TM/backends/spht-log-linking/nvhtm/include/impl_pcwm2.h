@@ -66,14 +66,15 @@ typedef struct {
 } __m256i;
 #define _mm256_load_si256(_m256i_addr) \
   *(_m256i_addr)
+// TODO: it is not atomic in POWER8
 #define _mm256_store_si256(_m256i_addr, _m256i_val) \
   *(_m256i_addr) = _m256i_val
 
 // TODO: this does not seem to be called
 #define MACRO_PCWM2_on_before_sgl_commit_pcwm2(threadId)                       \
-  smart_close_log_pcwm2(/* commit value */ onesBit63(PCWM2_readClockVal),             \
+  smart_close_log_pcwm2(/* commit value */ onesBit63(PCWM2_readClockVal),      \
                        /* marker position */ (uint64_t *)&(                    \
-                           write_log_thread[PCWM2_writeLogEnd]));                    \
+                           write_log_thread[PCWM2_writeLogEnd]));              \
   FENCE_PREV_FLUSHES();                                                        \
   /* emulating durmarker flush */                                              \
   FLUSH_CL(&P_last_safe_ts->ts);                                               \
@@ -93,13 +94,13 @@ typedef struct {
 {                                                                              \
   write_log_thread = &(P_write_log[threadId][0]);                              \
   PCWM2_writeLogEnd = PCWM2_writeLogStart =                                    \
-		G_next[threadId].log_ptrs.write_log_next;                                  \
+    G_next[threadId].log_ptrs.write_log_next;                                  \
   MACRO_PCWM2_fetch_log(threadId);                                             \
   if (gs_ts_array[threadId].pcwm.isUpdate != 0)                                \
     __atomic_store_n(&gs_ts_array[threadId].pcwm.isUpdate, 0, __ATOMIC_RELEASE);\
   PCWM2_readonly_tx = ro;                                                      \
   if (log_replay_flags & LOG_REPLAY_CONCURRENT)                                \
-	{                                                                            \
+  {                                                                            \
     /* check space in the log */                                               \
     const int MIN_SPACE_IN_LOG = 128;                                          \
     long totSize = gs_appInfo->info.allocLogSize;                              \
@@ -117,7 +118,7 @@ typedef struct {
   }                                                                            \
   PCWM2_myPreviousClock = zeroBit63(gs_ts_array[threadId].pcwm.ts);            \
   if (!PCWM2_readonly_tx)                                                      \
-	{                                                                            \
+  {                                                                            \
     write_log_thread[PCWM2_writeLogStart] = 0; /* clears logPos values */      \
     __m256i data256i = {                                                       \
       rdtsc(),                                                                 \
@@ -135,16 +136,16 @@ typedef struct {
 
 #define MACRO_PCWM2_on_htm_abort_pcwm2(threadId) \
   if (!PCWM2_readonly_tx) \
-  	__atomic_store_n(&gs_ts_array[threadId].pcwm.ts, rdtsc(), __ATOMIC_RELEASE);\
+    __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, rdtsc(), __ATOMIC_RELEASE);\
 //
 
 #define MACRO_PCWM2_on_before_htm_write_8B_pcwm2(threadId, addr, val)          \
   write_log_thread[PCWM2_writeLogEnd] = (uint64_t)addr;                        \
   PCWM2_writeLogEnd =                                                          \
-		(PCWM2_writeLogEnd + 1) & (gs_appInfo->info.allocLogSize - 1);             \
+    (PCWM2_writeLogEnd + 1) & (gs_appInfo->info.allocLogSize - 1);             \
   write_log_thread[PCWM2_writeLogEnd] = (uint64_t)val;                         \
   PCWM2_writeLogEnd =                                                          \
-		(PCWM2_writeLogEnd + 1) & (gs_appInfo->info.allocLogSize - 1);             \
+    (PCWM2_writeLogEnd + 1) & (gs_appInfo->info.allocLogSize - 1);             \
 //
 
 #define MACRO_PCWM2_on_before_htm_commit_pcwm2(threadId) \
@@ -234,16 +235,22 @@ static inline void smart_close_log_pcwm2(uint64_t marker, uint64_t *marker_pos)
 #define MACRO_PCWM2_RO_wait_for_durable_reads(threadId, myPreCommitTS) \
 \
   uint64_t otherTS; \
+  /* printf("BEFORE thread %i on RO wait\n", threadId); */ \
   for (int i = 0; i < gs_appInfo->info.nbThreads; i++) { \
     if (i!=threadId) { \
-      PCWM2_durability_RO_spins --; \
+      PCWM2_durability_RO_spins = 0; \
       do { \
-        otherTS = zeroBit63(__atomic_load_n(&(gs_ts_array[i].comm2.ts), __ATOMIC_ACQUIRE)); \
+        otherTS = zeroBit63(__atomic_load_n(&(gs_ts_array[i].pcwm.ts), __ATOMIC_ACQUIRE)); \
         PCWM2_durability_RO_spins ++; \
-      } \
-      while (otherTS < myPreCommitTS); \
+        /* if (PCWM2_durability_RO_spins > 100000UL && PCWM2_durability_RO_spins % 100001 == 0) \
+          printf("Thread %i is blocked on tid %i (%li spins)!\n", threadId, i, PCWM2_durability_RO_spins); */ \
+				if (otherTS == 0 /* corner case */) break; \
+      } /* TODO: This does not work very well in POWER because the 256bit stores are not atomic */ \
+      while (otherTS < myPreCommitTS && \
+        !__atomic_load_n(&gs_appInfo->info.isExit, __ATOMIC_ACQUIRE)); \
     } \
-	} \
+  } \
+  /* printf("AFTER thread %i on RO wait\n", threadId); */ \
 \
 //
 
@@ -252,8 +259,11 @@ on_after_htm_commit_pcwm2(int threadId)
 {
   // assert(gs_ts_array[threadId].pcwm.ts == 0);
 
+  /* printf("BEFORE on_after_htm_commit_pcwm2 thread %i PCWM2_readonly_tx %i\n", threadId, PCWM2_readonly_tx); */
+
   INC_PERFORMANCE_COUNTER(timeTotalTS1, timeAfterTXTS1, PCWM2_timeTX_upd);
   int didTheFlush = 0;
+  volatile unsigned long new_ts = onesBit63(PCWM2_readClockVal);
   __m256i storeStableData;
 
   int _PCWM2_prevThreadsArray[gs_appInfo->info.nbThreads];
@@ -271,13 +281,6 @@ on_after_htm_commit_pcwm2(int threadId)
   PCWM2_TSArray = _TSArray;
   // prevTSArray = _prevTSArray;
 
-  if (PCWM2_readonly_tx) {
-    /* RO durability wait (bug fix by Joao)*/
-    MACRO_PCWM2_RO_wait_for_durable_reads(threadId, PCWM2_readClockVal);
-
-    goto ret;
-  }
-
   // gs_ts_array[threadId].pcwm.ts = PCWM2_readClockVal; // currently has the TS of begin
   // tells the others my TS taken within the TX
   __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, PCWM2_readClockVal, __ATOMIC_RELEASE);
@@ -285,8 +288,10 @@ on_after_htm_commit_pcwm2(int threadId)
   // TODO: check if it does not break anything
   if (((PCWM2_writeLogStart + 1) & (gs_appInfo->info.allocLogSize - 1)) == PCWM2_writeLogEnd) {
     // tells the others to move on
-      __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, (uint64_t)-1, __ATOMIC_RELEASE);
-
+    __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, (uint64_t)-1, __ATOMIC_RELEASE);
+    // gs_ts_array[threadId].pcwm.ts
+    if (PCWM2_readonly_tx) // TODO: seems bogus
+      { MACRO_PCWM2_RO_wait_for_durable_reads(threadId, PCWM2_readClockVal); }
     goto ret;
   }
 
@@ -329,7 +334,7 @@ on_after_htm_commit_pcwm2(int threadId)
   
   // tells the others flush done!
   FENCE_PREV_FLUSHES();
-  __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, onesBit63(PCWM2_readClockVal), __ATOMIC_RELEASE);
+  __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, new_ts, __ATOMIC_RELEASE);
 
   MEASURE_TS(PCWM2_timeFlushTS2);
   INC_PERFORMANCE_COUNTER(PCWM2_timeFlushTS1, PCWM2_timeFlushTS2, PCWM2_timeFlushing);
@@ -439,4 +444,5 @@ ret_update:
 ret:
 // assert(gs_ts_array[threadId].pcwm.ts == 0);
   MEASURE_INC(PCWM2_countCommitPhases);
+  /* printf("AFTER on_after_htm_commit_pcwm2 thread %i\n", threadId); */
 }

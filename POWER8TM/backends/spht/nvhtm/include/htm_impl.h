@@ -45,7 +45,7 @@
 
 #undef BEFORE_SGL_COMMIT
 #define BEFORE_SGL_COMMIT(_tid) \
-	MACRO_PCWM2_on_before_sgl_commit_pcwm2(_tid) \
+	MACRO_PCWM_on_before_sgl_commit_pcwm(_tid) \
 //
 
 #endif /* HTM_IMPL_H_GUARD */
