@@ -6,17 +6,19 @@
 
 #include "htm_retry_template.h"
 
+#include "impl_pcwm.h"
+
 #undef AFTER_ABORT
 #define AFTER_ABORT(tid, budget, status) \
   if (!isCraftySet || (isCraftySet && !crafty_isValidate)) {\
     MEASURE_TS(timeAbortedTX_TS2); \
-    if (readonly_tx) \
+    if (PCWM_readonly_tx) \
       INC_PERFORMANCE_COUNTER(timeAbortedTX_TS1, timeAbortedTX_TS2, timeAbortedROTX); \
     else \
       INC_PERFORMANCE_COUNTER(timeAbortedTX_TS1, timeAbortedTX_TS2, timeAbortedUpdTX); \
     timeAbortedTX_TS1 = timeAbortedTX_TS2; \
   } \
-  on_htm_abort(tid)
+  MACRO_PCWM_on_htm_abort_pcwm(tid)
 
 #undef BEFORE_SGL_BEGIN
 #define BEFORE_SGL_BEGIN(HTM_SGL_tid) MEASURE_TS(timeSGL_TS1);

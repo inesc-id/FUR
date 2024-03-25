@@ -49,7 +49,7 @@ extern __thread long nbTransactions;
   crafty_isValidate = 0; \
   while (1) { /* TODO: this needs to be in the same function (else screws the stack) */ \
     jmp_buf env; \
-    on_before_htm_begin(_threadId, (int) ro); \
+    MACRO_PCWM_on_before_htm_begin_pcwm(_threadId, (int) ro); \
     if (ro) {\
       RO_begin(); \
     }\
@@ -317,7 +317,7 @@ void on_after_htm_commit_ccHTM(int threadId);
 void on_after_htm_commit_PHTM(int threadId);
 //void on_after_htm_commit_pcwc(int threadId);
 //void on_after_htm_commit_pcwc2(int threadId);
-void on_after_htm_commit_pcwm(int threadId);
+// void on_after_htm_commit_pcwm(int threadId);
 void on_after_htm_commit_pcwm2(int threadId);
 //void on_after_htm_commit_pcwm3(int threadId);
 void on_after_htm_commit_crafty(int threadId);
