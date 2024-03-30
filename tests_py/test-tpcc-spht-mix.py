@@ -6,8 +6,8 @@ from plot import LinesPlot, BackendDataset
 
 if __name__ == "__main__":
   params = BenchmarkParameters(["-w", "-m", "-s", "-d", "-o", "-p", "-r", "-n", "-t"])
-  params.set_params("-w", [32]) # nb warehouses
-  params.set_params("-m", [32]) # max nb warehouses (put the same as -w)
+  params.set_params("-w", [16]) # nb warehouses
+  params.set_params("-m", [16]) # max nb warehouses (put the same as -w)
   params.set_params("-t", [5])
   
   # From SI-HTM paper: mixed scenario
@@ -39,7 +39,7 @@ if __name__ == "__main__":
   # params.set_params("-r", [45, 45], True)
   params.set_params("-n", [1, 4, 8, 16, 32, 64])
   #params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60, 62, 64])
-  nb_samples = 1
+  nb_samples = 5
   locations = [
     "../POWER8TM/benchmarks/tpcc",
     "../POWER8TM/benchmarks/tpcc",

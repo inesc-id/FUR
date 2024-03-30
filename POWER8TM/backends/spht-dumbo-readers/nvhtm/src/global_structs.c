@@ -292,7 +292,7 @@ static void checkpointer()
   }
   if (!(log_replay_flags & (LOG_REPLAY_CC_HTM|LOG_REPLAY_CONCURRENT))) {
     while(!__atomic_load_n(G_flag_checkpointer_exit, __ATOMIC_ACQUIRE)) {
-      pthread_yield();
+      sched_yield();
       usleep(100);
     }
   }
@@ -488,7 +488,7 @@ void *nvmalloc_init(
 
   // TODO: if the replayer is not active this must be commented
   //while(!__atomic_load_n(G_flag_checkpointer_ready, __ATOMIC_ACQUIRE)) {
-  //  pthread_yield(); // wait the checkpointer
+  //  sched_yield(); // wait the checkpointer
   //  usleep(100);
   //}
 
@@ -712,6 +712,7 @@ void nvmalloc_print_stats(char *filename)
   fprintf(fp, "%lu\t%lu\t%lu\n", nvmalloc_count,
     (uintptr_t)nvmalloc0_current_ptr - (uintptr_t)nvmalloc0_base_ptr,
     (uintptr_t)nvmalloc1_current_ptr - (uintptr_t)nvmalloc1_base_ptr);
+	fclose(fp);
 }
 
 void global_structs_destroy()
@@ -730,7 +731,7 @@ void global_structs_destroy()
   }
   __atomic_store_n(G_flag_checkpointer_exit, 1, __ATOMIC_RELEASE);
   //while(!__atomic_load_n(G_flag_checkpointer_done, __ATOMIC_ACQUIRE)) {
-  //  pthread_yield(); // wait the checkpointer
+  //  sched_yield(); // wait the checkpointer
   //  usleep(100);
   //}
 

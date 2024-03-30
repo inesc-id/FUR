@@ -75,7 +75,12 @@ class CollectData(RunnableBench):
     os.chdir(self.curr_dir)
 
   def run_benchmark(self, exec):
-    out = subprocess.run(f"{exec}".split(), stdout=subprocess.PIPE, text=True)
+    attempts = 0
+    out = None
+    while out == None or out.returncode != 0 and attempts < 3:
+      out = subprocess.run(f"timeout 10m {exec}".split(), stdout=subprocess.PIPE, text=True)
+      attempts += 1
+      
     with open(f"{self.sample_output_folder}/{''.join(exec.split()).split('/')[-1]}", "w+") as f:
       f.write(out.stdout)
 

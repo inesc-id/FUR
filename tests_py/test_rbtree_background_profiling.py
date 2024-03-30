@@ -28,7 +28,7 @@ if __name__ == "__main__":
   params.set_params("-n", [1, 2, 4, 8, 16, 32])
 
   # Set the number of times each run is repeated (for average/stardard deviation computation).
-  nb_samples = 1
+  nb_samples = 5
 
   # Set the location of the benchmark here. Each backend needs to be associated with
   # a benchmark (allows to compare with "exotic" implementations).

@@ -87,7 +87,7 @@ void(*state_print_profile)(char*);
 // {
 //   // struct timespec sleepTime = {.tv_sec = 0, .tv_nsec = 100000};
 //   // nanosleep(&sleepTime, NULL); // sleeps for 100us
-//   pthread_yield();
+//   sched_yield();
 // }
 
 static void inTxFn(void *arg)
@@ -128,7 +128,7 @@ static void thread_main(int id, int nb_thrs, void *arg)
   }
 
   __atomic_fetch_add(&countNbThreadsReady, 1, __ATOMIC_RELAXED);
-  while (!(countNbThreadsReady == nb_thrs)) pthread_yield();
+  while (!(countNbThreadsReady == nb_thrs)) sched_yield();
 
   // uint64_t ts0,ts1, tot = 0;
   while (!gs_appInfo->info.isExit) {
@@ -182,7 +182,7 @@ static void thread_main(int id, int nb_thrs, void *arg)
   __atomic_fetch_add(&tot_bench_read_time_samples, bench_read_time_samples, __ATOMIC_RELAXED);
 
   // __atomic_fetch_add(&countNbThreadsReady, 1, __ATOMIC_RELAXED);
-  // while (!(countNbThreadsReady == 2 * nb_thrs)) pthread_yield();
+  // while (!(countNbThreadsReady == 2 * nb_thrs)) sched_yield();
 
   if (!usePSTM) {
     __atomic_fetch_add(&nbSuccess,  HTM_get_status_count(HTM_SUCCESS, NULL),  __ATOMIC_RELAXED);

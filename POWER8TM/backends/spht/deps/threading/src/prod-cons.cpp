@@ -75,7 +75,7 @@ void prod_cons_destroy(prod_cons_s *pc)
 
 long prod_cons_produce(prod_cons_s *pc, void *i)
 {
-  long readPtr;
+  long readPtr = 0;
   if (i == NULL) return -1; // error
   thr_sem_wait(pc->p_sem);
   readPtr = PROD_CONS_ATOMIC_INC_PTR(pc->p_ptr, pc->nb_items);
@@ -87,7 +87,7 @@ long prod_cons_produce(prod_cons_s *pc, void *i)
 
 long prod_cons_consume(prod_cons_s *pc, void **i)
 {
-  long readPtr;
+  long readPtr = 0;
   thr_sem_wait(pc->c_sem);
   readPtr = PROD_CONS_ATOMIC_INC_PTR(pc->c_ptr, pc->nb_items);
   while ((*i = *BUFFER_ADDR(pc, readPtr)) == NULL);
