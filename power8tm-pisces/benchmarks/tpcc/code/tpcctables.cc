@@ -10,6 +10,10 @@
 
 using std::vector;
 
+
+// int deliveryCalled = 0;
+// int deliverySuccess = 0;
+
 bool CustomerByNameOrdering::operator()(const Customer* a, const Customer* b) {
     if (a->c_w_id < b->c_w_id) return true;
     if (a->c_w_id > b->c_w_id) return false;
@@ -583,7 +587,9 @@ __attribute__((transaction_safe)) static int64_t makeNewOrderKey(int64_t w_id, i
 
 void TPCCTables::delivery(TM_ARGDECL int64_t warehouse_id, int64_t carrier_id, const char* now,
         std::vector<DeliveryOrderInfo>* orders, TPCCUndo** undo) {
+        
     // printf("delivery %d %d %s\n", warehouse_id, carrier_id, now);
+    // deliveryCalled ++; //JOAO DEBUG
 
 /*    __transaction_atomic { */
     // FIXME(nmld): transaction block here
@@ -593,7 +599,8 @@ void TPCCTables::delivery(TM_ARGDECL int64_t warehouse_id, int64_t carrier_id, c
         for (int64_t d_id = 1; d_id <= District::NUM_PER_WAREHOUSE; ++d_id) {
             // Find and remove the lowest numbered order for the district
 
-            int64_t key = makeNewOrderKey(warehouse_id, d_id, 1);
+            //JOAO DEBUG int64_t key = makeNewOrderKey(warehouse_id, d_id, 1);
+            int64_t key = makeNewOrderKey(warehouse_id, d_id, 0xFFFFFFFF);
             key = key; // *1000000; //JOAO DEBUG (otherwise, delivery was rarely picking up new orders)
             NewOrder* neworder;
             int64_t foundKey = -1;
@@ -612,6 +619,9 @@ void TPCCTables::delivery(TM_ARGDECL int64_t warehouse_id, int64_t carrier_id, c
                 // TODO: 2.7.4.2: If this occurs in max(1%, 1) of transactions, report it (???)
                 continue;
             }
+            
+            // deliverySuccess ++;
+
             int64_t o_id = neworder->no_o_id;
             if(local_exec_mode == 1 || local_exec_mode == 3)
               neworders_.slow_del(TM_ARG foundKey);
@@ -645,6 +655,7 @@ void TPCCTables::delivery(TM_ARGDECL int64_t warehouse_id, int64_t carrier_id, c
             }
     }
     TM_END();
+    // printf("delivery %d %d %s\n %d / %d\n", warehouse_id, carrier_id, now, deliveryCalled, deliverySuccess);
     //TM_THREAD_EXIT();
 /*    } */
 }
@@ -879,7 +890,8 @@ __attribute__((transaction_safe)) static int64_t makeOrderKey(int64_t w_id, int6
 __attribute__((transaction_safe)) static int64_t makeOrderByCustomerKey(int64_t w_id, int64_t d_id, int64_t c_id, int64_t o_id) {
     int64_t top_id = (w_id * District::NUM_PER_WAREHOUSE + d_id) * Customer::NUM_PER_DISTRICT
             + c_id;
-    return (((int64_t) top_id) << 8) | o_id;
+    //JOAO DEBUG return (((int64_t) top_id) << 8) | o_id;
+    return (((int64_t) top_id) << 32) | o_id;
 }
 
 /*__attribute__((transaction_safe)) Order* TPCCTables::insertOrder(const Order& order) {
@@ -921,7 +933,8 @@ __attribute__((transaction_safe)) Order* TPCCTables::findLastOrderByCustomer(TM_
 
     // Increment the (w_id, d_id, c_id) tuple
     int64_t key = makeOrderByCustomerKey(w_id, d_id, c_id, 1);
-    key += ((int64_t)1) << 8;
+    //JOAO DEBUG key += ((int64_t)1) << 8;
+    key += ((int64_t)1) << 32;
     bool found;
     if(local_exec_mode == 1 || local_exec_mode == 3)
       found = orders_by_customer_.slow_findLastLessThan(TM_ARG key, &order);
@@ -970,7 +983,8 @@ __attribute__((transaction_safe)) OrderLine* TPCCTables::findOrderLine(TM_ARGDEC
 
 __attribute__((transaction_safe)) static int64_t makeNewOrderKey(int64_t w_id, int64_t d_id, int64_t o_id) {
     int64_t upper_id = w_id * Warehouse::MAX_WAREHOUSE_ID + d_id;
-    int64_t id = static_cast<int64_t>(upper_id) << 8 | o_id;
+    //JOAO DEBUG int64_t id = static_cast<int64_t>(upper_id) << 8 | o_id;
+    int64_t id = static_cast<int64_t>(upper_id) << 32 | o_id;
     return id;
 }
 
