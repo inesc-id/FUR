@@ -116,7 +116,7 @@ int64_t TPCCTables::stockLevel(TM_ARGDECL int64_t warehouse_id, int64_t district
     //int64_t s_i_ids[10000];
 	long s_i_ids[100000];
     // Average size is more like ~30.
-    uint64_t counter_s = 0; int x;
+    uint64_t counter_s = 0; int x=0;
 /*    __transaction_atomic { */
     // FIXME(nmld): transaction block here
     //TM_THREAD_ENTER();
@@ -145,7 +145,6 @@ int64_t TPCCTables::stockLevel(TM_ARGDECL int64_t warehouse_id, int64_t district
 		}
                 else{
                 	stock_quantity = FAST_PATH_SHARED_READ(stock->s_quantity);
-                    numFinds ++;
 		}
                 if (stock_quantity < threshold) {
                     s_i_ids[counter_s] = line->ol_i_id;
