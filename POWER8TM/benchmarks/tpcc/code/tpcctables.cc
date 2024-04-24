@@ -124,7 +124,7 @@ int64_t TPCCTables::stockLevel(TM_ARGDECL int64_t warehouse_id, int64_t district
   //int64_t s_i_ids[10000];
 	long s_i_ids[100000];
   // Average size is more like ~30.
-  uint64_t counter_s = 0; int x;
+  uint64_t counter_s = 0; int x; 
 /*    __transaction_atomic { */
   // FIXME(nmld): transaction block here
   //TM_THREAD_ENTER();
@@ -149,6 +149,7 @@ int64_t TPCCTables::stockLevel(TM_ARGDECL int64_t warehouse_id, int64_t district
       // Check if s_quantity < threshold
       stock = findStock(TM_ARG warehouse_id, line->ol_i_id);
       stock_quantity = FAST_PATH_SHARED_READ(stock->s_quantity);
+      x += stock_quantity;
       // if (local_exec_mode == 1 || local_exec_mode == 3){
       //   stock_quantity = SLOW_PATH_SHARED_READ(stock->s_quantity);
 		  // } else {
@@ -170,6 +171,9 @@ int64_t TPCCTables::stockLevel(TM_ARGDECL int64_t warehouse_id, int64_t district
   //   // }
   // }
   TM_END();
+  
+  return x;
+  // printf("Stocklevel ended. numFinds=%d\n", numFinds);
   //TM_THREAD_EXIT();
 	/*if(stock_quantity>0)
 		counter_s++;
@@ -671,7 +675,7 @@ void TPCCTables::delivery(
   TM_BEGIN(ro);
   for (int64_t d_id = 1; d_id <= District::NUM_PER_WAREHOUSE; ++d_id) {
     // Find and remove the lowest numbered order for the district
-    int64_t key = makeNewOrderKey(warehouse_id, d_id, 1);
+    int64_t key = makeNewOrderKey(warehouse_id, d_id, 0xFFFFFFFF);
     key = key; // *1000000; //JOAO DEBUG (otherwise, delivery was rarely picking up new orders)
     NewOrder* neworder;
     int64_t foundKey = -1;
@@ -1015,7 +1019,7 @@ __attribute__((transaction_safe)) static int64_t makeOrderByCustomerKey(int64_t 
 {
   int64_t top_id = (w_id * District::NUM_PER_WAREHOUSE + d_id) * Customer::NUM_PER_DISTRICT
     + c_id;
-  return (((int64_t) top_id) << 8) | o_id;
+  return (((int64_t) top_id) << 32) | o_id;
 }
 
 __attribute__((transaction_safe)) Order* TPCCTables::insertOrder(const Order& order) {
@@ -1060,7 +1064,7 @@ __attribute__((transaction_safe)) Order* TPCCTables::findLastOrderByCustomer(TM_
 
   // Increment the (w_id, d_id, c_id) tuple
   int64_t key = makeOrderByCustomerKey(w_id, d_id, c_id, 1);
-  key += ((int64_t)1) << 8;
+  key += ((int64_t)1) << 32;
   bool found;
   found = orders_by_customer_.fast_findLastLessThan(TM_ARG key, &order);
   // if(local_exec_mode == 1 || local_exec_mode == 3)
@@ -1110,7 +1114,7 @@ __attribute__((transaction_safe)) OrderLine* TPCCTables::findOrderLine(TM_ARGDEC
 __attribute__((transaction_safe)) static int64_t makeNewOrderKey(int64_t w_id, int64_t d_id, int64_t o_id)
 {
   int64_t upper_id = w_id * Warehouse::MAX_WAREHOUSE_ID + d_id;
-  int64_t id = static_cast<int64_t>(upper_id) << 8 | o_id;
+  int64_t id = static_cast<int64_t>(upper_id) << 32 | o_id;
   return id;
 }
 

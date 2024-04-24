@@ -222,6 +222,9 @@ volatile long upd_tx_timeTally = 0;
 volatile long abort_timeTally = 0;
 volatile long stm_commitsTally = 0;
 
+volatile long stm_ro_commitsTally = 0;
+volatile long stm_upd_commitsTally = 0;
+
 
 volatile long ReadOverflowTally  = 0;
 volatile long WriteOverflowTally = 0;
@@ -380,6 +383,8 @@ READ_TIMESTAMP(end_time);
   "\tROT commits:  %lu\n" \
   "\tGL commits: %lu\n" \
   "\tSTM commits:  %lu\n" \
+  "\t\tSTM RO commits:  %lu\n" \
+  "\t\tSTM upd commits:  %lu\n" \
 "Total aborts: %lu\n" \
   "\tHTM conflict aborts:  %lu\n" \
     "\t\tHTM self aborts:  %lu\n" \
@@ -415,6 +420,8 @@ READ_TIMESTAMP(end_time);
   0,
   0,
   stm_commitsTally,
+  stm_ro_commitsTally,
+  stm_upd_commitsTally,
   AbortTally, 
   AbortTally,
   0,
@@ -484,7 +491,9 @@ TxFreeThread (Thread* t)
     AtomicAdd((volatile intptr_t*)((void*)(&abort_timeTally)),         t->abort_time);
 
     AtomicAdd((volatile intptr_t*)((void*)(&stm_commitsTally)),         t->upd_commits);
+    AtomicAdd((volatile intptr_t*)((void*)(&stm_upd_commitsTally)),         t->upd_commits);
     AtomicAdd((volatile intptr_t*)((void*)(&stm_commitsTally)),         t->ro_commits);
+    AtomicAdd((volatile intptr_t*)((void*)(&stm_ro_commitsTally)),         t->ro_commits);
 
     AtomicAdd((volatile intptr_t*)((void*)(&AbortTally)),         t->Aborts);
 
@@ -825,6 +834,7 @@ TxLoad (Thread* Self, volatile intptr_t* addr)
 {
     Self->numLoads ++;
     // assert_locked_wrset(Self);
+    
 
     lock_t *l = get_locked_avpair(addr);
 
