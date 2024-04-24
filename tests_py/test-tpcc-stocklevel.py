@@ -45,7 +45,7 @@ if __name__ == "__main__":
   # params.set_params("-r", [45, 45], True)
   params.set_params("-n", [1, 4, 8, 16, 32, 64])
   #params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60, 62, 64])
-  nb_samples = 1
+  nb_samples = 3
   locations = [
     "../POWER8TM/benchmarks/tpcc",
     "../POWER8TM/benchmarks/tpcc",
@@ -101,7 +101,7 @@ if __name__ == "__main__":
           backend,
           f"{data_folder}/{backend}-s{sample}"
         )
-      # data.run_sample(params) # TODO: not running samples
+      data.run_sample(params) # TODO: not running samples
       parser = Parser(f"{data_folder}/{backend}-s{sample}")
       parser.parse_all(f"{data_folder}/{backend}-s{sample}.csv")
     lst_each = params.list_for_each_param(["-s", "-d", "-o", "-p", "-r"])
