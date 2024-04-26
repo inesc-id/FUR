@@ -486,7 +486,7 @@ else /* handles warp around case */ \
 			stats_array[loc_var.tid].rot_capacity_aborts ++; \
 			if ( __TM_is_persistent_abort(&(loc_var.TM_buff)) ) \
         stats_array[loc_var.tid].rot_persistent_aborts ++; \
-      break; \
+      /*break; */\
 		} \
     else \
     { stats_array[loc_var.tid].rot_other_aborts ++; } \
