@@ -1,3 +1,29 @@
+payment:
+- tirar quiescence wait do psi e confirmar que aborts reduzem
+- hipótese: quiescence wait causa algum tipo de CM positivo... porquê?
+- o facto de payment ser high contention explica?
+- correr neworder de novo (agora com retry policy igual) para ver se a tendencia do payment tb se verifica lá
+
+
+
+*** rever os todos abaixo (alguns já não fazem sentido)
+
+26/abril
+Payment: 
+- 100% upd, no entanto o dumbo tem vantagem! Surpreendente, pois as vantagens conhecidas do dumbo são com RO.
+- Além disso, o dumbo tem mais aborts que spht! Surpreendente.
+O que será a causa?
+- será o facto das update txs se sincronizarem?...
+- será a lógica de durability commit?
+
+
+
+spht-dumbo-readers: 
+Aparentemente isto não está certo:
+/* Joao: the code in htm_retry_sample.h is already collecting these directly on stats_array */
+TODO: repor tal como no spht (retirar as stats que aparecem no htm_retry_template.h).
+
+
 neworder:
 - latency profile: nada do spht* em readonly
 - dumbo-readers: STL HTM commits inferior a sPHT. (seré que tem a ver com eu ter comentado o tratamento de empty WR no commit?)
