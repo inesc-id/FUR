@@ -467,8 +467,8 @@ LeafNode() : type(NODE_LEAF), num_keys(0) {tm_memset(keys,0,sizeof(keys));}
         LeafNode() : num_keys(0) {memset(keys,0,sizeof(keys));}
 #endif
         unsigned long num_keys;
-        KEY      keys[M];
-        VALUE    values[M];
+        KEY      keys[M+1];
+        VALUE    values[M+1];
 //                unsigned char _pad[LEAF_NODE_PADDING];
 };
 
