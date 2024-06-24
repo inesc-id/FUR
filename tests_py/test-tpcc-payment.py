@@ -44,17 +44,17 @@ if __name__ == "__main__":
   # params.set_params("-p", [43, 39], True)
   # params.set_params("-r", [45, 45], True)
   params.set_params("-n", [1, 4, 8, 16, 32, 64])
-  #params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60, 62, 64])
-  nb_samples = 1
+  # params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60, 62, 64])
+  nb_samples = 3
   locations = [
     "../POWER8TM/benchmarks/tpcc",
     "../POWER8TM/benchmarks/tpcc",
     "../POWER8TM/benchmarks/tpcc",
     "../POWER8TM/benchmarks/tpcc",
     "../power8tm-pisces/benchmarks/tpcc",
-    # "../POWER8TM/benchmarks/tpcc",
-    # "../POWER8TM/benchmarks/tpcc",
-    # "../POWER8TM/benchmarks/tpcc",
+    "../POWER8TM/benchmarks/tpcc",
+    "../POWER8TM/benchmarks/tpcc",
+    "../POWER8TM/benchmarks/tpcc",
     # "../POWER8TM/benchmarks/tpcc",
   ]
   # The backend name goes here (don't forget to match the position in the
@@ -65,9 +65,9 @@ if __name__ == "__main__":
     "spht-dumbo-readers",
     "spht",
     "pisces",
-    # "htm-sgl",
-    # "htm-sgl-sr",
-    # "si-htm",
+    "htm-sgl",
+    "htm-sgl-sr",
+    "si-htm",
     # "ureads-strong",
     # "ureads-p8tm"
   ]
@@ -148,32 +148,39 @@ if __name__ == "__main__":
 
       
       # Adds a bar plot for the profile information.
-      def divByUpdTxtime(e, attr):
+      def checkIfUpdCommitStats(e, attr):
         if (e["total-upd-tx-time"] == 0).any():
           return 0
         else:
           return (e[attr])
+      def checkIfAbortStats(e, attr):
+        if (e["total-abort-upd-tx-time"] == 0).any():
+          return 0
+        else:
+          return (e[attr])
       ds.add_stack("Latency profile (update txs)", "Time (clock ticks)", {
-        "processing committed txs.": lambda e: divByUpdTxtime(e, "total-upd-tx-time"),
-        "isolation wait": lambda e: divByUpdTxtime(e, "total-sus-time"),
-        "redo log flush": lambda e: divByUpdTxtime(e, "total-flush-time"),
-        "durability wait": lambda e: divByUpdTxtime(e, "total-dur-commit-time"),
-        # TODO
-        # "proc. aborted txs": lambda e: divByUpdTxtime(e, "total-abort-upd-tx-time")
+        "processing committed txs.": lambda e: checkIfUpdCommitStats(e, "total-upd-tx-time"),
+        "isolation wait": lambda e: checkIfUpdCommitStats(e, "total-sus-time"),
+        "redo log flush": lambda e: checkIfUpdCommitStats(e, "total-flush-time"),
+        "durability wait": lambda e: checkIfUpdCommitStats(e, "total-dur-commit-time"),
+        "proc. aborted txs": lambda e: checkIfAbortStats(e, "total-abort-upd-tx-time")
       })
 
       # Adds a bar plot for the profile information.
-      def divByROTxtime(e, attr):
+      def checkIfROCommitStats(e, attr):
         if (e["total-ro-tx-time"] == 0).any():
           return 0
         else:
           return (e[attr])
-          # return (e[attr] / (e["total-ro-tx-time"]))
+      def checkIfROAbortStats(e, attr):
+        if (e["total-ro-tx-time"] == 0).any():
+          return 0
+        else:
+          return (e[attr])
       ds.add_stack("Latency profile (read-only txs)", "Time (clock ticks)", {
-        "proc. committed txs": lambda e: divByROTxtime(e, "total-ro-tx-time"),
-        "durability wait": lambda e: divByROTxtime(e, "total-ro-dur-wait-time"),
-        # TODO
-        # "proc. aborted txs": lambda e: divByROTxtime(e, "total-abort-ro-tx-time")
+        "proc. committed txs": lambda e: checkIfROCommitStats(e, "total-ro-tx-time"),
+        "durability wait": lambda e: checkIfROCommitStats(e, "total-ro-dur-wait-time"),
+        "proc. aborted txs": lambda e: checkIfROAbortStats(e, "total-abort-ro-tx-time")
       })
       
       datasets_thr[(s,d,o,p,r)] += [ds]

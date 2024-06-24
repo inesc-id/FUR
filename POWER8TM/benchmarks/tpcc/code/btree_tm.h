@@ -252,8 +252,8 @@ private:
                 LeafNode() : num_keys(0) {memset(keys,0,sizeof(keys));}
 #endif
                 long int num_keys;
-                KEY      keys[M];
-                VALUE    values[M];
+                KEY      keys[M+1];
+                VALUE    values[M+1];
 	  //                unsigned char _pad[LEAF_NODE_PADDING];
         };
 

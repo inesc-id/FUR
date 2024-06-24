@@ -177,13 +177,14 @@ public:
           *value = temp_value;
         }
         if (temp_value)
-        return true;
+          return true;
         else
-        return false;
+          return false;
       }
     } else {
       return false;
     }
+    return false; // TODO: sometimes the code reaches this
   }
 
   __attribute__((transaction_safe)) bool slow_find(TM_ARGDECL const KEY & key, VALUE * value = 0)const {
@@ -436,8 +437,8 @@ private:
       }
       #endif
       unsigned long num_keys;
-      KEY keys[M];
-      VALUE values[M];
+      KEY keys[M+1];
+      VALUE values[M+1];
       //unsigned char _pad[LEAF_NODE_PADDING];
     };
 

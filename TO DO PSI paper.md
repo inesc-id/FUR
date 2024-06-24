@@ -1,9 +1,5 @@
 payment:
-- tirar quiescence wait do psi e confirmar que aborts reduzem
-- hipótese: quiescence wait causa algum tipo de CM positivo... porquê?
-- o facto de payment ser high contention explica?
 - correr neworder de novo (agora com retry policy igual) para ver se a tendencia do payment tb se verifica lá
-
 
 
 *** rever os todos abaixo (alguns já não fazem sentido)
@@ -17,21 +13,10 @@ O que será a causa?
 - será a lógica de durability commit?
 
 
-
-spht-dumbo-readers: 
-Aparentemente isto não está certo:
-/* Joao: the code in htm_retry_sample.h is already collecting these directly on stats_array */
-TODO: repor tal como no spht (retirar as stats que aparecem no htm_retry_template.h).
-
-
 neworder:
 - latency profile: nada do spht* em readonly
 - dumbo-readers: STL HTM commits inferior a sPHT. (seré que tem a ver com eu ter comentado o tratamento de empty WR no commit?)
 - latency profile (upd): considerando o ponto 8threads, a relação de números em absoluto de tx time não é explicável; redo log flush quase invisível; dur wait spht muito superior à do dumbo-read; spht desaparece após 16T (provavelmente ficaria melhor se incluisse SGL time e abort time?).
-
-
-- profiles: incluir tempos sgl e abort
-
 
 
 - Melhorias aos stacked bars de commits/aborts:

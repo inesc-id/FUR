@@ -44,17 +44,17 @@ if __name__ == "__main__":
   # params.set_params("-p", [43, 39], True)
   # params.set_params("-r", [45, 45], True)
   params.set_params("-n", [1, 4, 8, 16, 32, 64])
-  #params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60, 62, 64])
-  nb_samples = 1
+  # params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60, 62, 64])
+  nb_samples = 5
   locations = [
     "../POWER8TM/benchmarks/tpcc",
     "../POWER8TM/benchmarks/tpcc",
     "../POWER8TM/benchmarks/tpcc",
     "../POWER8TM/benchmarks/tpcc",
     # "../power8tm-pisces/benchmarks/tpcc",
-    # "../POWER8TM/benchmarks/tpcc",
-    # "../POWER8TM/benchmarks/tpcc",
-    # "../POWER8TM/benchmarks/tpcc",
+    "../POWER8TM/benchmarks/tpcc",
+    "../POWER8TM/benchmarks/tpcc",
+    "../POWER8TM/benchmarks/tpcc",
     # "../POWER8TM/benchmarks/tpcc",
   ]
   # The backend name goes here (don't forget to match the position in the
@@ -65,9 +65,9 @@ if __name__ == "__main__":
     "spht-dumbo-readers",
     "spht",
     # "pisces", # TODO: i commented this one since pisces sometimes crashes; still, it should be included!
-    # "htm-sgl",
-    # "htm-sgl-sr",
-    # "si-htm",
+    "htm-sgl",
+    "htm-sgl-sr",
+    "si-htm",
     # "ureads-strong",
     # "ureads-p8tm"
   ]
