@@ -189,13 +189,14 @@
       READ_TIMESTAMP(start_sus);\
       stats_array[q_args.tid].tx_time_upd_txs += start_sus - start_tx;\
       __thread long myOldActiveState = ts_state[q_args.tid].value; \
-      UPDATE_TS_STATE(NON_DURABLE); /* committing rot*/ \
+      UPDATE_STATE(INACTIVE); /*JOAO: perf bug fix 25jun*/ \
       order_ts[q_args.tid].value = atomicInc();\
       QUIESCENCE_CALL_ROT();  \
       rmb(); \
       READ_TIMESTAMP(end_sus);\
       stats_array[q_args.tid].sus_time += end_sus - start_sus;\
       __TM_resume(); \
+      UPDATE_TS_STATE(NON_DURABLE); /*JOAO: perf bug fix 25jun*/ \
       __TM_end(); \
       READ_TIMESTAMP(end_tx); \
       stats_array[q_args.tid].commit_time += end_tx - start_tx;\
