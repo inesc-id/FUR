@@ -315,10 +315,7 @@ void on_after_htm_commit_pcwm(int threadId)
       __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, onesBit63(readClockVal), __ATOMIC_RELEASE);
 
     /* RO durability wait (bug fix by Joao)*/
-    /* debug! */
-    // printf("will call RO_wait_for_durable_reads\n");
-    // RO_wait_for_durable_reads(threadId, readClockVal);
-    // printf("returned\n");
+    RO_wait_for_durable_reads(threadId, readClockVal);
 
     goto ret;
   }

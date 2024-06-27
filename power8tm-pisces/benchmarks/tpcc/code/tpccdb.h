@@ -71,7 +71,7 @@ struct Warehouse {
     static const int MAX_NAME = 10;
     // TPC-C 1.3.1 (page 11) requires 2*W. This permits testing up to 50 warehouses. This is an
     // arbitrary limit created to pack ids into integers.
-    static const int MAX_WAREHOUSE_ID = 100;
+    static const int MAX_WAREHOUSE_ID = 128;
 
     int64_t w_id;
     float w_tax;
@@ -95,15 +95,16 @@ struct District {
 
     int64_t d_id;
     int64_t d_w_id;
+    int64_t d_next_o_id; /* JOAO 28/june/2024 to avoid bug due to Pisces' bad float handling*/
     float d_tax;
     float d_ytd;
-    int64_t d_next_o_id;
     char d_name[MAX_NAME+1];
     char d_street_1[Address::MAX_STREET+1];
     char d_street_2[Address::MAX_STREET+1];
     char d_city[Address::MAX_CITY+1];
     char d_state[Address::STATE+1];
     char d_zip[Address::ZIP+1];
+
 };
 
 struct Stock {
@@ -151,12 +152,12 @@ struct Customer {
     int64_t c_id;
     int64_t c_d_id;
     int64_t c_w_id;
-    float c_credit_lim;
+    int64_t c_payment_cnt;
+    int64_t c_delivery_cnt;
+    float c_credit_lim;  /*JOAO 28/june: also reordered these floats, just to be sure */
     float c_discount;
     float c_balance;
     float c_ytd_payment;
-    int64_t c_payment_cnt;
-    int64_t c_delivery_cnt;
     char c_first[MAX_FIRST+1];
     char c_middle[MIDDLE+1];
     char c_last[MAX_LAST+1];
@@ -178,8 +179,8 @@ struct Order {
     static const int NULL_CARRIER_ID = 0;
     // Less than this value, carrier != null, >= -> carrier == null
     static const int NULL_CARRIER_LOWER_BOUND = 2101;
-    static const int MIN_OL_CNT = 5;
-    static const int MAX_OL_CNT = 15;
+    static const int MIN_OL_CNT = 1;
+    static const int MAX_OL_CNT = 3;
     static const int INITIAL_ALL_LOCAL = 1;
     static const int INITIAL_ORDERS_PER_DISTRICT = 3000;
     // See TPC-C 1.3.1 (page 15)
@@ -283,11 +284,12 @@ struct NewOrderOutput {
         memset(status, 0, sizeof(status));
     }
 
-    float w_tax;
-    float d_tax;
 
     // From district d_next_o_id
     int64_t o_id;
+
+    float w_tax;
+    float d_tax;
 
     float c_discount;
 

@@ -71,7 +71,7 @@ struct Warehouse {
     static const int MAX_NAME = 10;
     // TPC-C 1.3.1 (page 11) requires 2*W. This permits testing up to 50 warehouses. This is an
     // arbitrary limit created to pack ids into integers.
-    static const int MAX_WAREHOUSE_ID = 100;
+    static const int MAX_WAREHOUSE_ID = 128;
 
     int64_t w_id;
     float w_tax;
@@ -178,8 +178,8 @@ struct Order {
     static const int NULL_CARRIER_ID = 0;
     // Less than this value, carrier != null, >= -> carrier == null
     static const int NULL_CARRIER_LOWER_BOUND = 2101;
-    static const int MIN_OL_CNT = 5;
-    static const int MAX_OL_CNT = 15;
+    static const int MIN_OL_CNT = 1;
+    static const int MAX_OL_CNT = 3;
     static const int INITIAL_ALL_LOCAL = 1;
     static const int INITIAL_ORDERS_PER_DISTRICT = 3000;
     // See TPC-C 1.3.1 (page 15)

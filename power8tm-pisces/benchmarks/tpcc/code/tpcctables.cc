@@ -135,17 +135,18 @@ int64_t TPCCTables::stockLevel(TM_ARGDECL int64_t warehouse_id, int64_t district
                 if (line == NULL) {
                     // We can break since we have reached the end of the lines for this order.
                     // TODO: A btree iterate in (w_id, d_id, o_id) order would be a clean way to do this
+                    // printf("break com line_number=%d\n", line_number);
                     break;
                 }
                 // Check if s_quantity < threshold
                 stock = findStock(TM_ARG warehouse_id, line->ol_i_id);
                 if(local_exec_mode == 1 || local_exec_mode == 3){
 		        stock_quantity = SLOW_PATH_SHARED_READ(stock->s_quantity);
-                x += stock_quantity;
-		}
+		        }
                 else{
                 	stock_quantity = FAST_PATH_SHARED_READ(stock->s_quantity);
-		}
+		        }
+                x += stock_quantity;
                 if (stock_quantity < threshold) {
                     s_i_ids[counter_s] = line->ol_i_id;
                     counter_s++;
@@ -162,6 +163,7 @@ int64_t TPCCTables::stockLevel(TM_ARGDECL int64_t warehouse_id, int64_t district
 //     }
 //   }
   TM_END();
+//   if (x==0) printf("stocklevel returned 0\n");
   return x;
 //   printf("Stocklevel ended. numFinds=%d\n", numFinds);
   //TM_THREAD_EXIT();
@@ -524,9 +526,9 @@ __attribute__((transaction_safe)) void TPCCTables::paymentHome(TM_ARGDECL int64_
       float temp_float = FAST_PATH_SHARED_READ_D(w->w_ytd);
       FAST_PATH_SHARED_WRITE_D(w->w_ytd, temp_float+h_amount);
 
-      District* d = findDistrict(TM_ARG warehouse_id, district_id);
-      float temp_float_2 = FAST_PATH_SHARED_READ_D(d->d_ytd);
-      FAST_PATH_SHARED_WRITE_D(d->d_ytd, temp_float_2+h_amount);
+    //   District* d = findDistrict(TM_ARG warehouse_id, district_id);
+    //   float temp_float_2 = FAST_PATH_SHARED_READ_D(d->d_ytd);
+    //   FAST_PATH_SHARED_WRITE_D(d->d_ytd, temp_float_2+h_amount);
     }
 
     // Insert the line into the history table
