@@ -128,7 +128,7 @@ int64_t TPCCTables::stockLevel(TM_ARGDECL int64_t warehouse_id, int64_t district
 /*    __transaction_atomic { */
   // FIXME(nmld): transaction block here
   //TM_THREAD_ENTER();
-   int ro = 0;
+   int ro = 1;
   TM_BEGIN(ro);
   District* d = findDistrict(TM_ARG warehouse_id, district_id);
 	//printf("address of d is %p\n",d);
@@ -172,7 +172,7 @@ int64_t TPCCTables::stockLevel(TM_ARGDECL int64_t warehouse_id, int64_t district
   // }
   TM_END();
   
-  printf("stocklevel returned %d\n", x);
+  // printf("stocklevel returned %d\n", x);
   return x;
   // printf("Stocklevel ended. numFinds=%d\n", numFinds);
   //TM_THREAD_EXIT();
