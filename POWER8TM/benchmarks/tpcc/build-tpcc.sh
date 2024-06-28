@@ -39,6 +39,8 @@ cp ../../backends/$backend/Makefile .
 cp ../../backends/$backend/Makefile.flags .
 cp ../../backends/$backend/Defines.common.mk .
 
+# if pstm, make sure you run make in
+# ../../backends/spht/deps/tinystm/
 
 if [[ $backend == spht* || $backend == pstm ]] ; then
     rm lib/rdtsc.h

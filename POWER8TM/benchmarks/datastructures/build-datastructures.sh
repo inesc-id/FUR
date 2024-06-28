@@ -9,6 +9,8 @@ fi
 
 backend=$1  # e.g.: herwl
 
+# if pstm, make sure you run make in
+# ../../backends/spht/deps/tinystm/
 
 htm_retries=10
 rot_retries=10
