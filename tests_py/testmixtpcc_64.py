@@ -10,14 +10,13 @@ if __name__ == "__main__":
   params.set_params("-m", [64]) # max nb warehouses (put the same as -w)
   params.set_params("-t", [20])
   
+  data_folder = "datamixtpcc_64"
 
-  params.set_params("-s", [0], True)
-  params.set_params("-o", [100], True)
-  params.set_params("-p", [0], True)
-  params.set_params("-r", [0], True)
+  params.set_params("-s", [25], True)   
   params.set_params("-d", [0], True)
-
-  data_folder = "data-tpcc-orderstatus"
+  params.set_params("-o", [25], True)
+  params.set_params("-p", [25], True)
+  params.set_params("-r", [25], True)
 
   params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 28, 32, 40, 48, 56, 64])
 
@@ -29,7 +28,7 @@ if __name__ == "__main__":
    "../POWER8TM/benchmarks/tpcc",
    "../POWER8TM/benchmarks/tpcc",
     # "../POWER8TM/benchmarks/tpcc",
-    "../power8tm-pisces/benchmarks/tpcc",
+    # "../power8tm-pisces/benchmarks/tpcc",
     # "../POWER8TM/benchmarks/tpcc",
 #     "../POWER8TM/benchmarks/tpcc",
   ]
@@ -45,7 +44,7 @@ if __name__ == "__main__":
   #  "spht-dumbo-readers",
    "spht",
   #  "pstm",
-   "pisces",
+  #  "pisces",
   #  "psi",
     # "htm-sgl",
     # "htm-sgl-sr",
