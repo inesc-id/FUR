@@ -436,27 +436,13 @@ outerLoop:
 ret:
 
 if (readonly_tx) {
-  MEASURE_INC(countROCommitPhases);
+  // MEASURE_INC(countROCommitPhases);
 } else {
   uint64_t ts2;
   MEASURE_TS(ts2);
-  INC_PERFORMANCE_COUNTER(timeAfterTXTS1, ts2, dur_commit_time);
-  MEASURE_INC(countUpdCommitPhases);
+  INC_PERFORMANCE_COUNTER(timeFlushTS2, ts2, dur_commit_time);
+  // MEASURE_INC(countUpdCommitPhases);
 }
-
-#ifdef DETAILED_BREAKDOWN_PROFILING
-  if (!is_readonly_tx) {
-    uint64_t ts2;
-    MEASURE_TS(ts2);
-
-    int c = upd_after_commit_count[threadId];
-    if (c < MAX_PROFILE_COUNT) {
-      upd_after_commit_duration[threadId][c] = ts2 - timeAfterTXTS1;
-      upd_log_flush_duration[threadId][c] = timeFlushTS2 - timeFlushTS1;
-      upd_after_commit_count[threadId]++;
-    }
-  }
-#endif
 
   
 }
