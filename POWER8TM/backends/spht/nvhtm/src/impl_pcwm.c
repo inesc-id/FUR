@@ -436,12 +436,12 @@ outerLoop:
 ret:
 
 if (readonly_tx) {
-  // MEASURE_INC(countROCommitPhases);
+  MEASURE_INC(countROCommitPhases);
 } else {
   uint64_t ts2;
   MEASURE_TS(ts2);
   INC_PERFORMANCE_COUNTER(timeFlushTS2, ts2, dur_commit_time);
-  // MEASURE_INC(countUpdCommitPhases);
+  MEASURE_INC(countUpdCommitPhases);
 }
 
   
