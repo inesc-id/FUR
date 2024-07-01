@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 from typing import Callable, Optional, Tuple
+import json
 
 markers = [
   ",",
@@ -98,6 +99,8 @@ class LinesPlot:
     datasets_idx = {}
     plots_idx = {}
     stacked_bar_idx = {}
+    k = 0
+    cmap = plt.cm.get_cmap("Paired", 20)
     for idx,d in enumerate(fix_dataset):
       # breakpoint()
       if d.name in filter_out_backends:
@@ -107,11 +110,21 @@ class LinesPlot:
       for s_title, ss in d.y_stack.items():
         plots_idx[s_title[0]] = j
         j += 1
-        k = 0
         for sn, sy in ss.items():
-          cmap = plt.cm.get_cmap("Paired", len(ss)+5)
-          stacked_bar_idx[sn] = {"idx": k, "color": cmap(k)}
-          k += 1
+          if sn not in stacked_bar_idx:
+            k += 1
+            c = cmap(k)
+            stacked_bar_idx[sn] = {"idx": k, "color": cmap(k)}
+    for s1 in stacked_bar_idx: ### colors work around
+      for s2 in stacked_bar_idx:
+        if s1 == s2:
+          continue
+        c1 = stacked_bar_idx[s1]["color"]
+        c2 = stacked_bar_idx[s2]["color"]
+        if sum(np.abs(np.array(c1)-np.array(c2))) < 0.01:
+          stacked_bar_idx[s2]["color"] = (c2[0]*0.7, c2[1]*0.3, c2[2]*0.9, c2[3])
+
+    # print(json.dumps(stacked_bar_idx, indent=2))
 
     # fig, axs = plt.subplots(figsize=(f[0]*nb_stacks, f[1]), nrows=1, ncols=nb_stacks)
     # i = 0
@@ -150,6 +163,7 @@ class LinesPlot:
             tripleF.sort(key=lambda elem : elem[0]) # sort by X
             x_array, y_array, y_error = zip(*tripleF)
           except:
+            # print(sn, f"idx={i} backend={d.name} {sy}")
             # breakpoint()
             continue
           xs = np.array([k for k in range(len(x_array))]) + i*width + i*offset
@@ -183,6 +197,7 @@ class LinesPlot:
       axs.set_ylim(top=top+top*top_extra, bottom=0)
 
       # plt.tight_layout()
+      # print(f"stack_{idx}_{self.filename}")
       plt.savefig(f"stack_{idx}_{self.filename}")
       fig.clear()
       plt.close()
