@@ -6,30 +6,30 @@ from plot import LinesPlot, BackendDataset
 
 if __name__ == "__main__":
   params = BenchmarkParameters(["-w", "-m", "-s", "-d", "-o", "-p", "-r", "-n", "-t"])
-  params.set_params("-w", [128]) # nb warehouses
-  params.set_params("-m", [128]) # max nb warehouses (put the same as -w)
+  params.set_params("-w", [8]) # nb warehouses
+  params.set_params("-m", [8]) # max nb warehouses (put the same as -w)
   params.set_params("-t", [1])
   
   data_folder = "dataspht"
 
-  params.set_params("-s", [20], True)   
+  params.set_params("-s", [0], True)   
   params.set_params("-d", [0], True)
-  params.set_params("-o", [20], True)
-  params.set_params("-p", [30], True)
-  params.set_params("-r", [30], True)
+  params.set_params("-o", [0], True)
+  params.set_params("-p", [100], True)
+  params.set_params("-r", [0], True)
 
 #   params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 28, 32, 40, 48, 56, 64])
-  params.set_params("-n", [4, 8, 16])
+  params.set_params("-n", [4, 8, 16, 32])
 
   nb_samples = 1
   locations = [
    "../POWER8TM/benchmarks/tpcc",
-#    "../POWER8TM/benchmarks/tpcc",
+   "../POWER8TM/benchmarks/tpcc",
 #    "../POWER8TM/benchmarks/tpcc",
 #    "../POWER8TM/benchmarks/tpcc",
 #    "../POWER8TM/benchmarks/tpcc",
     # "../POWER8TM/benchmarks/tpcc",
-    "../power8tm-pisces/benchmarks/tpcc",
+    # "../power8tm-pisces/benchmarks/tpcc",
     # "../POWER8TM/benchmarks/tpcc",
 #     "../POWER8TM/benchmarks/tpcc",
   ]
@@ -44,8 +44,9 @@ if __name__ == "__main__":
   #  "psi-strong-bug",
   #  "spht-dumbo-readers",
    "spht",
+   "spht-log-linking",
   #  "pstm",
-   "pisces",
+  #  "pisces",
   #  "psi",
     # "htm-sgl",
     # "htm-sgl-sr",

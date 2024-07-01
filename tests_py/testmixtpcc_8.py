@@ -12,11 +12,11 @@ if __name__ == "__main__":
   
   
 
-  params.set_params("-s", [25], True)   
-  params.set_params("-d", [0], True)
-  params.set_params("-o", [25], True)
-  params.set_params("-p", [25], True)
-  params.set_params("-r", [25], True)
+  params.set_params("-s", [20], True)   
+  params.set_params("-d", [20], True)
+  params.set_params("-o", [20], True)
+  params.set_params("-p", [20], True)
+  params.set_params("-r", [20], True)
 
   data_folder = "datamixtpcc_8"
 

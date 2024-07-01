@@ -43,16 +43,31 @@ static volatile __thread uint64_t timeWaiting = 0;
 static volatile __thread uint64_t timeFlushing = 0;
 static volatile __thread uint64_t timeScanning = 0;
 static volatile __thread uint64_t timeTX_upd = 0;
+static volatile __thread uint64_t timeTX_ro = 0;
+static volatile __thread uint64_t ro_durability_wait_time = 0;
+static volatile __thread uint64_t dur_commit_time = 0;
+
 
 static volatile __thread uint64_t countCommitPhases = 0;
 
 static volatile uint64_t incCommitsPhases = 0;
+static volatile uint64_t incROCommitsPhases = 0;
 static volatile uint64_t incTimeTotal = 0;
 static volatile uint64_t incAfterTx = 0;
 static volatile uint64_t incWaiting = 0;
 static volatile uint64_t incFlushing = 0;
 static volatile uint64_t incScanning = 0;
 static volatile uint64_t incTXTime_upd = 0;
+static volatile uint64_t incTXTime_ro = 0;
+static volatile uint64_t inc_ro_durability_wait_time = 0;
+static volatile uint64_t inc_dur_commit_time = 0;
+
+
+__thread int readonly_tx2;
+
+static volatile __thread uint64_t countUpdCommitPhases = 0;
+static volatile __thread uint64_t countROCommitPhases = 0;
+
 
 typedef struct {
   uint64_t a[4];
@@ -72,28 +87,44 @@ void install_bindings_pcwm2()
 
   wait_commit_fn = wait_commit_pcwm2;
 }
-
 void state_gather_profiling_info_pcwm2(int threadId)
 {
-  __sync_fetch_and_add(&incCommitsPhases, countCommitPhases);
+  __sync_fetch_and_add(&incCommitsPhases, countUpdCommitPhases);
+  __sync_fetch_and_add(&incROCommitsPhases, countROCommitPhases);
+  // __sync_fetch_and_add(&incNbSamples, nbSamplesDone);
   __sync_fetch_and_add(&incTimeTotal, timeTotal);
   __sync_fetch_and_add(&incAfterTx, timeAfterTXSuc);
   __sync_fetch_and_add(&incWaiting, timeWaiting);
   __sync_fetch_and_add(&incFlushing, timeFlushing);
-  __sync_fetch_and_add(&incScanning, timeScanning);
   __sync_fetch_and_add(&incTXTime_upd, timeTX_upd);
+  __sync_fetch_and_add(&incTXTime_ro, timeTX_ro);
+  __sync_fetch_and_add(&inc_dur_commit_time, dur_commit_time);
+  __sync_fetch_and_add(&inc_ro_durability_wait_time, ro_durability_wait_time);
+  __sync_fetch_and_add(&timeSGL_global, timeSGL);
   __sync_fetch_and_add(&timeAbortedTX_global, timeAbortedUpdTX);
   __sync_fetch_and_add(&timeAbortedTX_global, timeAbortedROTX);
 
+  stats_array[threadId].htm_commits = countUpdCommitPhases + countROCommitPhases;
+  stats_array[threadId].flush_time = timeFlushing;
+  stats_array[threadId].tx_time_upd_txs = timeTX_upd;
+  stats_array[threadId].tx_time_ro_txs = timeTX_ro;
+  stats_array[threadId].dur_commit_time = dur_commit_time;
+  stats_array[threadId].readonly_durability_wait_time = ro_durability_wait_time;
+  stats_array[threadId].time_aborted_upd_txs = timeAbortedUpdTX;
+  stats_array[threadId].time_aborted_ro_txs = timeAbortedROTX;
 
   timeSGL = 0;
   timeAbortedUpdTX = 0;
   timeAbortedROTX = 0;
   timeTX_upd = 0;
+  timeTX_ro = 0;
+  dur_commit_time = 0;
+  ro_durability_wait_time = 0;
   timeAfterTXSuc = 0;
   timeWaiting = 0;
   timeTotal = 0;
-  countCommitPhases = 0;
+  countUpdCommitPhases = 0;
+  countROCommitPhases = 0;
 }
 
 void state_fprintf_profiling_info_pcwm2(char *filename)
@@ -136,10 +167,7 @@ void on_before_htm_begin_pcwm2(int threadId, int ro)
   write_log_thread = &(P_write_log[threadId][0]);
   
   writeLogEnd = writeLogStart = G_next[threadId].log_ptrs.write_log_next;
-
   fetch_log(threadId);
-
-   __atomic_store_n(&gs_ts_array[threadId].pcwm.isUpdate, 0, __ATOMIC_RELEASE);
 
   if (log_replay_flags & LOG_REPLAY_CONCURRENT) {
     // check space in the log
@@ -174,12 +202,19 @@ void on_before_htm_begin_pcwm2(int threadId, int ro)
   // __atomic_store_n(&gs_ts_array[threadId].pcwm.logPos, writeLogEnd, __ATOMIC_RELEASE);
   // __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, rdtsc(), __ATOMIC_RELEASE);
 
+  if (gs_ts_array[threadId].pcwm.isUpdate != 0)
+    __atomic_store_n(&gs_ts_array[threadId].pcwm.isUpdate, 0, __ATOMIC_RELEASE);
+  readonly_tx2 = ro;
+  if (!readonly_tx2)
+    __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, rdtsc(), __ATOMIC_RELEASE);
+
   writeLogEnd = (writeLogEnd + 1) & (gs_appInfo->info.allocLogSize - 1);
 }
 
 void on_htm_abort_pcwm2(int threadId)
 {
-  __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, rdtsc(), __ATOMIC_RELEASE);
+  if (!readonly_tx2)
+    __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, rdtsc(), __ATOMIC_RELEASE);
 }
 
 void on_before_htm_write_8B_pcwm2(int threadId, void *addr, uint64_t val)
@@ -277,9 +312,8 @@ static inline void smart_close_log_pcwm(uint64_t marker, uint64_t *marker_pos)
 
 void on_after_htm_commit_pcwm2(int threadId)
 {
-  INC_PERFORMANCE_COUNTER(timeTotalTS1, timeAfterTXTS1, timeTX_upd);
-  int didTheFlush = 0;
-  __m256i storeStableData;
+ 
+ __m256i storeStableData;
 
   int _prevThreadsArray[gs_appInfo->info.nbThreads];
   int _logPosArray[gs_appInfo->info.nbThreads];
@@ -289,6 +323,24 @@ void on_after_htm_commit_pcwm2(int threadId)
   uint64_t advertiseEntry;
   // uint64_t advertiseEntryVal;
 
+  int didTheFlush = 0;
+
+
+if (writeLogStart == writeLogEnd)
+    INC_PERFORMANCE_COUNTER(timeTotalTS1, timeAfterTXTS1, ro_durability_wait_time);
+  else
+    INC_PERFORMANCE_COUNTER(timeTotalTS1, timeAfterTXTS1, timeTX_upd);
+
+  
+  // gs_ts_array[threadId].pcwm.ts = readClockVal; // currently has the TS of begin
+  // tells the others my TS taken within the TX
+  // TODO: remove the atomic
+  if (!readonly_tx2) 
+    __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, readClockVal, __ATOMIC_RELEASE);
+
+  // printf("[%i] did TX=%lx\n", threadId, readClockVal);
+
+  
   nbPrevThreads = 0;
   prevThreadsArray = _prevThreadsArray;
   logPosArray = _logPosArray;
@@ -296,9 +348,18 @@ void on_after_htm_commit_pcwm2(int threadId)
   TSArray = _TSArray;
   // prevTSArray = _prevTSArray;
 
-  // gs_ts_array[threadId].pcwm.ts = readClockVal; // currently has the TS of begin
-  // tells the others my TS taken within the TX
-  __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, readClockVal, __ATOMIC_RELEASE);
+if (writeLogStart == writeLogEnd) {
+    /* Read-only transaction is about to return */
+
+    if (!readonly_tx2)
+    // tells the others to move on
+      __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, onesBit63(readClockVal), __ATOMIC_RELEASE);
+
+    /* RO durability wait (bug fix by Joao)*/
+    RO_wait_for_durable_reads2(threadId, readClockVal);
+
+    goto ret;
+  }
   
   // TODO: check if it does not break anything
   if (((writeLogStart + 1) & (gs_appInfo->info.allocLogSize - 1)) == writeLogEnd) {
@@ -454,7 +515,48 @@ ret_update:
   // place the next ptr after the TS
   G_next[threadId].log_ptrs.write_log_next = (writeLogEnd + 1) & (gs_appInfo->info.allocLogSize - 1);
 ret:
-  MEASURE_INC(countCommitPhases);
+  
+  if (readonly_tx2) {
+  MEASURE_INC(countROCommitPhases);
+} else {
+  uint64_t ts2;
+  MEASURE_TS(ts2);
+  INC_PERFORMANCE_COUNTER(timeFlushTS2, ts2, dur_commit_time);
+  MEASURE_INC(countUpdCommitPhases);
+}
+
+}
+
+
+
+void RO_wait_for_durable_reads2(int threadId, uint64_t myPreCommitTS)
+{
+  uint64_t ts1, ts2;
+  uint64_t otherTS;
+
+MEASURE_TS(ts1);
+  
+  for (int i = 0; i < gs_appInfo->info.nbThreads; i++) {
+    if (i!=threadId) {
+      do {
+        otherTS = __atomic_load_n(&(gs_ts_array[i].pcwm.ts), __ATOMIC_ACQUIRE);
+      }
+      while (otherTS > 0 && otherTS < myPreCommitTS); 
+      //TO DO Joao: The first condition above is just a quick fix since I didn't know how to init pcwm.ts to +infinite
+    }
+  }
+
+MEASURE_TS(ts2);
+INC_PERFORMANCE_COUNTER(ts1, ts2, ro_durability_wait_time);
+
+#ifdef DETAILED_BREAKDOWN_PROFILING
+  int c = ro_durability_wait_count[threadId];
+  if (c < MAX_PROFILE_COUNT) {
+    ro_durability_wait_duration[threadId][c] = ts2 - ts1;
+    ro_durability_wait_count[threadId]++;
+  }
+#endif
+
 }
 
 void wait_commit_pcwm2(int threadId)
