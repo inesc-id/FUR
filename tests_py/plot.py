@@ -34,7 +34,7 @@ class BackendDataset:
     self.y_label = y_label
     self.y_stack = {}
 
-  def add_stack(self, title, y_label, y_fns:dict[str,Callable], filter_x_fn:Optional[Callable[[Tuple[float,float,float]],bool]] = None, is_percent=False, fix_100=False, label_size=0):
+  def add_stack(self, title, y_label, y_fns:dict[str,Callable], filter_x_fn:Optional[Callable[[Tuple[float,float,float]],bool]] = None, is_percent=False, fix_100=False, label_size=0, filter_out_backends=[]):
     """
     Adds a stack to the stack plot.
     You can add an optional function fn((x,y,std_dev))->bool to discard points (when returning False).
@@ -53,7 +53,7 @@ class LinesPlot:
     self.figsize = figsize
     self.colors = colors
 
-  def plot(self, datasets:list[BackendDataset]):
+  def plot(self, datasets:list[BackendDataset], filter_out_backends=[]):
     fig, ax = plt.subplots(figsize=self.figsize, nrows=1, ncols=1)
     map_c = {}
     cmap = plt.cm.get_cmap("Paired", len(datasets)+5)
@@ -61,6 +61,8 @@ class LinesPlot:
     for i,d in enumerate(datasets):
       map_c[d.name] = cmap(i)
     for i,d in enumerate(datasets):
+      if d.name in filter_out_backends:
+        continue
       z = zip(d.x_param.transpose(), d.y_param.transpose())
       triple = [(np.average(x),np.average(y),np.std(y)) for x,y in z]
       triple.sort(key=lambda elem : elem[0]) # sort by X
@@ -79,10 +81,12 @@ class LinesPlot:
     fig.clear()
     plt.close()
 
-  def plot_stack(self, datasets:list[BackendDataset]):
+  def plot_stack(self, datasets:list[BackendDataset], filter_out_backends=[]):
     nb_stacks = 0
     fix_dataset = []
     for d in datasets:
+      if d.name in filter_out_backends:
+        continue
       l = len(d.y_stack)
       if l > nb_stacks:
         nb_stacks = l
@@ -96,6 +100,8 @@ class LinesPlot:
     stacked_bar_idx = {}
     for idx,d in enumerate(fix_dataset):
       # breakpoint()
+      if d.name in filter_out_backends:
+        continue
       datasets_idx[d.name] = idx
       j = 0
       for s_title, ss in d.y_stack.items():

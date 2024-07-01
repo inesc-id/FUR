@@ -55,6 +55,7 @@ class Parser:
 
     o = {}
     with open(file, "r") as f:
+      print(file)
       for l in f.readlines():
         for k,v in catch_param.items():
           m = v.match(l)
