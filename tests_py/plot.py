@@ -139,15 +139,19 @@ class LinesPlot:
           i = datasets_idx[d.name]
           # print(d.name, sn, "is_percent", is_percent)
           # j = plots_idx[s_title[0]]
-          if is_percent:
-            triple = [(np.average(x),np.average(y*100),np.std(y*100)) for x,y in zip(d.x_param.transpose(), sy.transpose())]
-          else:
-            triple = [(np.average(x),np.average(y),np.std(y)) for x,y in zip(d.x_param.transpose(), sy.transpose())]
-          tripleF = triple
-          if not d.filter_x_fn is None:
-            tripleF = list(filter(d.filter_x_fn, triple))
-          tripleF.sort(key=lambda elem : elem[0]) # sort by X
-          x_array, y_array, y_error = zip(*tripleF)
+          try:
+            if is_percent:
+              triple = [(np.average(x),np.average(y*100),np.std(y*100)) for x,y in zip(d.x_param.transpose(), sy.transpose())]
+            else:
+              triple = [(np.average(x),np.average(y),np.std(y)) for x,y in zip(d.x_param.transpose(), sy.transpose())]
+            tripleF = triple
+            if not d.filter_x_fn is None:
+              tripleF = list(filter(d.filter_x_fn, triple))
+            tripleF.sort(key=lambda elem : elem[0]) # sort by X
+            x_array, y_array, y_error = zip(*tripleF)
+          except:
+            # breakpoint()
+            continue
           xs = np.array([k for k in range(len(x_array))]) + i*width + i*offset
           ys = np.array(y_array)
           y_err = np.array(y_error)
