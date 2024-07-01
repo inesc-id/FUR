@@ -61,7 +61,7 @@ struct Item {
     float i_price;
     char i_name[MAX_NAME+1];
     char i_data[MAX_DATA+1];
-};
+} __attribute__((packed, aligned(8)));
 
 struct Warehouse {
     static const float MIN_TAX = 0;
@@ -82,7 +82,7 @@ struct Warehouse {
     char w_city[Address::MAX_CITY+1];
     char w_state[Address::STATE+1];
     char w_zip[Address::ZIP+1];
-};
+} __attribute__((packed, aligned(8)));
 
 struct District {
     static const float MIN_TAX = 0;
@@ -97,6 +97,7 @@ struct District {
     int64_t d_w_id;
     int64_t d_next_o_id; /* JOAO 28/june/2024 to avoid bug due to Pisces' bad float handling*/
     float d_tax;
+
     float d_ytd;
     char d_name[MAX_NAME+1];
     char d_street_1[Address::MAX_STREET+1];
@@ -105,7 +106,7 @@ struct District {
     char d_state[Address::STATE+1];
     char d_zip[Address::ZIP+1];
 
-};
+} __attribute__((packed, aligned(8)));
 
 struct Stock {
     static const int MIN_QUANTITY = 10;
@@ -123,7 +124,7 @@ struct Stock {
     int64_t s_remote_cnt;
     char s_dist[District::NUM_PER_WAREHOUSE][DIST+1];
     char s_data[MAX_DATA+1];
-};
+} __attribute__((packed, aligned(8)));
 
 // YYYY-MM-DD HH:MM:SS This is supposed to be a date/time field from Jan 1st 1900 -
 // Dec 31st 2100 with a resolution of 1 second. See TPC-C 1.3.1.
@@ -170,7 +171,7 @@ struct Customer {
     char c_since[DATETIME_SIZE+1];
     char c_credit[CREDIT+1];
     char c_data[MAX_DATA+1];
-};
+} __attribute__((packed, aligned(8)));
 
 struct Order {
     static const int MIN_CARRIER_ID = 1;
@@ -194,7 +195,7 @@ struct Order {
     int64_t o_ol_cnt;
     int64_t o_all_local;
     char o_entry_d[DATETIME_SIZE+1];
-};
+ } __attribute__((packed, aligned(8)));
 
 struct OrderLine {
     static const int MIN_I_ID = 1;
@@ -215,7 +216,7 @@ struct OrderLine {
     float ol_amount;
     char ol_delivery_d[DATETIME_SIZE+1];
     char ol_dist_info[Stock::DIST+1];
-};
+} __attribute__((packed, aligned(8)));
 
 struct NewOrder {
     static const int INITIAL_NUM_PER_DISTRICT = 900;
@@ -223,7 +224,7 @@ struct NewOrder {
     int64_t no_w_id;
     int64_t no_d_id;
     int64_t no_o_id;
-};
+} __attribute__((packed, aligned(8)));
 
 struct History {
     static const int MIN_DATA = 12;
@@ -238,7 +239,7 @@ struct History {
     float h_amount;
     char h_date[DATETIME_SIZE+1];
     char h_data[MAX_DATA+1];
-};
+} __attribute__((packed, aligned(8)));
 
 // Data returned by the "order status" transaction.
 struct OrderStatusOutput {
@@ -267,13 +268,13 @@ struct OrderStatusOutput {
 
     // From order
     char o_entry_d[DATETIME_SIZE+1];
-};
+} __attribute__((packed, aligned(8)));
 
 struct NewOrderItem {
     int64_t i_id;
     int64_t ol_supply_w_id;
     int64_t ol_quantity;
-};
+} __attribute__((packed, aligned(8)));
 
 struct NewOrderOutput {
     // Zero initialize everything. This avoids copying uninitialized data around when
@@ -306,7 +307,7 @@ struct NewOrderOutput {
         float ol_amount;
         char brand_generic;
         char i_name[Item::MAX_NAME+1];
-    };
+    } __attribute__((packed, aligned(8)));
 
     std::vector<ItemInfo> items;
     char c_last[Customer::MAX_LAST+1];
@@ -315,7 +316,7 @@ struct NewOrderOutput {
     static const int MAX_STATUS = 25;
     static const char INVALID_ITEM_STATUS[];
     char status[MAX_STATUS+1];
-};
+} __attribute__((packed, aligned(8)));
 
 struct PaymentOutput {
     // TPC-C 2.5.3.4 specifies these output fields
@@ -346,12 +347,12 @@ struct PaymentOutput {
     char c_since[DATETIME_SIZE+1];
     char c_credit[Customer::CREDIT+1];
     char c_data[Customer::MAX_DATA+1];
-};
+} __attribute__((packed, aligned(8)));
 
 struct DeliveryOrderInfo {
     int64_t d_id;
     int64_t o_id;
-};
+} __attribute__((packed, aligned(8)));
 
 // Contains data required to undo transactions. Note that only new order, payment, and delivery
 // update the database. This structure only contains information to undo these transactions.
