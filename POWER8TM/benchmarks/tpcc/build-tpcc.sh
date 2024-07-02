@@ -42,7 +42,7 @@ cp ../../backends/$backend/Defines.common.mk .
 if [[ $backend == spht* || $backend == pstm ]] ; then
     rm lib/rdtsc.h
     mkdir lib/
-    bash ../../backends/$backend/copy_spht.sh $backend ./lib
+    bash ../../backends/$backend/copy_spht.sh $backend ./lib ./code
 fi
 cd code;
 rm tpcc
