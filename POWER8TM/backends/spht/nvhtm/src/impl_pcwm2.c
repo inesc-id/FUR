@@ -393,6 +393,8 @@ if (!readonly_tx)
   MEASURE_TS(timeScanTS1);
   scan_others(threadId);
   MEASURE_TS(timeScanTS2);
+  __atomic_store_n(&write_log_thread[writeLogStart], readClockVal, __ATOMIC_RELEASE);
+  INC_PERFORMANCE_COUNTER(timeScanTS1, timeScanTS2, timeScanning);
 
 MEASURE_TS(timeFlushTS1);
   // int prevWriteLogEnd = writeLogEnd;
@@ -417,8 +419,6 @@ MEASURE_TS(timeFlushTS1);
   /** OLD */
   // -------------------
 
-  __atomic_store_n(&write_log_thread[writeLogStart], readClockVal, __ATOMIC_RELEASE);
-  INC_PERFORMANCE_COUNTER(timeScanTS1, timeScanTS2, timeScanning);
   
 // at this point you know the earliest tx that precedes you and that has already durably committed..
 // there may still be txs preceding you that have not durably committed yet
