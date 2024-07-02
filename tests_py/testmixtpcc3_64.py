@@ -12,23 +12,24 @@ if __name__ == "__main__":
   
   data_folder = "datamixtpcc3_64"
 
-  params.set_params("-s", [20], True)   
-  params.set_params("-d", [0], True)
-  params.set_params("-o", [20], True)
+  params.set_params("-s", [15], True)   
+  params.set_params("-d", [10], True)
+  params.set_params("-o", [15], True)
   params.set_params("-p", [30], True)
   params.set_params("-r", [30], True)
 
-  params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 28, 32, 40, 48, 56, 64])
+  # params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 28, 32, 40, 48, 56, 64])
+  params.set_params("-n", [1, 4, 8, 16, 32, 64])
 
-  nb_samples = 3
+  nb_samples = 1
   locations = [
    "../POWER8TM/benchmarks/tpcc",
    "../POWER8TM/benchmarks/tpcc",
    "../POWER8TM/benchmarks/tpcc",
    "../POWER8TM/benchmarks/tpcc",
    "../POWER8TM/benchmarks/tpcc",
-    # "../POWER8TM/benchmarks/tpcc",
-    # "../power8tm-pisces/benchmarks/tpcc",
+    "../POWER8TM/benchmarks/tpcc",
+    "../power8tm-pisces/benchmarks/tpcc",
     # "../POWER8TM/benchmarks/tpcc",
 #     "../POWER8TM/benchmarks/tpcc",
   ]
@@ -43,8 +44,9 @@ if __name__ == "__main__":
   #  "psi-strong-bug",
   #  "spht-dumbo-readers",
    "spht",
+   "spht-log-linking",
   #  "pstm",
-  #  "pisces",
+   "pisces",
   #  "psi",
     # "htm-sgl",
     # "htm-sgl-sr",
