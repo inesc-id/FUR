@@ -134,14 +134,14 @@ if __name__ == "__main__":
       # Adds a bar plot for the profile information.
       def checkIfUpdCommitStats(e, attr):
         if (e["total-upd-tx-time"] == 0).any():
-          return 0
+          return [0 for i in range(len(e))]
         else:
           return (e[attr]/e["total-upd-tx-time"])
       def checkIfAbortStats(e, attr):
         if (e["total-abort-upd-tx-time"] == 0).any():
-          return 0
+          return [0 for i in range(len(e))]
         if (e["total-upd-tx-time"] == 0).any():
-          return 0
+          return [0 for i in range(len(e))]
         else:
           return (e[attr]/e["total-upd-tx-time"])
       ds.add_stack("Latency profile (update txs)", "Overhead over time processing txs.", {
@@ -155,14 +155,14 @@ if __name__ == "__main__":
       # Adds a bar plot for the profile information.
       def checkIfROCommitStats(e, attr):
         if (e["total-ro-tx-time"] == 0).any():
-          return 0
+          return [0 for i in range(len(e))]
         else:
           return (e[attr]/e["total-ro-tx-time"])
       def checkIfROAbortStats(e, attr):
         if (e["total-abort-ro-tx-time"] == 0).any():
-          return 0
+          return [0 for i in range(len(e))]
         if (e["total-ro-tx-time"] == 0).any():
-          return 0
+          return [0 for i in range(len(e))]
         else:
           return (e[attr]/e["total-ro-tx-time"])
       ds.add_stack("Latency profile (read-only txs)", "Overhead over time processing txs", {
