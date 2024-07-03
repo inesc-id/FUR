@@ -26,8 +26,8 @@ if __name__ == "__main__":
    "../POWER8TM/benchmarks/tpcc",
    "../POWER8TM/benchmarks/tpcc",
    "../POWER8TM/benchmarks/tpcc",
-   "../POWER8TM/benchmarks/tpcc",
-   "../POWER8TM/benchmarks/tpcc",
+  #  "../POWER8TM/benchmarks/tpcc",
+  #  "../POWER8TM/benchmarks/tpcc",
     "../power8tm-pisces/benchmarks/tpcc",
     # "../POWER8TM/benchmarks/tpcc",
 #     "../POWER8TM/benchmarks/tpcc",
@@ -35,14 +35,10 @@ if __name__ == "__main__":
   # The backend name goes here (don't forget to match the position in the
   # "backends" list with the position in the "locations" list)
   backends = [
-   "psi",
-   "psi-strong",
-   "htm-sgl",
-   "si-htm",
-   "spht",
-    "pisces",
-  #  "psi-bug",
-  #  "psi-strong-bug",
+   "psi-bug",
+   "psi-strong-bug",
+   "spht-log-linking",
+   "pisces",
   #  "spht-dumbo-readers",
   #  "pstm",
   #  "psi",
@@ -82,7 +78,7 @@ if __name__ == "__main__":
           backend,
           f"{data_folder}/{backend}-s{sample}"
         )
-      # data.run_sample(params) # TODO: not running samples
+      data.run_sample(params) # TODO: not running samples
       parser = Parser(f"{data_folder}/{backend}-s{sample}")
       parser.parse_all(f"{data_folder}/{backend}-s{sample}.csv")
     lst_each = params.list_for_each_param(["-s", "-d", "-o", "-p", "-r"])

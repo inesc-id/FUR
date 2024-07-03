@@ -12,26 +12,24 @@ if __name__ == "__main__":
   
   data_folder = "datamixtpcc_64"
 
-  params.set_params("-s", [25], True)   
-  params.set_params("-d", [25], True)
-  params.set_params("-o", [25], True)
-  params.set_params("-p", [25], True)
-  params.set_params("-r", [25], True)
+  params.set_params("-s", [20], True)   
+  params.set_params("-d", [20], True)
+  params.set_params("-o", [20], True)
+  params.set_params("-p", [20], True)
+  params.set_params("-r", [20], True)
 
-  # params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 28, 32, 40, 48, 56, 64])
-  params.set_params("-n", [1, 4, 8, 16, 32, 64])
+  params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 28, 32, 40, 48, 56, 64])
+  # params.set_params("-n", [1, 4, 8, 16, 32, 64])
 
-  nb_samples = 1
+  nb_samples = 3
   locations = [
-   "../POWER8TM/benchmarks/tpcc",
-   "../POWER8TM/benchmarks/tpcc",
-   "../POWER8TM/benchmarks/tpcc",
-   "../POWER8TM/benchmarks/tpcc",
-   "../POWER8TM/benchmarks/tpcc",
+    "../POWER8TM/benchmarks/tpcc",
+    "../POWER8TM/benchmarks/tpcc",
+    "../POWER8TM/benchmarks/tpcc",
+    "../POWER8TM/benchmarks/tpcc",
+    "../POWER8TM/benchmarks/tpcc",
     "../POWER8TM/benchmarks/tpcc",
     "../power8tm-pisces/benchmarks/tpcc",
-    # "../POWER8TM/benchmarks/tpcc",
-#     "../POWER8TM/benchmarks/tpcc",
   ]
   # The backend name goes here (don't forget to match the position in the
   # "backends" list with the position in the "locations" list)
@@ -40,13 +38,13 @@ if __name__ == "__main__":
    "psi-strong",
    "htm-sgl",
    "si-htm",
-  #  "psi-bug",
-  #  "psi-strong-bug",
-  #  "spht-dumbo-readers",
    "spht",
    "spht-log-linking",
-  #  "pstm",
    "pisces",
+  #  "psi-bug",
+  #  "psi-strong-bug",
+     #  "pstm",
+   # #  "spht-dumbo-readers",
   #  "psi",
     # "htm-sgl",
     # "htm-sgl-sr",
