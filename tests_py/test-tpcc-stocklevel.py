@@ -19,10 +19,15 @@ if __name__ == "__main__":
 
   data_folder = "data-tpcc-stocklevel"
 
-  params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 28, 32, 40, 48, 56, 64])
+  #params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 28, 32, 40, 48, 56, 64])
+  # nb_samples = 3
 
-  nb_samples = 3
+  params.set_params("-n", [4, 8, 16, 32, 64])
+  nb_samples = 1
   locations = [
+   "../POWER8TM/benchmarks/tpcc",
+   "../POWER8TM/benchmarks/tpcc",
+   "../POWER8TM/benchmarks/tpcc",
    "../POWER8TM/benchmarks/tpcc",
    "../POWER8TM/benchmarks/tpcc",
    "../POWER8TM/benchmarks/tpcc",
@@ -35,9 +40,15 @@ if __name__ == "__main__":
   # The backend name goes here (don't forget to match the position in the
   # "backends" list with the position in the "locations" list)
   backends = [
+   "psi",
+   "psi-strong",
+  #  "htm-sgl",
+  #  "si-htm",
+   "spht",
+  #  "pisces",
    "psi-bug",
    "psi-strong-bug",
-   "spht-log-linking",
+   "spht-log-linking"
   #  "spht-dumbo-readers",
   #  "pstm",
   #  "psi",

@@ -196,7 +196,7 @@
       READ_TIMESTAMP(end_sus);\
       stats_array[q_args.tid].sus_time += end_sus - start_sus;\
       __TM_resume(); \
-      UPDATE_TS_STATE(NON_DURABLE);  /*JOAO: perf bug fix 25jun*/\
+      UPDATE_TS_STATE(NON_DURABLE); /*JOAO: perf bug fix 25jun*/\
       __TM_end(); \
       READ_TIMESTAMP(end_tx); \
       stats_array[q_args.tid].commit_time += end_tx - start_tx;\

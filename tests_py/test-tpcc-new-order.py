@@ -19,19 +19,20 @@ if __name__ == "__main__":
 
   data_folder = "data-tpcc-neworder"
 
-  params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 28, 32, 40, 48, 56, 64])
+  # params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 28, 32, 40, 48, 56, 64])
 
-  nb_samples = 3
+  params.set_params("-n", [4, 8, 16, 32, 64])
+  nb_samples = 1
   locations = [
-    "../POWER8TM/benchmarks/tpcc",
-    "../POWER8TM/benchmarks/tpcc",
-    "../POWER8TM/benchmarks/tpcc",
-    "../POWER8TM/benchmarks/tpcc",
-    "../POWER8TM/benchmarks/tpcc",
-    "../POWER8TM/benchmarks/tpcc",
-    "../POWER8TM/benchmarks/tpcc",
-    "../POWER8TM/benchmarks/tpcc",
-    "../power8tm-pisces/benchmarks/tpcc",
+   "../POWER8TM/benchmarks/tpcc",
+   "../POWER8TM/benchmarks/tpcc",
+   "../POWER8TM/benchmarks/tpcc",
+   "../POWER8TM/benchmarks/tpcc",
+   "../POWER8TM/benchmarks/tpcc",
+   "../POWER8TM/benchmarks/tpcc",
+  #  "../POWER8TM/benchmarks/tpcc",
+  #  "../POWER8TM/benchmarks/tpcc",
+  #   "../power8tm-pisces/benchmarks/tpcc",
     # "../POWER8TM/benchmarks/tpcc",
 #     "../POWER8TM/benchmarks/tpcc",
   ]
@@ -40,13 +41,13 @@ if __name__ == "__main__":
   backends = [
    "psi",
    "psi-strong",
-   "htm-sgl",
-   "si-htm",
+  #  "htm-sgl",
+  #  "si-htm",
    "spht",
-   "spht-log-linking",
+  #  "pisces",
    "psi-bug",
    "psi-strong-bug",
-   "pisces",
+   "spht-log-linking"
   #  "spht-dumbo-readers",
   #  "pstm",
   #  "psi",
