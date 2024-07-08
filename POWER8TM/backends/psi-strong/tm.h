@@ -195,10 +195,9 @@
       rmb(); \
       READ_TIMESTAMP(end_sus);\
       stats_array[q_args.tid].sus_time += end_sus - start_sus;\
+      UPDATE_TS_STATE(NON_DURABLE); /*JOAO: optimization 8jul*/ \
       __TM_resume(); \
-      /*UPDATE_TS_STATE(NON_DURABLE);*/ /*JOAO: perf bug fix 25jun*/ \
       __TM_end(); \
-      UPDATE_TS_STATE(NON_DURABLE); /*JOAO: perf bug fix 25jun*/ \
       READ_TIMESTAMP(end_tx); \
       stats_array[q_args.tid].commit_time += end_tx - start_tx;\
       /* flush_log_commit_marker( \

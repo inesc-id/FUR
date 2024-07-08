@@ -6,11 +6,7 @@ from plot import LinesPlot, BackendDataset
 
 if __name__ == "__main__":
   params = BenchmarkParameters(["-w", "-m", "-s", "-d", "-o", "-p", "-r", "-n", "-t"])
-  params.set_params("-w", [64]) # nb warehouses
-  params.set_params("-m", [64]) # max nb warehouses (put the same as -w)
-  params.set_params("-t", [20])
   
-
   params.set_params("-s", [0], True)
   params.set_params("-o", [0], True)
   params.set_params("-p", [0], True)
@@ -19,9 +15,14 @@ if __name__ == "__main__":
 
   data_folder = "data-tpcc-neworder"
 
-  # params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 28, 32, 40, 48, 56, 64])
+  params.set_params("-w", [64]) # nb warehouses
+  params.set_params("-m", [64]) # max nb warehouses (put the same as -w)
+  params.set_params("-t", [5])
 
-  params.set_params("-n", [4, 8, 16, 32, 64])
+  # params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 28, 32, 40, 48, 56, 64])
+  # nb_samples = 3
+
+  params.set_params("-n", [1, 2, 4, 8, 16, 32, 64])
   nb_samples = 1
   locations = [
    "../POWER8TM/benchmarks/tpcc",
@@ -30,9 +31,8 @@ if __name__ == "__main__":
    "../POWER8TM/benchmarks/tpcc",
    "../POWER8TM/benchmarks/tpcc",
    "../POWER8TM/benchmarks/tpcc",
-  #  "../POWER8TM/benchmarks/tpcc",
-  #  "../POWER8TM/benchmarks/tpcc",
-  #   "../power8tm-pisces/benchmarks/tpcc",
+   "../POWER8TM/benchmarks/tpcc",
+    # "../power8tm-pisces/benchmarks/tpcc",
     # "../POWER8TM/benchmarks/tpcc",
 #     "../POWER8TM/benchmarks/tpcc",
   ]
@@ -41,13 +41,14 @@ if __name__ == "__main__":
   backends = [
    "psi",
    "psi-strong",
-  #  "htm-sgl",
-  #  "si-htm",
+   "htm-sgl",
+   "si-htm",
    "spht",
+   "spht-log-linking", 
+   "spht-quiescence-naive",
   #  "pisces",
-   "psi-bug",
-   "psi-strong-bug",
-   "spht-log-linking"
+  #  "psi-bug",
+  #  "psi-strong-bug",
   #  "spht-dumbo-readers",
   #  "pstm",
   #  "psi",
@@ -72,7 +73,8 @@ if __name__ == "__main__":
     "htm-sgl-sr" : "HTM+sus",
     "si-htm" : "SI-HTM",
     "ureads-strong": "ureads-strong", 
-    "ureads-p8tm": "ureads-p8tm"
+    "ureads-p8tm": "ureads-p8tm",
+    "spht-quiescence-naive": "DUMBO-naive",
   }
   
  
@@ -108,7 +110,7 @@ if __name__ == "__main__":
       def filter_threads(t) -> bool:
         x, y, sd = t
         # return True on the threads to keep
-        return True if x in [2, 8, 16, 24, 32, 64] else False
+        return True if x in [2, 4, 8, 16, 32] else False
 
           
       ds.add_stack("Prob. of different outcomes for a transaction", "Percentage of started transactions", {

@@ -223,12 +223,19 @@ void on_before_htm_begin_pcwm(int threadId, int ro)
   readonly_tx = ro;
   if (!readonly_tx)
     __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, rdtsc(), __ATOMIC_RELEASE);
+  else {
+    //For RO txs (which run non-transactionally), we set their ts to infinity
+    if (gs_ts_array[threadId].pcwm.ts != onesBit63(0))
+    __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, onesBit63(0), __ATOMIC_RELEASE);
+  }
+
 }
 
 void on_htm_abort_pcwm(int threadId)
 {
   if (!readonly_tx)
-    __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, rdtsc(), __ATOMIC_RELEASE);
+    __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, onesBit63(0), __ATOMIC_RELEASE);
+    // __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, rdtsc(), __ATOMIC_RELEASE);
 }
 
 void on_before_htm_write_8B_pcwm(int threadId, void *addr, uint64_t val)
@@ -444,6 +451,9 @@ if (readonly_tx) {
   MEASURE_INC(countUpdCommitPhases);
 }
 
+/* TODO: this might not be needed for every case (it's just for safety) */
+if (gs_ts_array[threadId].pcwm.ts != onesBit63(0))
+__atomic_store_n(&gs_ts_array[threadId].pcwm.ts, onesBit63(0), __ATOMIC_RELEASE);
   
 }
 
@@ -457,7 +467,8 @@ MEASURE_TS(ts1);
   for (int i = 0; i < gs_appInfo->info.nbThreads; i++) {
     if (i!=threadId) {
       do {
-        otherTS = __atomic_load_n(&(gs_ts_array[i].pcwm.ts), __ATOMIC_ACQUIRE);
+        //otherTS = __atomic_load_n(&(gs_ts_array[i].pcwm.ts), __ATOMIC_ACQUIRE);
+        otherTS = gs_ts_array[i].pcwm.ts;
       }
       while (otherTS > 0 && otherTS < myPreCommitTS); 
       //TO DO Joao: The first condition above is just a quick fix since I didn't know how to init pcwm.ts to +infinite
@@ -465,7 +476,8 @@ MEASURE_TS(ts1);
   }
 
 MEASURE_TS(ts2);
-INC_PERFORMANCE_COUNTER(ts1, ts2, ro_durability_wait_time);
+if (readonly_tx) 
+  INC_PERFORMANCE_COUNTER(ts1, ts2, ro_durability_wait_time);
 
 #ifdef DETAILED_BREAKDOWN_PROFILING
   int c = ro_durability_wait_count[threadId];
