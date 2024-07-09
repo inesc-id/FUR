@@ -161,6 +161,7 @@ loc_var.tid = local_thread_id;\
 
 # define RO_commit(){\
   READ_TIMESTAMP(end_tx); \
+  onBeforeHtmCommit(HTM_SGL_tid); \
   stats_array[q_args.tid].tx_time_ro_txs += end_tx - start_tx;\
   UPDATE_STATE(INACTIVE);\
   rmb(); \

@@ -233,10 +233,9 @@ void on_before_htm_begin_pcwm(int threadId, int ro)
 
 void on_htm_abort_pcwm(int threadId)
 {
-  /*debug*/
-  __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, onesBit63(0), __ATOMIC_RELEASE);
-  // if (!readonly_tx)
-  //   __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, rdtsc(), __ATOMIC_RELEASE); /* TODO: debug: why? shouldn't it be infinity? */
+  if (!readonly_tx)
+    __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, onesBit63(0), __ATOMIC_RELEASE);
+    // __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, rdtsc(), __ATOMIC_RELEASE);
 }
 
 void on_before_htm_write_8B_pcwm(int threadId, void *addr, uint64_t val)
