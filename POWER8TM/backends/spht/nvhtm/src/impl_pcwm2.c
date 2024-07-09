@@ -236,7 +236,8 @@ if (!readonly_tx)
 void on_htm_abort_pcwm2(int threadId)
 {
   if (!readonly_tx)
-  __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, rdtsc(), __ATOMIC_RELEASE);
+    __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, onesBit63(0), __ATOMIC_RELEASE);
+  // __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, rdtsc(), __ATOMIC_RELEASE);
 }
 
 void on_before_htm_write_8B_pcwm2(int threadId, void *addr, uint64_t val)
