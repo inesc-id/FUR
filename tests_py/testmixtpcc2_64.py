@@ -6,7 +6,12 @@ from plot import LinesPlot, BackendDataset
 
 if __name__ == "__main__":
   params = BenchmarkParameters(["-w", "-m", "-s", "-d", "-o", "-p", "-r", "-n", "-t"])
-  
+
+  params.set_params("-s", [45], True)   
+  params.set_params("-d", [0], True)
+  params.set_params("-o", [45], True)
+  params.set_params("-p", [5], True)
+  params.set_params("-r", [5], True)  
   data_folder = "datamixtpcc2_64"
 
 
@@ -14,11 +19,11 @@ if __name__ == "__main__":
   params.set_params("-m", [64]) # max nb warehouses (put the same as -w)
   params.set_params("-t", [5])
 
-  # params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 28, 32, 40, 48, 56, 64])
-  # nb_samples = 3
+  params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 28, 32, 40, 48, 56, 64])
+  nb_samples = 3
 
-  params.set_params("-n", [1, 2, 4, 8, 16, 32, 64])
-  nb_samples = 1
+  # params.set_params("-n", [1, 2, 4, 8, 16, 32, 64])
+  # nb_samples = 1
   locations = [
    "../POWER8TM/benchmarks/tpcc",
    "../POWER8TM/benchmarks/tpcc",
@@ -26,7 +31,7 @@ if __name__ == "__main__":
    "../POWER8TM/benchmarks/tpcc",
    "../POWER8TM/benchmarks/tpcc",
    "../POWER8TM/benchmarks/tpcc",
-   "../POWER8TM/benchmarks/tpcc",
+  #  "../POWER8TM/benchmarks/tpcc",
     # "../power8tm-pisces/benchmarks/tpcc",
     # "../POWER8TM/benchmarks/tpcc",
 #     "../POWER8TM/benchmarks/tpcc",
@@ -40,7 +45,7 @@ if __name__ == "__main__":
    "si-htm",
    "spht",
    "spht-log-linking", 
-   "spht-quiescence-naive",
+  #  "spht-quiescence-naive",
   #  "pisces",
   #  "psi-bug",
   #  "psi-strong-bug",
@@ -105,7 +110,7 @@ if __name__ == "__main__":
       def filter_threads(t) -> bool:
         x, y, sd = t
         # return True on the threads to keep
-        return True if x in [2, 4, 8, 16, 32] else False
+        return True if x in [2, 4, 8, 16] else False
 
           
       ds.add_stack("Prob. of different outcomes for a transaction", "Percentage of started transactions", {
@@ -170,7 +175,7 @@ if __name__ == "__main__":
       ds.add_stack("Latency profile (read-only txs)", "Overhead over time processing txs", {
         # "proc. committed txs": lambda e: checkIfROCommitStats(e, "total-ro-tx-time")),
         "durability wait": lambda e: (checkIfROCommitStats(e, "total-ro-dur-wait-time")),
-        "proc. aborted txs": lambda e: (checkIfROAbortStats(e, "total-abort-ro-tx-time"))
+        # "proc. aborted txs": lambda e: (checkIfROAbortStats(e, "total-abort-ro-tx-time"))
       }, is_percent=True, filter_x_fn=filter_threads)
       
       datasets_thr[(s,d,o,p,r)] += [ds]
@@ -190,4 +195,4 @@ if __name__ == "__main__":
     # print(v)
     lines_plot = LinesPlot(f"[-s, -d, -o, -p, -r] = {u}", f"tpcc_{u}.pdf", figsize=(8, 4), colors=colors)
     lines_plot.plot(v)
-    lines_plot.plot_stack(v, filter_out_backends=["HTM", "SI-HTM", "Pisces"])
+    lines_plot.plot_stack(v, filter_out_backends=["HTM", "SI-HTM", "Pisces", "SPHT-LL"])

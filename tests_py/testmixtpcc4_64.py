@@ -7,13 +7,13 @@ from plot import LinesPlot, BackendDataset
 if __name__ == "__main__":
   params = BenchmarkParameters(["-w", "-m", "-s", "-d", "-o", "-p", "-r", "-n", "-t"])
   
-  params.set_params("-s", [25], True)   
+  params.set_params("-s", [0], True)   
   params.set_params("-d", [0], True)
-  params.set_params("-o", [25], True)
-  params.set_params("-p", [25], True)
-  params.set_params("-r", [25], True)  
-  
-  data_folder = "datamixtpcc_64"
+  params.set_params("-o", [34], True)
+  params.set_params("-p", [33], True)
+  params.set_params("-r", [33], True)
+  data_folder = "datamixtpcc4_64"
+
 
   params.set_params("-w", [64]) # nb warehouses
   params.set_params("-m", [64]) # max nb warehouses (put the same as -w)
