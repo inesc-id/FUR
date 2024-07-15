@@ -7,11 +7,11 @@ from plot import LinesPlot, BackendDataset
 if __name__ == "__main__":
   params = BenchmarkParameters(["-w", "-m", "-s", "-d", "-o", "-p", "-r", "-n", "-t"])
   
-  params.set_params("-s", [25], True)   
-  params.set_params("-d", [0], True)
-  params.set_params("-o", [25], True)
-  params.set_params("-p", [25], True)
-  params.set_params("-r", [25], True)  
+  params.set_params("-s", [20], True)   
+  params.set_params("-d", [20], True)
+  params.set_params("-o", [20], True)
+  params.set_params("-p", [20], True)
+  params.set_params("-r", [20], True)  
   
   data_folder = "datamixtpcc_64"
 
@@ -32,7 +32,7 @@ if __name__ == "__main__":
    "../POWER8TM/benchmarks/tpcc",
    "../POWER8TM/benchmarks/tpcc",
   #  "../POWER8TM/benchmarks/tpcc",
-    # "../power8tm-pisces/benchmarks/tpcc",
+    "../power8tm-pisces/benchmarks/tpcc",
     # "../POWER8TM/benchmarks/tpcc",
 #     "../POWER8TM/benchmarks/tpcc",
   ]
@@ -46,7 +46,7 @@ if __name__ == "__main__":
    "spht",
    "spht-log-linking", 
   #  "spht-quiescence-naive",
-  #  "pisces",
+   "pisces",
   #  "psi-bug",
   #  "psi-strong-bug",
   #  "spht-dumbo-readers",
@@ -89,7 +89,7 @@ if __name__ == "__main__":
           backend,
           f"{data_folder}/{backend}-s{sample}"
         )
-      data.run_sample(params) # TODO: not running samples
+      # data.run_sample(params) # TODO: not running samples
       parser = Parser(f"{data_folder}/{backend}-s{sample}")
       parser.parse_all(f"{data_folder}/{backend}-s{sample}.csv")
     lst_each = params.list_for_each_param(["-s", "-d", "-o", "-p", "-r"])
@@ -110,7 +110,7 @@ if __name__ == "__main__":
       def filter_threads(t) -> bool:
         x, y, sd = t
         # return True on the threads to keep
-        return True if x in [2, 4, 8, 16] else False
+        return True if x in [2, 4, 8, 16, 32, 64] else False
 
           
       ds.add_stack("Prob. of different outcomes for a transaction", "Percentage of started transactions", {
@@ -195,4 +195,4 @@ if __name__ == "__main__":
     # print(v)
     lines_plot = LinesPlot(f"[-s, -d, -o, -p, -r] = {u}", f"tpcc_{u}.pdf", figsize=(8, 4), colors=colors)
     lines_plot.plot(v)
-    lines_plot.plot_stack(v, filter_out_backends=["HTM", "SI-HTM", "Pisces", "SPHT-LL"])
+    lines_plot.plot_stack(v, filter_out_backends=["HTM", "SI-HTM", "Pisces", "SPHT-LL", "SPHT"])

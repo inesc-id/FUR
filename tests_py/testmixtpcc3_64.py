@@ -8,10 +8,10 @@ if __name__ == "__main__":
   params = BenchmarkParameters(["-w", "-m", "-s", "-d", "-o", "-p", "-r", "-n", "-t"])
   
   params.set_params("-s", [5], True)   
-  params.set_params("-d", [0], True)
+  params.set_params("-d", [5], True)
   params.set_params("-o", [5], True)
-  params.set_params("-p", [45], True)
-  params.set_params("-r", [45], True)
+  params.set_params("-p", [43], True)
+  params.set_params("-r", [42], True)
   data_folder = "datamixtpcc3_64"
 
 
@@ -32,7 +32,7 @@ if __name__ == "__main__":
    "../POWER8TM/benchmarks/tpcc",
    "../POWER8TM/benchmarks/tpcc",
   #  "../POWER8TM/benchmarks/tpcc",
-    # "../power8tm-pisces/benchmarks/tpcc",
+    "../power8tm-pisces/benchmarks/tpcc",
     # "../POWER8TM/benchmarks/tpcc",
 #     "../POWER8TM/benchmarks/tpcc",
   ]
@@ -46,7 +46,7 @@ if __name__ == "__main__":
    "spht",
    "spht-log-linking", 
   #  "spht-quiescence-naive",
-  #  "pisces",
+   "pisces",
   #  "psi-bug",
   #  "psi-strong-bug",
   #  "spht-dumbo-readers",
@@ -89,7 +89,7 @@ if __name__ == "__main__":
           backend,
           f"{data_folder}/{backend}-s{sample}"
         )
-      data.run_sample(params) # TODO: not running samples
+      # data.run_sample(params) # TODO: not running samples
       parser = Parser(f"{data_folder}/{backend}-s{sample}")
       parser.parse_all(f"{data_folder}/{backend}-s{sample}.csv")
     lst_each = params.list_for_each_param(["-s", "-d", "-o", "-p", "-r"])

@@ -7,9 +7,9 @@ from plot import LinesPlot, BackendDataset
 if __name__ == "__main__":
   params = BenchmarkParameters(["-w", "-m", "-s", "-d", "-o", "-p", "-r", "-n", "-t"])
 
-  params.set_params("-s", [45], True)   
-  params.set_params("-d", [0], True)
-  params.set_params("-o", [45], True)
+  params.set_params("-s", [42], True)   
+  params.set_params("-d", [5], True)
+  params.set_params("-o", [43], True)
   params.set_params("-p", [5], True)
   params.set_params("-r", [5], True)  
   data_folder = "datamixtpcc2_64"
@@ -32,7 +32,7 @@ if __name__ == "__main__":
    "../POWER8TM/benchmarks/tpcc",
    "../POWER8TM/benchmarks/tpcc",
   #  "../POWER8TM/benchmarks/tpcc",
-    # "../power8tm-pisces/benchmarks/tpcc",
+    "../power8tm-pisces/benchmarks/tpcc",
     # "../POWER8TM/benchmarks/tpcc",
 #     "../POWER8TM/benchmarks/tpcc",
   ]
@@ -46,7 +46,7 @@ if __name__ == "__main__":
    "spht",
    "spht-log-linking", 
   #  "spht-quiescence-naive",
-  #  "pisces",
+   "pisces",
   #  "psi-bug",
   #  "psi-strong-bug",
   #  "spht-dumbo-readers",
