@@ -174,7 +174,7 @@
 # define RELEASE_WRITE_LOCK(){ \
   if(loc_var.exec_mode == 1) \
   { \
-    if (loc_var.numLoggedWrites == 0) {\
+    if (0) {\
       __TM_end(); \
       RELEASE_READ_LOCK(); \
       /* TODO: avoid this ugly work around to have correct commit stats*/\
@@ -182,23 +182,20 @@
       stats_array[q_args.tid].nontx_commits--; \
     }\
     else { \
-      READ_TIMESTAMP(start_sus);\
       __TM_suspend(); \
-      READ_TIMESTAMP(q_args.start_wait_time); \
+      READ_TIMESTAMP(start_sus);\
+      stats_array[q_args.tid].tx_time_upd_txs += start_sus - start_tx;\
       __thread long myOldActiveState = ts_state[q_args.tid].value; \
       UPDATE_STATE(INACTIVE); /*JOAO: perf bug fix 25jun*/ \
-      order_ts[q_args.tid].value = atomicInc();\
+      /*order_ts[q_args.tid].value = atomicInc(); naive */ \
       QUIESCENCE_CALL_ROT();  \
       rmb(); \
-      stats_array[q_args.tid].sus_time += q_args.start_wait_time - start_sus;\
+      READ_TIMESTAMP(end_sus);\
+      stats_array[q_args.tid].wait_time += end_sus - start_sus;\
       UPDATE_TS_STATE(NON_DURABLE); /*JOAO: optimization 8jul*/ \
-      READ_TIMESTAMP(q_args.end_wait_time); \
-      stats_array[q_args.tid].wait_time += q_args.end_wait_time - q_args.start_wait_time; \
       __TM_resume(); \
       __TM_end(); \
       READ_TIMESTAMP(end_tx); \
-      stats_array[q_args.tid].tx_time_upd_txs += start_sus - start_tx;\
-      stats_array[q_args.tid].sus_time += end_tx - q_args.end_wait_time;\
       stats_array[q_args.tid].commit_time += end_tx - start_tx;\
       /* flush_log_commit_marker( \
         loc_var.mylogpointer, \
@@ -217,6 +214,7 @@
       }\
       long num_threads = global_numThread; \
       READ_TIMESTAMP(loc_var.start_wait2);\
+      /*naive: substituir com logica commit do spht*/\
       for(int index=0; index < num_threads; index++) \
       { \
         if(index == q_args.tid) \
@@ -224,8 +222,8 @@
         while(get_state(dur_state[index].value) == NON_DURABLE && get_ts_from_state(ts_state[index].value) < get_ts_from_state(myOldActiveState)) \
         { cpu_relax(); } \
       } \
-      SEQL_START(order_ts[q_args.tid].value, q_args.tid, ((uint64_t)(loc_var.mylogpointer_snapshot - loc_var.mylogstart))); \
-      SEQL_COMMIT(order_ts[q_args.tid].value, (loc_var.mylogpointer - loc_var.mylogstart)); \
+      /*SEQL_START(order_ts[q_args.tid].value, q_args.tid, ((uint64_t)(loc_var.mylogpointer_snapshot - loc_var.mylogstart))); */\
+      /*SEQL_COMMIT(order_ts[q_args.tid].value, (loc_var.mylogpointer - loc_var.mylogstart));*/ \
       READ_TIMESTAMP(loc_var.end_wait2); \
       stats_array[q_args.tid].dur_commit_time += loc_var.end_wait2 - loc_var.start_wait2; \
       UPDATE_STATE(INACTIVE); /* inactive rot*/ \
