@@ -190,10 +190,9 @@
       order_ts[q_args.tid].value = atomicInc();\
       QUIESCENCE_CALL_ROT();  \
       rmb(); \
-      stats_array[q_args.tid].sus_time += q_args.start_wait_time - start_sus;\
       UPDATE_TS_STATE(NON_DURABLE); /*JOAO: optimization 8jul*/ \
       READ_TIMESTAMP(q_args.end_wait_time); \
-      stats_array[q_args.tid].wait_time += q_args.end_wait_time - q_args.start_wait_time; \
+      stats_array[q_args.tid].wait_time += (q_args.end_wait_time - q_args.start_wait_time) + (q_args.start_wait_time - start_sus); \
       __TM_resume(); \
       __TM_end(); \
       READ_TIMESTAMP(end_tx); \

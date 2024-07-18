@@ -476,8 +476,8 @@ MEASURE_TS(ts1);
   }
 
 MEASURE_TS(ts2);
-if (readonly_tx) 
-  INC_PERFORMANCE_COUNTER(ts1, ts2, ro_durability_wait_time);
+// if (readonly_tx) 
+INC_PERFORMANCE_COUNTER(ts1, ts2, ro_durability_wait_time);
 
 #ifdef DETAILED_BREAKDOWN_PROFILING
   int c = ro_durability_wait_count[threadId];

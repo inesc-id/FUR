@@ -407,8 +407,8 @@ READ_TIMESTAMP(end_time);
   0,
   abort_timeTally,
   0, //in pisces, RO never abort
-  0,
   isolation_wait_timeTally,
+  0,
   flush_timeTally,
   upd_dur_commit_timeTally,
   ro_wait_timeTally,

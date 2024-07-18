@@ -137,7 +137,6 @@
 //todo retirar slowdowns do cmmit log (emulate_pm_slowdown)
 //cache line é calculada com um ++ em vez do emulate
 # define QUIESCENCE_CALL_ROT(){ \
-	READ_TIMESTAMP(q_args.start_wait_time); \
 	for(q_args.index=0; q_args.index < q_args.num_threads; q_args.index++) \
   { \
 		if(q_args.index == q_args.tid) \
@@ -167,8 +166,6 @@
       { cpu_relax(); } \
 		} \
 	} \
-  READ_TIMESTAMP(q_args.end_wait_time); \
-  stats_array[q_args.tid].wait_time += q_args.end_wait_time - q_args.start_wait_time; \
 };
 
 
@@ -185,20 +182,22 @@
       stats_array[q_args.tid].nontx_commits--; \
     }\
     else { \
-      __TM_suspend(); \
       READ_TIMESTAMP(start_sus);\
-      stats_array[q_args.tid].tx_time_upd_txs += start_sus - start_tx;\
+      __TM_suspend(); \
+      READ_TIMESTAMP(q_args.start_wait_time); \
       __thread long myOldActiveState = ts_state[q_args.tid].value; \
       UPDATE_STATE(INACTIVE); /*JOAO: perf bug fix 25jun*/ \
       order_ts[q_args.tid].value = atomicInc();\
       QUIESCENCE_CALL_ROT();  \
       rmb(); \
-      READ_TIMESTAMP(end_sus);\
-      stats_array[q_args.tid].sus_time += end_sus - start_sus;\
       UPDATE_TS_STATE(NON_DURABLE); /*JOAO: optimization 8jul*/ \
+      READ_TIMESTAMP(q_args.end_wait_time); \
+      stats_array[q_args.tid].wait_time += (q_args.end_wait_time - q_args.start_wait_time) + (q_args.start_wait_time - start_sus); \
       __TM_resume(); \
       __TM_end(); \
       READ_TIMESTAMP(end_tx); \
+      stats_array[q_args.tid].tx_time_upd_txs += start_sus - start_tx;\
+      stats_array[q_args.tid].sus_time += end_tx - q_args.end_wait_time;\
       stats_array[q_args.tid].commit_time += end_tx - start_tx;\
       /* flush_log_commit_marker( \
         loc_var.mylogpointer, \

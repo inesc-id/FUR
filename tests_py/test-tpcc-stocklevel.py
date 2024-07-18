@@ -152,6 +152,7 @@ if __name__ == "__main__":
       ds.add_stack("Latency profile (update txs)", "Overhead over time processing txs.", {
         #"processing committed txs.": lambda e: checkIfUpdCommitStats(e, "total-upd-tx-time"),
         "isolation wait": lambda e: (checkIfUpdCommitStats(e, "total-sus-time")),
+        "suspend/resume": lambda e: (checkIfUpdCommitStats(e, "total-sus-time")),
         "redo log flush": lambda e: (checkIfUpdCommitStats(e, "total-flush-time")),
         "durability wait": lambda e: (checkIfUpdCommitStats(e, "total-dur-commit-time")),
         # "proc. aborted txs": lambda e: (checkIfAbortStats(e, "total-abort-upd-tx-time")),
