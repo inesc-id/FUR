@@ -111,7 +111,7 @@ void state_gather_profiling_info_pcwm(int threadId)
   // stats_array[threadId].tx_time_upd_txs = timeTX_upd;
   // stats_array[threadId].tx_time_ro_txs += timeTX_ro; 
   stats_array[threadId].readonly_durability_wait_time = ro_durability_wait_time;
-  stats_array[threadId].dur_commit_time = dur_commit_time;
+  stats_array[threadId].dur_commit_time = dur_commit_time - stats_array[threadId].wait_time - stats_array[threadId].sus_time;
   stats_array[threadId].time_aborted_upd_txs = timeAbortedUpdTX;
   stats_array[threadId].time_aborted_ro_txs = timeAbortedROTX;
 
@@ -488,8 +488,8 @@ MEASURE_TS(ts1);
   }
 
 MEASURE_TS(ts2);
-if (readonly_tx) 
-  INC_PERFORMANCE_COUNTER(ts1, ts2, ro_durability_wait_time);
+
+INC_PERFORMANCE_COUNTER(ts1, ts2, ro_durability_wait_time);
 
 #ifdef DETAILED_BREAKDOWN_PROFILING
   int c = ro_durability_wait_count[threadId];

@@ -180,6 +180,9 @@ loc_var.tid = local_thread_id;\
         onBeforeHtmCommit(HTM_SGL_tid); \
         COMMIT_TRANSACTION(HTM_SGL_tid, HTM_SGL_budget, HTM_SGL_status); \
         /*printf("%d: HTM-committed\n", q_args.tid);*/\
+        stats_array[q_args.tid].wait_time += q_args.end_wait_time - q_args.start_wait_time; \
+        stats_array[q_args.tid].sus_time += (q_args.after_sus_ts - q_args.before_sus_ts) - (q_args.end_wait_time - q_args.start_wait_time); \
+        stats_array[q_args.tid].tx_time_upd_txs += q_args.start_wait_time - start_tx; \
         on_after_htm_commit(HTM_SGL_tid); \
         /*UPDATE_STATE(INACTIVE); */\
         rmb(); \
@@ -212,10 +215,10 @@ loc_var.tid = local_thread_id;\
 // end QUIESCENCE_CALL_GL
 
 # define QUIESCENCE_CALL_HTM() { \
+    READ_TIMESTAMP(q_args.before_sus_ts); \
 	__TM_suspend(); \
     UPDATE_STATE(INACTIVE);\
     READ_TIMESTAMP(q_args.start_wait_time); \
-    stats_array[q_args.tid].tx_time_upd_txs += q_args.start_wait_time - start_tx; \
     for(q_args.index=0; q_args.index < q_args.num_threads; q_args.index++) \
     { \
 	    if(q_args.index == q_args.tid) \
@@ -239,8 +242,7 @@ loc_var.tid = local_thread_id;\
 	} \
   READ_TIMESTAMP(q_args.end_wait_time); \
   __TM_resume(); \
-  stats_array[q_args.tid].wait_time += q_args.end_wait_time - q_args.start_wait_time; \
-  stats_array[q_args.tid].sus_time += q_args.end_wait_time - q_args.start_wait_time; \
+  READ_TIMESTAMP(q_args.after_sus_ts); \
 }
 
 

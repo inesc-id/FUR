@@ -71,6 +71,9 @@ typedef struct quiscence_call_args {
     volatile uint64_t *logptr;
     volatile long start_wait_time; 
     volatile long end_wait_time; 
+    char middlePadding[CACHE_LINE_SIZE];
+    volatile long after_sus_ts; 
+    volatile long before_sus_ts; 
     volatile long ts1; 
     volatile long ts2; 
     char suffixPadding[CACHE_LINE_SIZE];
