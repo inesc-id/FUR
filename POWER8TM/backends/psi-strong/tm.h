@@ -192,11 +192,11 @@
       rmb(); \
       UPDATE_TS_STATE(NON_DURABLE); /*JOAO: optimization 8jul*/ \
       READ_TIMESTAMP(q_args.end_wait_time); \
-      stats_array[q_args.tid].wait_time += (q_args.end_wait_time - q_args.start_wait_time) + (q_args.start_wait_time - start_sus); \
       __TM_resume(); \
       __TM_end(); \
       READ_TIMESTAMP(end_tx); \
       stats_array[q_args.tid].tx_time_upd_txs += start_sus - start_tx;\
+      stats_array[q_args.tid].wait_time += (q_args.end_wait_time - q_args.start_wait_time) + (q_args.start_wait_time - start_sus); \
       stats_array[q_args.tid].sus_time += end_tx - q_args.end_wait_time;\
       stats_array[q_args.tid].commit_time += end_tx - start_tx;\
       /* flush_log_commit_marker( \
