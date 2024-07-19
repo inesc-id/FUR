@@ -52,7 +52,7 @@
 	#define HTM_STATUS_TYPE		TM_buff_type
 	#define HTM_CODE_SUCCESS	_HTM_TBEGIN_STARTED
 
-	#define HTM_begin(var)			(__TM_begin((var)))
+	#define HTM_begin(var)			(__TM_begin(var))
 	#define HTM_abort()				__TM_abort()
 	#define HTM_named_abort(code)	__TM_named_abort(code)
 	#define HTM_is_named(status)	__TM_is_named_user_abort (status, NULL);
@@ -201,7 +201,7 @@ __TM_is_tfiar_exact(void* const TM_buff)
 	#define HTM_STATUS_TYPE   register int
 	#define HTM_CODE_SUCCESS  _XBEGIN_STARTED
 
-	#define HTM_begin(var)			  (var = _xbegin())
+	#define HTM_begin(var)			  (printf("begin_rot\n"); var = __TM_begin_rot())
 	#define HTM_abort()           _xabort(0)
 	#define HTM_named_abort(code)	_xabort(code)
 	#define HTM_test()            _xtest()
