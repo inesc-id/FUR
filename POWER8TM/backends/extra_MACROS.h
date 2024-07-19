@@ -139,6 +139,7 @@ typedef struct padded_statistics {
     unsigned long readonly_durability_wait_time;     //time that a readonly tx must wait to ensure that its reads are durable
     unsigned long tx_time_upd_txs;
     unsigned long tx_time_ro_txs;
+    unsigned long ro_durability_wait_spins;
     char suffixPadding[CACHE_LINE_SIZE];
 } __attribute__((aligned(CACHE_LINE_SIZE))) padded_statistics_t;
 
@@ -602,6 +603,7 @@ else /* handles warp around case */ \
   unsigned long readonly_durability_wait_time = 0; \
   unsigned long tx_time_upd_txs = 0; \
   unsigned long tx_time_ro_txs = 0; \
+  unsigned long ro_durability_wait_spins = 0;\
   int i = 0; \
   for (; i < 80; i++) \
   { \
@@ -638,6 +640,7 @@ else /* handles warp around case */ \
     tx_time_ro_txs += stats_array[i].tx_time_ro_txs; \
     time_aborted_upd_txs += stats_array[i].time_aborted_upd_txs; \
     time_aborted_ro_txs += stats_array[i].time_aborted_ro_txs; \
+    ro_durability_wait_spins += stats_array[i].ro_durability_wait_spins; \
   } \
   printf(\
 "Total sum time: %lu\n" \
@@ -711,6 +714,7 @@ else /* handles warp around case */ \
   rot_persistent_aborts, \
   rot_other_aborts); \
   printf("Emulated PM latency: %d\n", delay_for_pm); \
+  printf("ro_durability_wait_spins: %u\n", ro_durability_wait_spins);\
 // end FINAL_PRINT
 
 #ifdef __cplusplus

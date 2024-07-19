@@ -37,6 +37,7 @@ static volatile __thread uint64_t timeTX_upd = 0;
 static volatile __thread uint64_t timeTX_ro = 0;
 static volatile __thread uint64_t ro_durability_wait_time = 0;
 static volatile __thread uint64_t dur_commit_time = 0;
+static volatile __thread uint64_t ro_durability_wait_spins = 0;
 
 __thread int readonly_tx;
 
@@ -113,6 +114,7 @@ void state_gather_profiling_info_pcwm(int threadId)
   stats_array[threadId].readonly_durability_wait_time = ro_durability_wait_time;
   stats_array[threadId].time_aborted_upd_txs = timeAbortedUpdTX;
   stats_array[threadId].time_aborted_ro_txs = timeAbortedROTX;
+  stats_array[threadId].ro_durability_wait_spins = ro_durability_wait_spins;
 
   timeSGL = 0;
   timeAbortedUpdTX = 0;
@@ -469,9 +471,11 @@ MEASURE_TS(ts1);
       do {
         //otherTS = __atomic_load_n(&(gs_ts_array[i].pcwm.ts), __ATOMIC_ACQUIRE);
         otherTS = gs_ts_array[i].pcwm.ts;
+        ro_durability_wait_spins ++;
       }
       while (otherTS > 0 && otherTS < myPreCommitTS); 
       //TO DO Joao: The first condition above is just a quick fix since I didn't know how to init pcwm.ts to +infinite
+      ro_durability_wait_spins --;
     }
   }
 
