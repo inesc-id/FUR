@@ -187,6 +187,10 @@ void TPCCClient::bindWarehouseDistrict(int warehouse_id, int district_id) {
 }
 
 int32_t TPCCClient::generateWarehouse() {
+    #ifdef DISJOINT
+    return thread_getId()+1; /*joao: trick to ensure disjoint accesses*/
+    #endif
+
     if (bound_warehouse_ == 0) {
         return generator_->number(1, global_num_warehouses);
     } else {

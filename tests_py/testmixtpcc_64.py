@@ -15,20 +15,20 @@ if __name__ == "__main__":
   
   data_folder = "datamixtpcc_64"
 
-  params.set_params("-w", [8]) # nb warehouses
-  params.set_params("-m", [8]) # max nb warehouses (put the same as -w)
+  params.set_params("-w", [64]) # nb warehouses
+  params.set_params("-m", [64]) # max nb warehouses (put the same as -w)
   params.set_params("-t", [5])
 
-  # params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 28, 32, 40, 48, 56, 64])
-  # nb_samples = 3
+  params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 28, 32, 40, 48, 56, 64])
+  nb_samples = 3
 
-  params.set_params("-n", [4, 8, 16, 32])
-  nb_samples = 1
+  # params.set_params("-n", [1, 2, 4, 8, 16, 32, 64])
+  # nb_samples = 1
   locations = [
    "../POWER8TM/benchmarks/tpcc",
    "../POWER8TM/benchmarks/tpcc",
-   "../POWER8TM/benchmarks/tpcc",
-   "../POWER8TM/benchmarks/tpcc",
+  #  "../POWER8TM/benchmarks/tpcc",
+  #  "../POWER8TM/benchmarks/tpcc",
   #  "../POWER8TM/benchmarks/tpcc",
   #  "../POWER8TM/benchmarks/tpcc",
   # #  "../POWER8TM/benchmarks/tpcc",
@@ -41,8 +41,6 @@ if __name__ == "__main__":
   backends = [
    "psi",
    "psi-strong",
-   "spht-quiescence-naive2",
-   "spht-quiescence-naive2-strong",
   #  "htm-sgl",
   #  "si-htm",
   #  "spht",
@@ -76,8 +74,7 @@ if __name__ == "__main__":
     "si-htm" : "SI-HTM",
     "ureads-strong": "ureads-strong", 
     "ureads-p8tm": "ureads-p8tm",
-    "spht-quiescence-naive2": "DUMBO-naive",
-    "spht-quiescence-naive2-strong": "DUMBO-naive-strong",
+    "spht-quiescence-naive": "DUMBO-naive",
   }
   
  

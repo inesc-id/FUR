@@ -143,6 +143,8 @@ void assert_empty_locks(Thread *self) {
 //map variable address to lock address.
 //TODO: revert to the following commented lines
 #define TAB_OFFSET(a) ((UNS(a) & TABMSK))
+//define TAB_OFFSET(a) ((((UNS(a)+COLOR) >> PSSHIFT) & TABMSK)) /* PS1M */
+
 #define LOCKED_AVPAIRS(a) (locked_avpairs + TAB_OFFSET(addr))
 #define LOCK_OWNER(a) (lock_owners + TAB_OFFSET(addr))
 
@@ -765,7 +767,7 @@ TxStore (Thread* Self, volatile intptr_t* addr, intptr_t valu)
     if (owner && owner != Self) {
         // printf("Aborted: thread %d, addr=%p, owner=%d\n", Self->UniqID, addr, owner->UniqID);
         TxAbort(Self);
-        assert(0); //I should never reachi this point
+        assert(0); //I should never reach this point
         return;
     }
 
@@ -780,7 +782,7 @@ TxStore (Thread* Self, volatile intptr_t* addr, intptr_t valu)
     }
     else {
         if (CAS(LOCK_OWNER(addr), NULL, Self) != NULL) {
-            // printf("I will abort becaus CAS on txstore failed\n");
+            // printf("I will abort because CAS on txstore failed\n");
             TxAbort(Self);
             assert(0); //I should never reachi this point
             return;
