@@ -1,11 +1,22 @@
+payment:
+- correr neworder de novo (agora com retry policy igual) para ver se a tendencia do payment tb se verifica lá
+
+
+*** rever os todos abaixo (alguns já não fazem sentido)
+
+26/abril
+Payment: 
+- 100% upd, no entanto o dumbo tem vantagem! Surpreendente, pois as vantagens conhecidas do dumbo são com RO.
+- Além disso, o dumbo tem mais aborts que spht! Surpreendente.
+O que será a causa?
+- será o facto das update txs se sincronizarem?...
+- será a lógica de durability commit?
+
+
 neworder:
 - latency profile: nada do spht* em readonly
 - dumbo-readers: STL HTM commits inferior a sPHT. (seré que tem a ver com eu ter comentado o tratamento de empty WR no commit?)
 - latency profile (upd): considerando o ponto 8threads, a relação de números em absoluto de tx time não é explicável; redo log flush quase invisível; dur wait spht muito superior à do dumbo-read; spht desaparece após 16T (provavelmente ficaria melhor se incluisse SGL time e abort time?).
-
-
-- profiles: incluir tempos sgl e abort
-
 
 
 - Melhorias aos stacked bars de commits/aborts:

@@ -5,12 +5,15 @@
 #include <stdio.h>
 #include <limits.h>
 #include <stdint.h>
+#include <assert.h>
 
 #include "htm_impl.h"
 
 #define LARGER_THAN(_TSi, _TSj, _i, _j) ((_TSi > _TSj) || (_TSi == _TSj && _i > _j))
 
 typedef uintptr_t bit_array_t;
+
+static __thread int readonly_tx;
 
 static volatile __thread uint64_t readClockVal;
 static volatile __thread uint64_t myPreviousClock;
@@ -43,16 +46,27 @@ static volatile __thread uint64_t timeWaiting = 0;
 static volatile __thread uint64_t timeFlushing = 0;
 static volatile __thread uint64_t timeScanning = 0;
 static volatile __thread uint64_t timeTX_upd = 0;
+static volatile __thread uint64_t timeTX_ro = 0;
+static volatile __thread uint64_t ro_durability_wait_time = 0;
+static volatile __thread uint64_t dur_commit_time = 0;
+
 
 static volatile __thread uint64_t countCommitPhases = 0;
 
 static volatile uint64_t incCommitsPhases = 0;
+static volatile uint64_t incROCommitsPhases = 0;
 static volatile uint64_t incTimeTotal = 0;
 static volatile uint64_t incAfterTx = 0;
 static volatile uint64_t incWaiting = 0;
 static volatile uint64_t incFlushing = 0;
 static volatile uint64_t incScanning = 0;
 static volatile uint64_t incTXTime_upd = 0;
+static volatile uint64_t incTXTime_ro = 0;
+static volatile uint64_t inc_ro_durability_wait_time = 0;
+static volatile uint64_t inc_dur_commit_time = 0;
+static volatile __thread uint64_t countUpdCommitPhases = 0;
+static volatile __thread uint64_t countROCommitPhases = 0;
+
 
 typedef struct {
   uint64_t a[4];
@@ -62,6 +76,9 @@ typedef struct {
 #define _mm256_store_si256(_m256i_addr, _m256i_val) \
   *(_m256i_addr) = _m256i_val
 
+
+void on_before_sgl_commit_pcwm2(int threadId);
+
 void install_bindings_pcwm2()
 {
   on_before_htm_begin  = on_before_htm_begin_pcwm2;
@@ -69,31 +86,52 @@ void install_bindings_pcwm2()
   on_before_htm_write  = on_before_htm_write_8B_pcwm2;
   on_before_htm_commit = on_before_htm_commit_pcwm2;
   on_after_htm_commit  = on_after_htm_commit_pcwm2;
+  on_before_sgl_commit = on_before_sgl_commit_pcwm2;
 
   wait_commit_fn = wait_commit_pcwm2;
 }
 
+
 void state_gather_profiling_info_pcwm2(int threadId)
 {
-  __sync_fetch_and_add(&incCommitsPhases, countCommitPhases);
+  __sync_fetch_and_add(&incCommitsPhases, countUpdCommitPhases);
+  __sync_fetch_and_add(&incROCommitsPhases, countROCommitPhases);
+  // __sync_fetch_and_add(&incNbSamples, nbSamplesDone);
   __sync_fetch_and_add(&incTimeTotal, timeTotal);
   __sync_fetch_and_add(&incAfterTx, timeAfterTXSuc);
   __sync_fetch_and_add(&incWaiting, timeWaiting);
   __sync_fetch_and_add(&incFlushing, timeFlushing);
   __sync_fetch_and_add(&incScanning, timeScanning);
   __sync_fetch_and_add(&incTXTime_upd, timeTX_upd);
+  __sync_fetch_and_add(&incTXTime_ro, timeTX_ro);
+  __sync_fetch_and_add(&inc_dur_commit_time, dur_commit_time+timeScanning);
+  __sync_fetch_and_add(&inc_ro_durability_wait_time, ro_durability_wait_time);
+  __sync_fetch_and_add(&timeSGL_global, timeSGL);
   __sync_fetch_and_add(&timeAbortedTX_global, timeAbortedUpdTX);
   __sync_fetch_and_add(&timeAbortedTX_global, timeAbortedROTX);
 
+  stats_array[threadId].htm_commits = countUpdCommitPhases + countROCommitPhases;
+  stats_array[threadId].flush_time = timeFlushing;
+  stats_array[threadId].tx_time_upd_txs = timeTX_upd;
+  stats_array[threadId].tx_time_ro_txs = timeTX_ro;
+  stats_array[threadId].dur_commit_time = dur_commit_time;
+  stats_array[threadId].readonly_durability_wait_time = ro_durability_wait_time;
+  stats_array[threadId].time_aborted_upd_txs = timeAbortedUpdTX;
+  stats_array[threadId].time_aborted_ro_txs = timeAbortedROTX;
 
   timeSGL = 0;
   timeAbortedUpdTX = 0;
   timeAbortedROTX = 0;
+  
   timeTX_upd = 0;
+  timeTX_ro = 0;
+  dur_commit_time = 0;
+  ro_durability_wait_time = 0;
   timeAfterTXSuc = 0;
   timeWaiting = 0;
   timeTotal = 0;
-  countCommitPhases = 0;
+  countUpdCommitPhases = 0;
+  countROCommitPhases = 0;
 }
 
 void state_fprintf_profiling_info_pcwm2(char *filename)
@@ -131,6 +169,15 @@ static inline void fetch_log(int threadId)
 
 void on_before_htm_begin_pcwm2(int threadId, int ro)
 {
+
+  assert(on_before_htm_begin);
+  assert(on_htm_abort);
+  assert(on_before_htm_write);
+  assert(on_before_htm_commit);
+  assert(on_after_htm_commit);
+  assert(on_before_sgl_commit);
+  assert(wait_commit_fn);
+  
   onBeforeWrite = on_before_htm_write;
   onBeforeHtmCommit = on_before_htm_commit;
   write_log_thread = &(P_write_log[threadId][0]);
@@ -139,8 +186,10 @@ void on_before_htm_begin_pcwm2(int threadId, int ro)
 
   fetch_log(threadId);
 
-   __atomic_store_n(&gs_ts_array[threadId].pcwm.isUpdate, 0, __ATOMIC_RELEASE);
-
+  if (gs_ts_array[threadId].pcwm.isUpdate != 0)
+    __atomic_store_n(&gs_ts_array[threadId].pcwm.isUpdate, 0, __ATOMIC_RELEASE);
+  readonly_tx = ro;
+  
   if (log_replay_flags & LOG_REPLAY_CONCURRENT) {
     // check space in the log
     const int MIN_SPACE_IN_LOG = 128;
@@ -162,24 +211,33 @@ void on_before_htm_begin_pcwm2(int threadId, int ro)
   
   // TODO: write atomically these 2
 
-  write_log_thread[writeLogStart] = 0; // clears logPos values
-  __m256i data256i = {
-    rdtsc(),
-    gs_ts_array[threadId].pcwm.prevTS,
-    writeLogEnd,
-    gs_ts_array[threadId].pcwm.prevLogPos
-  };
-  _mm256_store_si256((__m256i*)&gs_ts_array[threadId].pcwm, data256i);
+  if (!readonly_tx) {
+    write_log_thread[writeLogStart] = 0; // clears logPos values
+    __m256i data256i = {
+      rdtsc(),
+      gs_ts_array[threadId].pcwm.prevTS,
+      writeLogEnd,
+      gs_ts_array[threadId].pcwm.prevLogPos
+    };
+    _mm256_store_si256((__m256i*)&gs_ts_array[threadId].pcwm, data256i);
+  }
 
   // __atomic_store_n(&gs_ts_array[threadId].pcwm.logPos, writeLogEnd, __ATOMIC_RELEASE);
   // __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, rdtsc(), __ATOMIC_RELEASE);
 
+if (!readonly_tx)
+    __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, rdtsc(), __ATOMIC_RELEASE);
+
   writeLogEnd = (writeLogEnd + 1) & (gs_appInfo->info.allocLogSize - 1);
+
+  // assert(gs_ts_array[threadId].pcwm.ts == 0);
 }
 
 void on_htm_abort_pcwm2(int threadId)
 {
-  __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, rdtsc(), __ATOMIC_RELEASE);
+  if (!readonly_tx)
+    __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, onesBit63(0), __ATOMIC_RELEASE);
+  // __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, rdtsc(), __ATOMIC_RELEASE);
 }
 
 void on_before_htm_write_8B_pcwm2(int threadId, void *addr, uint64_t val)
@@ -274,12 +332,24 @@ static inline void smart_close_log_pcwm2(uint64_t marker, uint64_t *marker_pos)
   }
 }
 
+//TO DO: this function is implemented in impl_pcwm.c (but it should be in some common c file)
+void RO_wait_for_durable_reads(int threadId, uint64_t myPreCommitTS);
+
 
 void on_after_htm_commit_pcwm2(int threadId)
 {
-  INC_PERFORMANCE_COUNTER(timeTotalTS1, timeAfterTXTS1, timeTX_upd);
+  // assert(gs_ts_array[threadId].pcwm.ts == 0);
+
+if (writeLogStart == writeLogEnd)
+    INC_PERFORMANCE_COUNTER(timeTotalTS1, timeAfterTXTS1, timeTX_ro);
+  else
+    INC_PERFORMANCE_COUNTER(timeTotalTS1, timeAfterTXTS1, timeTX_upd);
+
   int didTheFlush = 0;
   __m256i storeStableData;
+
+if (!readonly_tx) 
+    __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, readClockVal, __ATOMIC_RELEASE);
 
   int _prevThreadsArray[gs_appInfo->info.nbThreads];
   int _logPosArray[gs_appInfo->info.nbThreads];
@@ -296,25 +366,38 @@ void on_after_htm_commit_pcwm2(int threadId)
   TSArray = _TSArray;
   // prevTSArray = _prevTSArray;
 
-  // gs_ts_array[threadId].pcwm.ts = readClockVal; // currently has the TS of begin
-  // tells the others my TS taken within the TX
-  __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, readClockVal, __ATOMIC_RELEASE);
-  
+  if (writeLogStart == writeLogEnd) {
+    /* Read-only transaction is about to return */
+
+    if (!readonly_tx)
+    // tells the others to move on
+      __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, onesBit63(readClockVal), __ATOMIC_RELEASE);
+
+    /* RO durability wait (bug fix by Joao)*/
+    RO_wait_for_durable_reads(threadId, readClockVal);
+
+    goto ret;
+  }
+
   // TODO: check if it does not break anything
   if (((writeLogStart + 1) & (gs_appInfo->info.allocLogSize - 1)) == writeLogEnd) {
     // tells the others to move on
-    __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, (uint64_t)-1, __ATOMIC_RELEASE);
+      __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, (uint64_t)-1, __ATOMIC_RELEASE);
+
     goto ret;
   }
 
   __atomic_store_n(&gs_ts_array[threadId].pcwm.isUpdate, 1, __ATOMIC_RELEASE);
 
-  MEASURE_TS(timeFlushTS1);
+  
 
   MEASURE_TS(timeScanTS1);
   scan_others(threadId);
   MEASURE_TS(timeScanTS2);
+  __atomic_store_n(&write_log_thread[writeLogStart], readClockVal, __ATOMIC_RELEASE);
+  INC_PERFORMANCE_COUNTER(timeScanTS1, timeScanTS2, timeScanning);
 
+MEASURE_TS(timeFlushTS1);
   // int prevWriteLogEnd = writeLogEnd;
   // writeLogEnd = (writeLogEnd + 1) & (gs_appInfo->info.allocLogSize - 1); // needed
   smart_close_log_pcwm2(
@@ -337,8 +420,6 @@ void on_after_htm_commit_pcwm2(int threadId)
   /** OLD */
   // -------------------
 
-  __atomic_store_n(&write_log_thread[writeLogStart], readClockVal, __ATOMIC_RELEASE);
-  INC_PERFORMANCE_COUNTER(timeScanTS1, timeScanTS2, timeScanning);
   
 // at this point you know the earliest tx that precedes you and that has already durably committed..
 // there may still be txs preceding you that have not durably committed yet
@@ -454,7 +535,15 @@ ret_update:
   // place the next ptr after the TS
   G_next[threadId].log_ptrs.write_log_next = (writeLogEnd + 1) & (gs_appInfo->info.allocLogSize - 1);
 ret:
-  MEASURE_INC(countCommitPhases);
+  if (readonly_tx) {
+    MEASURE_INC(countROCommitPhases);
+  } else {
+    uint64_t ts2;
+    MEASURE_TS(ts2);
+    INC_PERFORMANCE_COUNTER(timeFlushTS2, ts2, dur_commit_time);
+    MEASURE_INC(countUpdCommitPhases);
+  }
+
 }
 
 void wait_commit_pcwm2(int threadId)
@@ -507,4 +596,22 @@ void wait_commit_pcwm2(int threadId)
 
   MEASURE_TS(timeWaitingTS2);
   INC_PERFORMANCE_COUNTER(timeWaitingTS1, timeWaitingTS2, timeWaiting);
+}
+
+
+void on_before_sgl_commit_pcwm2(int threadId) {
+  // printf("called on_before_sgl_commit (%d)\n", loc_var.exec_mode);
+  smart_close_log_pcwm(
+  /* commit value */ onesBit63(readClockVal),
+  /* marker position */ (uint64_t*)&(write_log_thread[writeLogEnd])
+  );
+  FENCE_PREV_FLUSHES();
+  //emulating durmarker flush
+  FLUSH_CL(&P_last_safe_ts->ts);
+  FENCE_PREV_FLUSHES();
+
+  //just to be safe
+  __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, onesBit63(0), __ATOMIC_RELEASE);
+
+  return ;
 }

@@ -179,6 +179,291 @@ void state_fprintf_profiling_info_pcwm(char *filename)
 #endif
 }
 
+static inline void fetch_log(int threadId)
+{
+  write_log_thread[writeLogEnd] = 0;
+  write_log_thread[(writeLogEnd + 8) & (gs_appInfo->info.allocLogSize - 1)] = 0;
+}
+
+void on_before_htm_begin_pcwm(int threadId, int ro)
+{
+  onBeforeWrite = on_before_htm_write;
+  onBeforeHtmCommit = on_before_htm_commit;
+  write_log_thread = &(P_write_log[threadId][0]);
+
+  // nbSamples++;
+  // if ((nbSamples & (PCWM_NB_SAMPLES - 1)) == (PCWM_NB_SAMPLES - 1)) {
+  //   nbSamplesDone++;
+  // }
+  
+  writeLogEnd = writeLogStart = G_next[threadId].log_ptrs.write_log_next;
+  fetch_log(threadId);
+
+  if (log_replay_flags & LOG_REPLAY_CONCURRENT) {
+    // check space in the log
+    const int MIN_SPACE_IN_LOG = 128;
+    long totSize = gs_appInfo->info.allocLogSize;
+    volatile long start = G_next[threadId].log_ptrs.write_log_start;
+    long next = G_next[threadId].log_ptrs.write_log_next;
+    long nextExtra = (next + MIN_SPACE_IN_LOG) & (totSize - 1);
+    volatile long size = next >= start ? next - start : totSize - (start - next);
+    long extraSize = nextExtra > next ? nextExtra - next : totSize - (next - nextExtra);
+    while (size + extraSize > totSize) {
+      // wait the background replayer to gather some transactions
+      start = __atomic_load_n(&G_next[threadId].log_ptrs.write_log_start, __ATOMIC_ACQUIRE);
+      size = next >= start ? next - start : totSize - (start - next);
+      extraSize = nextExtra > next ? nextExtra - next : totSize - (next - nextExtra);
+    }
+  }
+
+  if (gs_ts_array[threadId].pcwm.isUpdate != 0)
+    __atomic_store_n(&gs_ts_array[threadId].pcwm.isUpdate, 0, __ATOMIC_RELEASE);
+  readonly_tx = ro;
+  if (!readonly_tx)
+    __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, rdtsc(), __ATOMIC_RELEASE);
+  else 
+    //For RO txs (which run non-transactionally), we set their ts to infinity
+    __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, onesBit63(readClockVal), __ATOMIC_RELEASE);
+}
+
+void on_htm_abort_pcwm(int threadId)
+{
+  /*debug*/
+  __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, onesBit63(0), __ATOMIC_RELEASE);
+  // if (!readonly_tx)
+  //   __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, rdtsc(), __ATOMIC_RELEASE); /* TODO: debug: why? shouldn't it be infinity? */
+}
+
+void on_before_htm_write_8B_pcwm(int threadId, void *addr, uint64_t val)
+{
+  write_log_thread[writeLogEnd] = (uint64_t)addr;
+  writeLogEnd = (writeLogEnd + 1) & (gs_appInfo->info.allocLogSize - 1);
+  write_log_thread[writeLogEnd] = (uint64_t)val;
+  writeLogEnd = (writeLogEnd + 1) & (gs_appInfo->info.allocLogSize - 1);
+}
+
+void on_before_htm_commit_pcwm(int threadId)
+{
+  readClockVal = rdtscp();
+}
+
+static inline void smart_close_log_pcwm(uint64_t marker, uint64_t *marker_pos)
+{
+  // printf("called smart_close_log_pcwm (%d)\n", loc_var.exec_mode);
+  intptr_t lastCL  = ((uintptr_t)(&write_log_thread[writeLogEnd]) >> 6) << 6;
+  intptr_t firstCL = ((uintptr_t)(&write_log_thread[writeLogStart]) >> 6) << 6;
+
+  void *logStart = (void*) (write_log_thread + 0);
+  void *logEnd   = (void*) (write_log_thread + gs_appInfo->info.allocLogSize);
+
+  if (firstCL == lastCL) {
+    // same cache line
+    *marker_pos = marker;
+    FLUSH_RANGE(firstCL, lastCL, logStart, logEnd);
+  } else {
+    intptr_t lastCLMinus1;
+    if (lastCL == (uintptr_t)logStart) {
+      lastCLMinus1 = (uintptr_t)logEnd;
+    } else {
+      lastCLMinus1 = lastCL - 1;
+    }
+    FLUSH_RANGE(firstCL, lastCLMinus1, logStart, logEnd);
+    FENCE_PREV_FLUSHES();
+    *marker_pos = marker;
+    FLUSH_CL((void*)lastCL);
+  }
+}
+
+
+void on_before_sgl_commit_pcwm(int threadId) {
+  // printf("called on_before_sgl_commit (%d)\n", loc_var.exec_mode);
+  smart_close_log_pcwm(
+  /* commit value */ onesBit63(readClockVal),
+  /* marker position */ (uint64_t*)&(write_log_thread[writeLogEnd])
+  );
+  FENCE_PREV_FLUSHES();
+  //emulating durmarker flush
+  FLUSH_CL(&P_last_safe_ts->ts);
+  FENCE_PREV_FLUSHES();
+  return ;
+}
+
+void on_after_htm_commit_pcwm(int threadId)
+{
+  // if (writeLogStart == writeLogEnd)
+  //   INC_PERFORMANCE_COUNTER(timeTotalTS1, timeAfterTXTS1, timeTX_ro);
+  // else
+  //   INC_PERFORMANCE_COUNTER(timeTotalTS1, timeAfterTXTS1, timeTX_upd);
+
+  int didTheFlush = 0;
+
+  // gs_ts_array[threadId].pcwm.ts = readClockVal; // currently has the TS of begin
+  // tells the others my TS taken within the TX
+  // TODO: remove the atomic
+  if (!readonly_tx) 
+    __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, readClockVal, __ATOMIC_RELEASE);
+
+  // printf("[%i] did TX=%lx\n", threadId, readClockVal);
+
+  if (writeLogStart == writeLogEnd) {
+    /* Read-only transaction is about to return */
+
+    if (!readonly_tx)
+    // tells the others to move on
+      __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, onesBit63(readClockVal), __ATOMIC_RELEASE);
+
+    /* RO durability wait (bug fix by Joao)*/
+    RO_wait_for_durable_reads(threadId, readClockVal);
+
+    goto ret;
+  }
+
+  __atomic_store_n(&gs_ts_array[threadId].pcwm.isUpdate, 1, __ATOMIC_RELEASE);
+
+#ifndef DISABLE_PCWM_OPT
+  // says to the others that it intends to write this value in the marker
+  // TODO: now using gs_ts_array[threadId].pcwm.ts as TS intention
+  // __atomic_store_n(&gs_ts_array[threadId].comm2.globalMarkerIntent, readClockVal, __ATOMIC_RELEASE);
+#endif
+
+  // if ((nbSamples & (PCWM_NB_SAMPLES - 1)) == (PCWM_NB_SAMPLES - 1)) {
+    MEASURE_TS(timeFlushTS1);
+  // }
+
+  // int prevWriteLogEnd = writeLogEnd;
+  // writeLogEnd = (writeLogEnd + 1) & (gs_appInfo->info.allocLogSize - 1); // needed
+  smart_close_log_pcwm(
+    /* commit value */ onesBit63(readClockVal),
+    /* marker position */ (uint64_t*)&(write_log_thread[writeLogEnd])
+  );
+  // writeLogEnd = prevWriteLogEnd;
+
+  // -------------------
+  /** OLD */
+  // flush log entries
+  // writeLogEnd = (writeLogEnd + gs_appInfo->info.allocLogSize - 1) & (gs_appInfo->info.allocLogSize - 1);
+  // FLUSH_RANGE(&write_log_thread[writeLogStart], &write_log_thread[writeLogEnd],
+  //   &write_log_thread[0], write_log_thread + gs_appInfo->info.allocLogSize);
+  // writeLogEnd = (writeLogEnd + 1) & (gs_appInfo->info.allocLogSize - 1);
+  // FENCE_PREV_FLUSHES();
+  // /* Commits the write log (commit marker) */
+  // write_log_thread[writeLogEnd] = onesBit63(readClockVal);
+  // FLUSH_CL(&write_log_thread[writeLogEnd]);
+  /** OLD */
+  // -------------------
+
+  // tells the others flush done!
+  FENCE_PREV_FLUSHES();
+  __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, onesBit63(readClockVal), __ATOMIC_RELEASE);
+
+  // if ((nbSamples & (PCWM_NB_SAMPLES - 1)) == (PCWM_NB_SAMPLES - 1)) {
+    MEASURE_TS(timeFlushTS2);
+  // }
+  INC_PERFORMANCE_COUNTER(timeFlushTS1, timeFlushTS2, timeFlushing);
+
+  // now: is it safe to return to the application?
+  // first wait preceding TXs
+  canJumpToWait = 0;
+  wait_commit_fn(threadId);
+  // all preceding TXs flushed their logs, and we know the intention
+
+  if (canJumpToWait) goto waitTheMarker;
+
+  // second verify it the checkpointer will reproduce our log
+  volatile uint64_t oldVal, oldVal2;
+putTheMarker:
+  if ((oldVal = __atomic_load_n(&P_last_safe_ts->ts, __ATOMIC_ACQUIRE)) < readClockVal) {
+    int success = 0;
+    // it will not be reproduced, need to change it
+    while (__atomic_load_n(&P_last_safe_ts->ts, __ATOMIC_ACQUIRE) < readClockVal) {
+      oldVal2 = __sync_val_compare_and_swap(&P_last_safe_ts->ts, oldVal, readClockVal);
+      success = (oldVal2 == oldVal);
+      oldVal = oldVal2;
+    }
+    if (success) {
+      FLUSH_CL(&P_last_safe_ts->ts);
+      FENCE_PREV_FLUSHES();
+      didTheFlush = 1;
+// -------------------------------
+      // tells the others that I've managed to flush up to my TS
+      // __atomic_store_n(&gs_ts_array[threadId].comm2.globalMarkerTS, readClockVal, __ATOMIC_RELEASE);
+      // TODO: now using the same cacheline
+      __atomic_store_n(&gs_ts_array[threadId].pcwm.flushedMarker, readClockVal, __ATOMIC_RELEASE);
+// -------------------------------
+      // this may fail, I guess a more recent transaction will update the TS...
+      // at this point it should be guaranteed that the checkpointer sees:
+      //  P_last_safe_ts->ts >= readClockVal (it ignores bit 63)
+      // TODO: while enabling this do not forget zeroBit63 whenever you read P_last_safe_ts
+      // __sync_val_compare_and_swap(&P_last_safe_ts->ts, readClockVal, onesBit63(readClockVal));
+    }
+  }
+waitTheMarker:
+  if (!didTheFlush) {
+    // tried the following (seems to be slightly faster):
+// -------------------------------
+    volatile uint64_t spinCount = 0;
+    while (1) {
+      // while (__atomic_load_n(&P_last_safe_ts->ts, __ATOMIC_ACQUIRE) < readClockVal) {
+      //   _mm_pause();
+      //   spinCount++;
+      //   if (spinCount > 10000) {
+      //     // printf("goto putTheMarker\n");
+      //     goto putTheMarker;
+      //   }
+      // }; // need to wait
+      spinCount++;
+      int i;
+      for (i = 0; i < gs_appInfo->info.nbThreads; ++i) {
+            // if (gs_ts_array[i].comm2.globalMarkerTS >= readClockVal) {
+        if (__atomic_load_n(&gs_ts_array[i].pcwm.flushedMarker, __ATOMIC_ACQUIRE) >= readClockVal) {
+          goto outerLoop;
+        }
+      }
+      if (spinCount > 10000) {
+        // goto putTheMarker;
+      }
+      //_mm_pause();
+    }
+// -------------------------------
+    // // need to be sure it was flushed
+    // while (!isBit63One(P_last_safe_ts->ts)); // TODO: the code before seems slightly faster
+  }
+outerLoop:
+  
+  G_next[threadId].log_ptrs.write_log_next = (writeLogEnd + 1) & (gs_appInfo->info.allocLogSize - 1);
+ret:
+
+if (readonly_tx) {
+  MEASURE_INC(countROCommitPhases);
+} else {
+  uint64_t ts2;
+  MEASURE_TS(ts2);
+  INC_PERFORMANCE_COUNTER(timeAfterTXTS1, ts2, dur_commit_time);
+  MEASURE_INC(countUpdCommitPhases);
+}
+
+/* TODO: this might not be needed for every case (it's just for safety) */
+__atomic_store_n(&gs_ts_array[threadId].pcwm.ts, onesBit63(0), __ATOMIC_RELEASE);
+
+
+#ifdef DETAILED_BREAKDOWN_PROFILING
+  if (!is_readonly_tx) {
+    uint64_t ts2;
+    MEASURE_TS(ts2);
+
+    int c = upd_after_commit_count[threadId];
+    if (c < MAX_PROFILE_COUNT) {
+      upd_after_commit_duration[threadId][c] = ts2 - timeAfterTXTS1;
+      upd_log_flush_duration[threadId][c] = timeFlushTS2 - timeFlushTS1;
+      upd_after_commit_count[threadId]++;
+    }
+  }
+#endif
+
+// printf("gs_ts_array[%d].pcwm.ts = %lu\n", threadId, gs_ts_array[threadId].pcwm.ts);
+  
+}
+
 void RO_wait_for_durable_reads(int threadId, uint64_t myPreCommitTS)
 {
   uint64_t ts1, ts2;

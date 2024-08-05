@@ -143,6 +143,8 @@ void assert_empty_locks(Thread *self) {
 //map variable address to lock address.
 //TODO: revert to the following commented lines
 #define TAB_OFFSET(a) ((UNS(a) & TABMSK))
+//define TAB_OFFSET(a) ((((UNS(a)+COLOR) >> PSSHIFT) & TABMSK)) /* PS1M */
+
 #define LOCKED_AVPAIRS(a) (locked_avpairs + TAB_OFFSET(addr))
 #define LOCK_OWNER(a) (lock_owners + TAB_OFFSET(addr))
 
@@ -221,6 +223,9 @@ volatile long ro_tx_timeTally = 0;
 volatile long upd_tx_timeTally = 0;
 volatile long abort_timeTally = 0;
 volatile long stm_commitsTally = 0;
+
+volatile long stm_ro_commitsTally = 0;
+volatile long stm_upd_commitsTally = 0;
 
 
 volatile long ReadOverflowTally  = 0;
@@ -365,8 +370,8 @@ READ_TIMESTAMP(end_time);
   printf(\
 "Total sum time: %lu\n" \
 "Total commit time: %lu\n" \
-"Total-abort-upd-tx-time: %lu\n" \
-"Total-abort-ro-tx-time: %lu\n" \
+"Total abort-upd time: %lu\n" \
+"Total abort-ro time: %lu\n" \
 "Total wait time: %lu\n" \
 "Total sus time: %lu\n" \
 "Total flush time: %lu\n" \
@@ -380,6 +385,8 @@ READ_TIMESTAMP(end_time);
   "\tROT commits:  %lu\n" \
   "\tGL commits: %lu\n" \
   "\tSTM commits:  %lu\n" \
+  "\t\tSTM RO commits:  %lu\n" \
+  "\t\tSTM upd commits:  %lu\n" \
 "Total aborts: %lu\n" \
   "\tHTM conflict aborts:  %lu\n" \
     "\t\tHTM self aborts:  %lu\n" \
@@ -402,8 +409,8 @@ READ_TIMESTAMP(end_time);
   0,
   abort_timeTally,
   0, //in pisces, RO never abort
-  0,
   isolation_wait_timeTally,
+  0,
   flush_timeTally,
   upd_dur_commit_timeTally,
   ro_wait_timeTally,
@@ -415,6 +422,8 @@ READ_TIMESTAMP(end_time);
   0,
   0,
   stm_commitsTally,
+  stm_ro_commitsTally,
+  stm_upd_commitsTally,
   AbortTally, 
   AbortTally,
   0,
@@ -484,7 +493,9 @@ TxFreeThread (Thread* t)
     AtomicAdd((volatile intptr_t*)((void*)(&abort_timeTally)),         t->abort_time);
 
     AtomicAdd((volatile intptr_t*)((void*)(&stm_commitsTally)),         t->upd_commits);
+    AtomicAdd((volatile intptr_t*)((void*)(&stm_upd_commitsTally)),         t->upd_commits);
     AtomicAdd((volatile intptr_t*)((void*)(&stm_commitsTally)),         t->ro_commits);
+    AtomicAdd((volatile intptr_t*)((void*)(&stm_ro_commitsTally)),         t->ro_commits);
 
     AtomicAdd((volatile intptr_t*)((void*)(&AbortTally)),         t->Aborts);
 
@@ -756,7 +767,7 @@ TxStore (Thread* Self, volatile intptr_t* addr, intptr_t valu)
     if (owner && owner != Self) {
         // printf("Aborted: thread %d, addr=%p, owner=%d\n", Self->UniqID, addr, owner->UniqID);
         TxAbort(Self);
-        assert(0); //I should never reachi this point
+        assert(0); //I should never reach this point
         return;
     }
 
@@ -771,7 +782,7 @@ TxStore (Thread* Self, volatile intptr_t* addr, intptr_t valu)
     }
     else {
         if (CAS(LOCK_OWNER(addr), NULL, Self) != NULL) {
-            // printf("I will abort becaus CAS on txstore failed\n");
+            // printf("I will abort because CAS on txstore failed\n");
             TxAbort(Self);
             assert(0); //I should never reachi this point
             return;
@@ -825,6 +836,7 @@ TxLoad (Thread* Self, volatile intptr_t* addr)
 {
     Self->numLoads ++;
     // assert_locked_wrset(Self);
+    
 
     lock_t *l = get_locked_avpair(addr);
 

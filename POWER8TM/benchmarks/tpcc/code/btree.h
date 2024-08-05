@@ -283,7 +283,8 @@ public:
   // item is.If we were to insert key into the tree, it would go after this item.This is weird,
   //but is easier than implementing iterators.In STL terms, this would be "lower_bound(key)--"
   // WARNING:This does * not * work when values are deleted.Thankfully, TPC - C does not use deletes.
-  __attribute__((transaction_safe)) bool fast_findLastLessThan(TM_ARGDECL const KEY & key, VALUE * value = 0, KEY * out_key = 0)const {
+  __attribute__((transaction_safe)) bool fast_findLastLessThan(TM_ARGDECL  KEY & key, VALUE * value = 0, KEY * out_key = 0)const {
+retry_fast_findLastLessThan: /* Joao: ugly hack to avoid multiple recursive calls of this function */
     const void *node = FAST_PATH_SHARED_READ_P(root);
     unsigned long d = FAST_PATH_SHARED_READ(depth);
     while (d-- != 0) {
@@ -328,6 +329,10 @@ public:
           // this makes it work.We need this for TPC-C undo.The solution is to use a
           // more complete b - tree implementation.
           intptr_t temp_key_4 = FAST_PATH_SHARED_READ(leaf->keys[pos]);
+          key = temp_key_4;
+          goto retry_fast_findLastLessThan;
+          assert(0);
+          /* Joao: this is the previous recursive call (before the ugly goto hack)*/
           return fast_findLastLessThan(TM_ARG temp_key_4, value, out_key);
         }
       }

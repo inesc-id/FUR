@@ -120,13 +120,14 @@ int64_t TPCCTables::stockLevel(TM_ARGDECL int64_t warehouse_id, int64_t district
     //int64_t s_i_ids[10000];
 	long s_i_ids[100000];
     // Average size is more like ~30.
-    uint64_t counter_s = 0; int x;
+    uint64_t counter_s = 0; int x=0;
 /*    __transaction_atomic { */
     // FIXME(nmld): transaction block here
     //TM_THREAD_ENTER();
      int ro = 0;
     TM_BEGIN(ro);
         District* d = findDistrict(TM_ARG warehouse_id, district_id);
+        
 	//printf("address of d is %p\n",d);
 	int64_t o_id = d->d_next_o_id;
         // Iterate over [o_id-20, o_id)
@@ -138,16 +139,18 @@ int64_t TPCCTables::stockLevel(TM_ARGDECL int64_t warehouse_id, int64_t district
                 if (line == NULL) {
                     // We can break since we have reached the end of the lines for this order.
                     // TODO: A btree iterate in (w_id, d_id, o_id) order would be a clean way to do this
+                    // printf("break com line_number=%d\n", line_number);
                     break;
                 }
                 // Check if s_quantity < threshold
                 stock = findStock(TM_ARG warehouse_id, line->ol_i_id);
                 if(local_exec_mode == 1 || local_exec_mode == 3){
 		        stock_quantity = SLOW_PATH_SHARED_READ(stock->s_quantity);
-		}
+		        }
                 else{
                 	stock_quantity = FAST_PATH_SHARED_READ(stock->s_quantity);
-		}
+		        }
+                x += stock_quantity;
                 if (stock_quantity < threshold) {
                     s_i_ids[counter_s] = line->ol_i_id;
                     counter_s++;
@@ -164,6 +167,9 @@ int64_t TPCCTables::stockLevel(TM_ARGDECL int64_t warehouse_id, int64_t district
 //     }
 //   }
   TM_END();
+//   if (x==0) printf("stocklevel returned 0\n");
+  return x;
+//   printf("Stocklevel ended. numFinds=%d\n", numFinds);
   //TM_THREAD_EXIT();
 	/*if(stock_quantity>0)
 		counter_s++;
@@ -524,9 +530,9 @@ __attribute__((transaction_safe)) void TPCCTables::paymentHome(TM_ARGDECL int64_
       float temp_float = FAST_PATH_SHARED_READ_D(w->w_ytd);
       FAST_PATH_SHARED_WRITE_D(w->w_ytd, temp_float+h_amount);
 
-      District* d = findDistrict(TM_ARG warehouse_id, district_id);
-      float temp_float_2 = FAST_PATH_SHARED_READ_D(d->d_ytd);
-      FAST_PATH_SHARED_WRITE_D(d->d_ytd, temp_float_2+h_amount);
+    //   District* d = findDistrict(TM_ARG warehouse_id, district_id);
+    //   float temp_float_2 = FAST_PATH_SHARED_READ_D(d->d_ytd);
+    //   FAST_PATH_SHARED_WRITE_D(d->d_ytd, temp_float_2+h_amount);
     }
 
     // Insert the line into the history table
@@ -599,7 +605,6 @@ void TPCCTables::delivery(TM_ARGDECL int64_t warehouse_id, int64_t carrier_id, c
         for (int64_t d_id = 1; d_id <= District::NUM_PER_WAREHOUSE; ++d_id) {
             // Find and remove the lowest numbered order for the district
 
-            //JOAO DEBUG int64_t key = makeNewOrderKey(warehouse_id, d_id, 1);
             int64_t key = makeNewOrderKey(warehouse_id, d_id, 0xFFFFFFFF);
             key = key; // *1000000; //JOAO DEBUG (otherwise, delivery was rarely picking up new orders)
             NewOrder* neworder;
@@ -890,7 +895,6 @@ __attribute__((transaction_safe)) static int64_t makeOrderKey(int64_t w_id, int6
 __attribute__((transaction_safe)) static int64_t makeOrderByCustomerKey(int64_t w_id, int64_t d_id, int64_t c_id, int64_t o_id) {
     int64_t top_id = (w_id * District::NUM_PER_WAREHOUSE + d_id) * Customer::NUM_PER_DISTRICT
             + c_id;
-    //JOAO DEBUG return (((int64_t) top_id) << 8) | o_id;
     return (((int64_t) top_id) << 32) | o_id;
 }
 
@@ -933,7 +937,6 @@ __attribute__((transaction_safe)) Order* TPCCTables::findLastOrderByCustomer(TM_
 
     // Increment the (w_id, d_id, c_id) tuple
     int64_t key = makeOrderByCustomerKey(w_id, d_id, c_id, 1);
-    //JOAO DEBUG key += ((int64_t)1) << 8;
     key += ((int64_t)1) << 32;
     bool found;
     if(local_exec_mode == 1 || local_exec_mode == 3)
@@ -983,7 +986,6 @@ __attribute__((transaction_safe)) OrderLine* TPCCTables::findOrderLine(TM_ARGDEC
 
 __attribute__((transaction_safe)) static int64_t makeNewOrderKey(int64_t w_id, int64_t d_id, int64_t o_id) {
     int64_t upper_id = w_id * Warehouse::MAX_WAREHOUSE_ID + d_id;
-    //JOAO DEBUG int64_t id = static_cast<int64_t>(upper_id) << 8 | o_id;
     int64_t id = static_cast<int64_t>(upper_id) << 32 | o_id;
     return id;
 }
