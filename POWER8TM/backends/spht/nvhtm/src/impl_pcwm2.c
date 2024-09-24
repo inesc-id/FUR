@@ -225,8 +225,8 @@ void on_before_htm_begin_pcwm2(int threadId, int ro)
   // __atomic_store_n(&gs_ts_array[threadId].pcwm.logPos, writeLogEnd, __ATOMIC_RELEASE);
   // __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, rdtsc(), __ATOMIC_RELEASE);
 
-if (!readonly_tx)
-    __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, rdtsc(), __ATOMIC_RELEASE);
+// if (!readonly_tx)
+//     __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, rdtsc(), __ATOMIC_RELEASE);
 
   writeLogEnd = (writeLogEnd + 1) & (gs_appInfo->info.allocLogSize - 1);
 
