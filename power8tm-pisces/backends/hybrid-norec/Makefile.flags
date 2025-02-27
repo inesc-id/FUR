@@ -1,5 +1,0 @@
-CFLAGS   += -w $(HTM_RETRIES) $(RETRY_POLICY)
-
-CPPFLAGS := $(CFLAGS)
-LIBS     += $(CFLAGS) -I ../../../stms/norec/ -lrt -lm -L../../../stms//norec/ -lnorec -ltcmalloc -lpthread
-LDFLAGS  += $(LIBS)

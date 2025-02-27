@@ -1,0 +1,9 @@
+Fri Jan 31 2020 Marcin Ślusarz <marcin.slusarz@intel.com>
+	* Version 1.8
+
+	This is a first release of vmem as separate project from PMDK.
+
+	It fixes compatiblity with newer toolchains.
+
+	ChangeLog for previous releases (with PMDK) can be found in
+	ChangeLog.pmdk.

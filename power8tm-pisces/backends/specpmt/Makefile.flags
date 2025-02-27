@@ -1,0 +1,5 @@
+CFLAGS   += -w -mhtm -DSTM -I$(STM)/ -I../lib -DPTM -O2 --std=c++17 -g -fPIC -mcpu=native -mtune=native -DCLFLUSH -DNO_WARN_X86_INTRINSICS
+CPPFLAGS := $(CFLAGS)
+LDFLAGS  += -L$(STM) -I$(STM)/ -I../lib
+LIBS     += $(CPPFLAGS) -lsptx_naive -lm -ltcmalloc -lrt -lpthread -mcpu=power9 -mtune=power9 -fpermissive -lboost_system
+

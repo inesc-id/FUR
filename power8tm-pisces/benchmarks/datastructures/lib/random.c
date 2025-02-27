@@ -77,7 +77,7 @@
 #include <sched.h>
 #include "mt19937ar.h"
 #include "random.h"
-#include "tm.h"
+//include "tm.h"
 
 
 /* =============================================================================
@@ -110,7 +110,8 @@ void init_random(random_t* randomPtr) {
 random_t*
 Prandom_alloc (void)
 {
-    random_t* randomPtr = (random_t*)P_MALLOC(sizeof(random_t));
+    // random_t* randomPtr = (random_t*)P_MALLOC(sizeof(random_t));
+    random_t* randomPtr = (random_t*)malloc(sizeof(random_t));
     if (randomPtr != NULL) {
         randomPtr->mti = N;
         init_genrand(randomPtr->mt, &(randomPtr->mti), RANDOM_DEFAULT_SEED);
@@ -138,7 +139,8 @@ random_free (random_t* randomPtr)
 void
 Prandom_free (random_t* randomPtr)
 {
-    P_FREE(randomPtr);
+    free(randomPtr);
+    // P_FREE(randomPtr);
 }
 
 
