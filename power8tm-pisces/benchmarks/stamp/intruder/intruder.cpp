@@ -317,7 +317,7 @@ processPackets (void* argPtr)
         packet_t* packetPtr = (packet_t*)bytes;
         long flowId = packetPtr->flowId;
 
-        error_t error;
+        e_error_t error;
 	local_exec_mode = 1;
         TM_BEGIN(ro);
         if (local_exec_mode != 1 && local_exec_mode != 3) {
@@ -347,7 +347,7 @@ processPackets (void* argPtr)
         }
         TM_END();
         if (data) {
-            error_t error = PDETECTOR_PROCESS(detectorPtr, data);
+					e_error_t error = PDETECTOR_PROCESS(detectorPtr, data);
             P_FREE(data);
             if (error) {
                 bool_t status = PVECTOR_PUSHBACK(errorVectorPtr,

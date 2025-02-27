@@ -323,12 +323,12 @@ normal_exec (int       nthreads,
         /* Replace old cluster centers with new_centers */
         for (i = 0; i < nclusters; i++) {
             for (j = 0; j < nfeatures; j++) {
-                if (new_centers_len[i] > 0) {
+                if (*new_centers_len[i] > 0.0f) {
                     clusters[i][j] = new_centers[i][j] / *new_centers_len[i];
                 }
                 new_centers[i][j] = 0.0;   /* set back to 0 */
             }
-            *new_centers_len[i] = 0;   /* set back to 0 */
+            *new_centers_len[i] = 0.0f;   /* set back to 0 */
         }
 
         delta /= npoints;

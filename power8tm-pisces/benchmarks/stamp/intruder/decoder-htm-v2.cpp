@@ -122,7 +122,7 @@ decoder_htm_v2::decoder_free (decoder_t* decoderPtr)
  * decoder_process
  * =============================================================================
  */
-error_t
+e_error_t
 decoder_htm_v2::decoder_process (decoder_t* decoderPtr, char* bytes, long numByte)
 {
     bool_t status;
@@ -286,7 +286,7 @@ decoder_htm_v2::decoder_process (decoder_t* decoderPtr, char* bytes, long numByt
  * TMdecoder_process
  * =============================================================================
  */
-error_t
+e_error_t
 decoder_htm_v2::TMdecoder_process (TM_ARGDECL  decoder_t* decoderPtr, char* bytes, long numByte)
 {
     bool_t status;

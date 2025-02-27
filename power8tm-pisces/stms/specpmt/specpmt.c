@@ -8,8 +8,6 @@
 #include "platform.h"
 #include "util.h"
 
-
-
 # define delay_for_pm 70
 # define emulate_pm_slowdown() \
 { \
@@ -21,9 +19,47 @@
 static unsigned long start_time, end_time;
 
 #ifndef READ_TIMESTAMP
-# define READ_TIMESTAMP(dest) __asm__ volatile("0: \n\tmfspr   %0,268 \n": "=r"(dest));
-#endif 
+#	if defined(__i386__)
+#		error "READ_TIMESTAMP not refined for __i386__"
+#	elif defined(__x86_64__)
+static __inline__ unsigned long long
+rdtsc_x86_64( void )
+{ 
+	unsigned long long res; 
+	__asm__ __volatile__ ( 
+	"xor %%rax,%%rax \n\t" 
+	"rdtsc           \n\t" 
+	"shl $32,%%rdx   \n\t" 
+	"or  %%rax,%%rdx \n\t" 
+	"mov %%rdx,%0    \n\t" 
+	: "=r"(res) 
+	: 
+	: "rax", "rdx"); 
+	return res; 
+}
 
+static __inline__ unsigned long long
+rdtscp_x86_64( void ) 
+{
+	unsigned long long res;
+	__asm__ __volatile__ (
+	"xor %%rax,%%rax \n\t"
+	"rdtscp          \n\t"
+	"shl $32,%%rdx   \n\t"
+	"or  %%rax,%%rdx \n\t"
+	"mov %%rdx,%0    \n\t"
+	: "=r"(res)
+	:
+	: "rax", "rdx", "ecx");
+	return res;
+}
+
+# 	define READ_TIMESTAMP(dest) dest = rdtsc_x86_64()
+
+#	elif defined(__powerpc__)
+# 	define READ_TIMESTAMP(dest) __asm__ volatile("0: \n\tmfspr   %0,268 \n": "=r"(dest));
+#	endif /* ARCH options */
+#endif /* READ_TIMESTAMP */
 
 
 struct _Thread {
@@ -203,43 +239,43 @@ READ_TIMESTAMP(end_time);
   "\tROT capacity aborts:  %lu\n" \
     "\t\tROT persistent aborts:  %lu\n" \
   "\tROT other aborts:  %lu\n", \
-  0,
-  0,
+  0L,
+  0L,
   abort_timeTally,
-  0, //in pisces, RO never abort
+  0L, //in pisces, RO never abort
   isolation_wait_timeTally,
-  0,
+  0L,
   flush_timeTally,
   upd_dur_commit_timeTally,
   ro_wait_timeTally,
   upd_tx_timeTally,
   ro_tx_timeTally,
   stm_commitsTally, 
-  0,
-  0, 
-  0,
-  0,
+  0L,
+  0L, 
+  0L,
+  0L,
   stm_commitsTally,
   stm_ro_commitsTally,
   stm_upd_commitsTally,
   AbortTally, 
   AbortTally,
-  0,
+  0L,
   AbortTally,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0);
+  0L,
+  0L,
+  0L,
+  0L,
+  0L,
+  0L,
+  0L,
+  0L,
+  0L,
+  0L,
+  0L,
+  0L,
+  0L,
+  0L);
 
   printf("Emulated PM latency: %d\n", delay_for_pm);
 

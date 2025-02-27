@@ -60,9 +60,9 @@ __INLINE__ intptr_t cas(intptr_t newv, intptr_t old, intptr_t* ptr) {
  * http://mail.nl.linux.org/kernelnewbies/2002-11/msg00127.html
  * =============================================================================
  */
-#define MEMBARLDLD()                    __asm__ __volatile__ ("sync" : : :"memory")
-#define MEMBARSTST()                    __asm__ __volatile__ ("sync" : : :"memory")
-#define MEMBARSTLD()                    __asm__ __volatile__ ("sync" : : :"memory")
+#define MEMBARLDLD()                    __asm__ __volatile__ ("lfence" : : :"memory")
+#define MEMBARSTST()                    __asm__ __volatile__ ("sfence" : : :"memory")
+#define MEMBARSTLD()                    __asm__ __volatile__ ("mfence" : : :"memory")
 
 
 /* =============================================================================

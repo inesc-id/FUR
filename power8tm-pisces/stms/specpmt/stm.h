@@ -19,6 +19,7 @@
 
 //include "include/sptx_naive.h"
 #include "util.h"
+#include "stdint.h"
 
 #define STM_THREAD_T                    Thread
 #define STM_SELF                        Self

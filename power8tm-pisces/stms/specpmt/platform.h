@@ -12,13 +12,13 @@
 #define PLATFORM_H 1
 
 
-// #if defined(SPARC) || defined(__sparc__)
-// #  include "platform_sparc.h"
-// #elif defined(__powerpc__)
+#if defined(SPARC) || defined(__sparc__)
+#  include "platform_sparc.h"
+#elif defined(__powerpc__)
 #  include "platform_powerpc.h"
-// #else /* !SPARC (i.e., x86) */
-// #  include "platform_x86.h"
-// #endif
+#else /* !SPARC (i.e., x86) */
+#  include "platform_x86.h"
+#endif
 
 
 #define CAS(m,c,s)  cas((intptr_t)(s),(intptr_t)(c),(intptr_t*)(m))

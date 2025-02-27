@@ -1,5 +1,15 @@
-CFLAGS   += -w -mhtm -DSTM -I$(STM)/ -I../lib -DPTM -O2 --std=c++17 -g -fPIC -mcpu=native -mtune=native -DCLFLUSH -DNO_WARN_X86_INTRINSICS
+CFLAGS   += -w -DSTM -I$(STM)/ -I../lib -DPTM -O2 --std=c++17 -g -fPIC -DCLFLUSH
+LIBS     += $(CPPFLAGS) -lsptx_naive -lm -ltcmalloc -lrt -lpthread -fpermissive -lboost_system
+CC       = g++
+uname_p := $(shell uname -p)
+ifeq ($(uname_p),x86_64)
+CFLAGS   += -mrtm -mcpu=native -mtune=native 
+LIBS     += 
+else
+CFLAGS   += -mhtm -mcpu=native -mtune=native -DNO_WARN_X86_INTRINSICS
+LIBS     += -mcpu=power9 -mtune=power9
+endif
+
 CPPFLAGS := $(CFLAGS)
 LDFLAGS  += -L$(STM) -I$(STM)/ -I../lib
-LIBS     += $(CPPFLAGS) -lsptx_naive -lm -ltcmalloc -lrt -lpthread -mcpu=power9 -mtune=power9 -fpermissive -lboost_system
 

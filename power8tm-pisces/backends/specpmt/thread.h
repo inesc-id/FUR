@@ -288,7 +288,18 @@ thread_getId();
 long
 thread_getNumThread();
 
+#define _GNU_SOURCE
+#include <sched.h>
 
+// #if defined(__powerpc__) || defined(__ppc__) || defined(__PPC__)
+static void bindThread(long threadId) {
+	cpu_set_t my_set;
+	CPU_ZERO(&my_set);
+	// int offset = threadId / 10;
+	CPU_SET(threadId, &my_set);
+	sched_setaffinity(0, sizeof(cpu_set_t), &my_set);
+}
+// #endif
 
 #ifdef __cplusplus
 }

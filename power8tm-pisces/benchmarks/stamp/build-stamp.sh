@@ -43,9 +43,9 @@ do
 	if [[ $backend == htm-sgl || $backend == hybrid-norec ]] ; then
 		make_command="make -f Makefile HTM_RETRIES=-DHTM_RETRIES=$htm_retries RETRY_POLICY=-DRETRY_POLICY=$rot_retries"
 	else
-        	make_command="make -f Makefile HTM_RETRIES=-DHTM_RETRIES=$htm_retries ROT_RETRIES=-DROT_RETRIES=$rot_retries"
+		make_command="make -f Makefile HTM_RETRIES=-DHTM_RETRIES=$htm_retries ROT_RETRIES=-DROT_RETRIES=$rot_retries"
 	fi
-        $make_command
+		$make_command
     rc=$?
     if [[ $rc != 0 ]] ; then
         echo ""

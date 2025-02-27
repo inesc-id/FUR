@@ -32,9 +32,10 @@
 
 #  include <string.h>
 #  include <stm.h>
+#  include <stdint.h>
 #  include "thread.h"
 #  include "specpmt.h"
-//  include "include/sptx_naive.h"
+#  include "include/sptx_naive.h"
 
 extern PMT pmt;
 

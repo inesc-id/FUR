@@ -12,5 +12,5 @@ fi
 
 ssh $NODE "mkdir $DIR ; mkdir $DM "
 
-rsync -avz . --exclude plots_scripts/data/ $NODE:$DM
+rsync -avz . --exclude plots_scripts/data/ --exclude .git $NODE:$DM
 

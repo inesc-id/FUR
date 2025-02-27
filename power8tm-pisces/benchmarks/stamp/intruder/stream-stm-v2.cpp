@@ -244,7 +244,7 @@ stream_stm_v2::stream_generate (stream_t* streamPtr,
             char* str2 = (char*)malloc((length + 1) * sizeof(char));
             assert(str2);
             strcpy(str2, str);
-            error_t error = detector_process(detectorPtr, str2); /* updates in-place */
+            e_error_t error = detector_process(detectorPtr, str2); /* updates in-place */
             if (error == ERROR_SIGNATURE) {
                 bool_t status = MAP_INSERT(attackMapPtr,
                                            (void*)f,
