@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 FOLDERS="genome intruder vacation labyrinth ssca2 kmeans yada"
 
 if [ $# -eq 0 ] ; then

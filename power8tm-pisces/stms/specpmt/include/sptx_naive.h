@@ -21,7 +21,7 @@ public:
   void tm_system_shutdown(); //called on program exit
   void tm_thread_init(); //called on per-thread tm init
   void tm_thread_exit();
-  void tm_begin();
+  void tm_begin(long thread_id);
   void tm_end();
   
   template<typename T> void tm_read(T* addr);

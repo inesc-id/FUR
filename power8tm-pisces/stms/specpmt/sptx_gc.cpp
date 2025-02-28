@@ -16,7 +16,10 @@ void SPGCPMT::tm_thread_init(){
 }
 void SPGCPMT::tm_thread_exit(){}
 
-void SPGCPMT::tm_begin(){
+void SPGCPMT::tm_begin(long thread_id){
+	if (local_log == nullptr) {
+		local_log = new SPLog(thread_id);
+	}
   local_log->start_tx();
 }
 

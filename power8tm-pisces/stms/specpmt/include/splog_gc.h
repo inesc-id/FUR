@@ -130,7 +130,7 @@ public:
   * unlike undo logging, speculative logging doesn't need the timestamp of tx start as it will not use the log of uncommitted tx
   */
   void start_tx(){
-    tx_id++;
+    this->tx_id++;
     start_pos = current_pos;
     insertValue(current_pos, 0LL); //checksum
   }

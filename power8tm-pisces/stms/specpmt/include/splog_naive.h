@@ -31,15 +31,15 @@ public:
 
   SPLog(uint64_t _thread_id) { //, memkind_t _mem_kind) : mem_kind(_mem_kind){
     thread_id = _thread_id;
-    tx_id = -1;
-    capacity = 1<<20; //1MB log default, we assume that the write set size of a transaction is less than this capacity
+    this->tx_id = -1;
+    capacity = 1<<28; //1MB log default, we assume that the write set size of a transaction is less than this capacity
     roll_capacity = capacity; //rolls at 1MB on commit, no matter what's the capacity; capacity should be larger than the roll_capacity;
 
     // log_area = (char*)memkind_malloc(mem_kind, capacity);
-    log_area = (char*)malloc(capacity);
-    *(uint64_t*)log_area = -1;
-    start_pos = log_area;
-    current_pos = log_area;
+    this->log_area = (char*)malloc(capacity);
+    *(uint64_t*)this->log_area = -1;
+    this->start_pos = this->log_area;
+    this->current_pos = this->log_area;
   }
   
   template<typename T>

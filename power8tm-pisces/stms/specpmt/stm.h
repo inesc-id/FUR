@@ -60,7 +60,7 @@
 #  define STM_BEGIN(isReadOnly)         do { \
                                             STM_JMPBUF_T STM_JMPBUF; \
                                             sigsetjmp(STM_JMPBUF, 1); \
-                                            pmt.tm_begin(); \
+                                            pmt.tm_begin(thread_getId()); \
                                         } while (0) /* enforce comma */
 
 #define STM_BEGIN_RD()                  STM_BEGIN(1)

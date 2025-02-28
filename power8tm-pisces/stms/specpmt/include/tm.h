@@ -29,8 +29,8 @@ extern PMT pmt;
 #  define TM_MALLOC(size)             malloc(size)
 #  define TM_FREE(ptr)                free(ptr)
 
-#  define TM_BEGIN()                    pmt.tm_begin();
-#  define TM_BEGIN_RO()                 pmt.tm_begin();
+#  define TM_BEGIN()                    pmt.tm_begin(thread_getId());
+#  define TM_BEGIN_RO()                 pmt.tm_begin(thread_getId());
 #  define TM_END()                      pmt.tm_end();
 #  define TM_RESTART()                  assert(0)
 

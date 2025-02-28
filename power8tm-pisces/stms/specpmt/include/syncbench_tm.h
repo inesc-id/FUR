@@ -11,7 +11,7 @@ extern PMT pmt;
 
 
 
-#  define TX_START(type)                 pmt.tm_begin();
+#  define TX_START(type, thread_id)      pmt.tm_begin(thread_id);
 #  define TX_END                         pmt.tm_end();
 #define TM_SHUTDOWN()                   /*nothing*/
 
