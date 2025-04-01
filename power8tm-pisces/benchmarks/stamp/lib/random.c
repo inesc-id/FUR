@@ -174,13 +174,13 @@ __inline__ unsigned long long tick()
   #endif
 }
 
-#if defined(__powerpc__) || defined(__ppc__) || defined(__PPC__)
-void bindThread(long threadId) {
-    cpu_set_t my_set;
-    CPU_ZERO(&my_set);
-    int offset = threadId / 10;
-    CPU_SET((threadId % 10)*8+offset, &my_set);
-    sched_setaffinity(0, sizeof(cpu_set_t), &my_set);
-}
-#endif
+// #if defined(__powerpc__) || defined(__ppc__) || defined(__PPC__)
+// void bindThread(long threadId) {
+//     cpu_set_t my_set;
+//     CPU_ZERO(&my_set);
+//     int offset = threadId / 10;
+//     CPU_SET((threadId % 10)*8+offset, &my_set);
+//     sched_setaffinity(0, sizeof(cpu_set_t), &my_set);
+// }
+// #endif
 

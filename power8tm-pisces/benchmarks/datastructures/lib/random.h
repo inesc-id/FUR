@@ -151,9 +151,9 @@ __inline__ unsigned long long tick();
 #define PRANDOM_SEED(r, s)              random_seed(r, s)
 #define PRANDOM_GENERATE(r)             random_generate(r)
 
-#if defined(__powerpc__) || defined(__ppc__) || defined(__PPC__)
-void bindThread(long threadId);
-#endif
+// #if defined(__powerpc__) || defined(__ppc__) || defined(__PPC__)
+// void bindThread(long threadId);
+// #endif
 
 
 #ifdef __cplusplus
