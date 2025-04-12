@@ -292,7 +292,7 @@ thread_getNumThread();
 #include <sched.h>
 
 // #if defined(__powerpc__) || defined(__ppc__) || defined(__PPC__)
-void bindThread(long threadId) {
+static void bindThread(long threadId) {
 	cpu_set_t my_set;
 	CPU_ZERO(&my_set);
 	// int offset = threadId / 10;
