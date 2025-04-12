@@ -19,7 +19,7 @@ cp ../../backends/$backend/tm.h code/
 cp ../../backends/$backend/thread.c code/
 cp ../../backends/$backend/thread.h code/
 cp ../../backends/$backend/Makefile . 
-cp ../../backends/$backend/Makefile.common .
+# cp ../../backends/$backend/Makefile.common .
 cp ../../backends/$backend/Makefile.flags .
 cp ../../backends/$backend/Defines.common.mk . 
 
