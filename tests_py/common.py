@@ -78,7 +78,7 @@ class CollectData(RunnableBench):
     attempts = 0
     out = None
     my_env = os.environ.copy()
-    my_env["LD_LIBRARY_PATH"] = "~/dumbo/power8tm-pisces/stms/specpmt/"
+    my_env["LD_LIBRARY_PATH"] = "/home/ubuntu/dumbo/power8tm-pisces/stms/specpmt/"
     while out == None or out.returncode != 0 and attempts < 3:
       out = subprocess.run(f"timeout 10m {exec}".split(), stdout=subprocess.PIPE, text=True, env=my_env)
       attempts += 1
