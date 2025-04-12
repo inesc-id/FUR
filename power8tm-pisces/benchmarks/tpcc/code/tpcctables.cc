@@ -5,7 +5,7 @@
 #include <limits>
 #include <vector>
 
-#include "assert.h"
+#include "cassert"
 #include "stlutil.h"
 
 using std::vector;
@@ -14,7 +14,7 @@ using std::vector;
 // int deliveryCalled = 0;
 // int deliverySuccess = 0;
 
-bool CustomerByNameOrdering::operator()(const Customer* a, const Customer* b) {
+bool CustomerByNameOrdering::operator()(const Customer* a, const Customer* b) const {
     if (a->c_w_id < b->c_w_id) return true;
     if (a->c_w_id > b->c_w_id) return false;
     assert(a->c_w_id == b->c_w_id);

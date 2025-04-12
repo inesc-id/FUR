@@ -12,7 +12,7 @@
 
 class CustomerByNameOrdering {
 public:
-    bool operator()(const Customer* a, const Customer* b);
+    bool operator()(const Customer* a, const Customer* b) const;
 };
 
 // Stores all the tables in TPC-C
