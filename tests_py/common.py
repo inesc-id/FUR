@@ -77,8 +77,10 @@ class CollectData(RunnableBench):
   def run_benchmark(self, exec):
     attempts = 0
     out = None
+    my_env = os.environ.copy()
+    my_env["LD_LIBRARY_PATH"] = "~/dumbo/power8tm-pisces/stms/specpmt/"
     while out == None or out.returncode != 0 and attempts < 3:
-      out = subprocess.run(f"timeout 10m {exec}".split(), stdout=subprocess.PIPE, text=True)
+      out = subprocess.run(f"timeout 10m {exec}".split(), stdout=subprocess.PIPE, text=True, env=my_env)
       attempts += 1
       
     with open(f"{self.sample_output_folder}/{''.join(exec.split()).split('/')[-1]}", "w+") as f:
