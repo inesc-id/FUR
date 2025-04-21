@@ -241,8 +241,15 @@ int main(int argc, char** argv) {
     // Change the constants for run
     local_random = new tpcc::RealRandomGenerator();
     local_random->setC(tpcc::NURandC::makeRandomForRun(local_random, cLoad));
-        clients[c] = new TPCCClient(local_clock, local_random, tables, Item::NUM_ITEMS, static_cast<int>(num_warehouses),
-                District::NUM_PER_WAREHOUSE, Customer::NUM_PER_DISTRICT);
+		clients[c] = new TPCCClient(
+			local_clock,
+			local_random,
+			tables,
+			Item::NUM_ITEMS,
+			static_cast<int>(num_warehouses),
+			District::NUM_PER_WAREHOUSE,
+			Customer::NUM_PER_DISTRICT
+		);
   }
 
   int64_t next_workload_secs;

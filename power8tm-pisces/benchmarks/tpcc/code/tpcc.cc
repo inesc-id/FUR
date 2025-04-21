@@ -82,29 +82,26 @@ int global_num_threads = 0;
 pthread_rwlock_t rw_lock;
 
 static long int num_warehouses;
-static SystemClock* clock;
-static tpcc::RealRandomGenerator* random;
+static SystemClock* local_clock;
+static tpcc::RealRandomGenerator* local_random;
 
 void* client(void *data)
 {
 	TM_THREAD_ENTER();
-    // FIXME(nmld): you may call some code to init the worker TM thread here
-    //
-     local_thread_id = __sync_fetch_and_add( &global_num_threads, 1 );
+  local_thread_id = thread_getId();
+	TPCCClient* client = (TPCCClient*)((TPCCClient**) data)[local_thread_id];
+	SystemClock* clock = new SystemClock();
+	int64_t begin = clock->getMicroseconds();
+	int64_t beginCycles = begin * 2300;
+  int64_t duration_usecs = duration_secs * 1000000;
+  int64_t duration_cycles = duration_usecs * 2300;
+  int64_t end_cycles = duration_cycles + beginCycles;
 
-    bindThread(local_thread_id);
-
-    TPCCClient* client = (TPCCClient*)((TPCCClient**) data)[local_thread_id];
-    SystemClock* clock = new SystemClock();
-    int64_t begin = clock->getMicroseconds();
-
-
-    do {
-        client->doOne(TM_ARG_ALONE);
-	//printf("Tx executed");
-    } while (((clock->getMicroseconds() - begin) / 1000000) < duration_secs);
+	do {
+		  client->doOne(TM_ARG_ALONE);
+	 } while (((clock->getMicroseconds() - begin)) < duration_usecs);
+	//} while (rdtsc() < end_cycles);
 	TM_THREAD_EXIT();
-  return NULL;
 }
 
 static struct option long_options[] = {
@@ -133,20 +130,20 @@ void init_warehouse(void *data)
 	printf("Loading %ld warehouses... ", num_warehouses);
 	fflush(stdout);
 	char now[Clock::DATETIME_SIZE+1];
-	clock->getDateTimestamp(now);
+	local_clock->getDateTimestamp(now);
 	printf("num items: %d", Item::NUM_ITEMS);
-	int64_t begin = clock->getMicroseconds();
+	int64_t begin = local_clock->getMicroseconds();
 	int ro = 1;
 	// TM_BEGIN_NO_LOG();
 	local_exec_mode = 2;
-	TPCCGenerator generator(random, now, Item::NUM_ITEMS, District::NUM_PER_WAREHOUSE,
+	TPCCGenerator generator(local_random, now, Item::NUM_ITEMS, District::NUM_PER_WAREHOUSE,
 					Customer::NUM_PER_DISTRICT, NewOrder::INITIAL_NUM_PER_DISTRICT);
 	generator.makeItemsTableSingleThread(tables);
 	for (int i = 0; i < num_warehouses; ++i) {
 			generator.makeWarehouseSingleThread(tables, i+1);
 	}
 	// TM_END_NO_LOG();
-	int64_t end = clock->getMicroseconds();
+	int64_t end = local_clock->getMicroseconds();
 	printf("%ld ms\n", (end - begin + 500)/1000);
 
 	// GLOBAL_instrument_write = 1;
@@ -238,12 +235,12 @@ int main(int argc, char** argv)
   thread_startup(num_clients);
 	
 		TPCCTables* tables = new TPCCTables();
-		clock = new SystemClock();
+		local_clock = new SystemClock();
 	
 		// Create a generator for filling the database.
-		random = new tpcc::RealRandomGenerator();
-		tpcc::NURandC cLoad = tpcc::NURandC::makeRandom(random);
-		random->setC(cLoad);
+		local_random = new tpcc::RealRandomGenerator();
+		tpcc::NURandC cLoad = tpcc::NURandC::makeRandom(local_random);
+		local_random->setC(cLoad);
 
 	init_warehouse(NULL);
 
@@ -253,11 +250,11 @@ int main(int argc, char** argv)
   for ( c = 0; c < num_clients; c++ )
   {
     // Change the constants for run
-    random = new tpcc::RealRandomGenerator();
-    random->setC(tpcc::NURandC::makeRandomForRun(random, cLoad));
+    local_random = new tpcc::RealRandomGenerator();
+    local_random->setC(tpcc::NURandC::makeRandomForRun(random, cLoad));
     clients[c] = new TPCCClient(
-      clock,
-      random,
+      local_clock,
+      local_random,
       tables,
       Item::NUM_ITEMS,
       static_cast<int>(num_warehouses),
@@ -315,7 +312,7 @@ int main(int argc, char** argv)
 
   printf("Running... ");
   fflush(stdout);
-  begin = clock->getMicroseconds();
+  begin = local_clock->getMicroseconds();
   //for (c = 0; c < num_clients; c++) {
   //	pthread_create(&threads[c], NULL, client, clients[c]);
   //}
@@ -325,7 +322,7 @@ int main(int argc, char** argv)
     pthread_join(threads[c], NULL);
   }*/
 
-  end = clock->getMicroseconds();
+  end = local_clock->getMicroseconds();
   int64_t microseconds = end - begin;
 
   P_MEMORY_SHUTDOWN();
