@@ -81,6 +81,7 @@ unsigned long total_trials;
 int global_num_threads = 0;
 pthread_rwlock_t rw_lock;
 
+static TPCCTables* tables;
 static long int num_warehouses;
 static SystemClock* local_clock;
 static tpcc::RealRandomGenerator* local_random;
@@ -234,7 +235,7 @@ int main(int argc, char** argv)
   P_MEMORY_STARTUP(num_clients);
   thread_startup(num_clients);
 	
-		TPCCTables* tables = new TPCCTables();
+		tables = new TPCCTables();
 		local_clock = new SystemClock();
 	
 		// Create a generator for filling the database.
@@ -251,7 +252,7 @@ int main(int argc, char** argv)
   {
     // Change the constants for run
     local_random = new tpcc::RealRandomGenerator();
-    local_random->setC(tpcc::NURandC::makeRandomForRun(random, cLoad));
+    local_random->setC(tpcc::NURandC::makeRandomForRun(local_random, cLoad));
     clients[c] = new TPCCClient(
       local_clock,
       local_random,
