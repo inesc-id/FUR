@@ -49,7 +49,9 @@ __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t counters[80];
 
 __attribute__((aligned(CACHE_LINE_SIZE))) pthread_spinlock_t writers_lock = 0;
 
-
+volatile int TM_isSequential;
+volatile int TM_totNbThreads;
+volatile int TM_thrMallocCnt = 0;
 
 __thread long rs_mask_2 = 0xffffffffffff0000;
 __thread long rs_mask_4 = 0xffffffff00000000;
@@ -78,6 +80,10 @@ unsigned long total_trials;
 
 int global_num_threads = 0;
 pthread_rwlock_t rw_lock;
+
+static long int num_warehouses;
+static SystemClock* clock;
+static tpcc::RealRandomGenerator* random;
 
 void* client(void *data)
 {
@@ -127,20 +133,20 @@ void init_warehouse(void *data)
 	printf("Loading %ld warehouses... ", num_warehouses);
 	fflush(stdout);
 	char now[Clock::DATETIME_SIZE+1];
-	local_clock->getDateTimestamp(now);
+	clock->getDateTimestamp(now);
 	printf("num items: %d", Item::NUM_ITEMS);
-	int64_t begin = local_clock->getMicroseconds();
+	int64_t begin = clock->getMicroseconds();
 	int ro = 1;
 	// TM_BEGIN_NO_LOG();
 	local_exec_mode = 2;
-	TPCCGenerator generator(local_random, now, Item::NUM_ITEMS, District::NUM_PER_WAREHOUSE,
+	TPCCGenerator generator(random, now, Item::NUM_ITEMS, District::NUM_PER_WAREHOUSE,
 					Customer::NUM_PER_DISTRICT, NewOrder::INITIAL_NUM_PER_DISTRICT);
 	generator.makeItemsTableSingleThread(tables);
 	for (int i = 0; i < num_warehouses; ++i) {
 			generator.makeWarehouseSingleThread(tables, i+1);
 	}
 	// TM_END_NO_LOG();
-	int64_t end = local_clock->getMicroseconds();
+	int64_t end = clock->getMicroseconds();
 	printf("%ld ms\n", (end - begin + 500)/1000);
 
 	// GLOBAL_instrument_write = 1;
@@ -159,7 +165,6 @@ int main(int argc, char** argv)
 
   std::vector<int> workload_changes;
   int adapt_workload = 0;
-  int num_warehouses;
   int num_clients;
   int i, c;
 
@@ -233,35 +238,14 @@ int main(int argc, char** argv)
   thread_startup(num_clients);
 	
 		TPCCTables* tables = new TPCCTables();
-		SystemClock* clock = new SystemClock();
+		clock = new SystemClock();
 	
 		// Create a generator for filling the database.
-		tpcc::RealRandomGenerator* random = new tpcc::RealRandomGenerator();
+		random = new tpcc::RealRandomGenerator();
 		tpcc::NURandC cLoad = tpcc::NURandC::makeRandom(random);
 		random->setC(cLoad);
 
-	init_warehouse(client);
-  TM_THREAD_ENTER();
-
-  // Generate the data
-  printf("Loading %ld warehouses... ", num_warehouses);
-  fflush(stdout);
-  char now[Clock::DATETIME_SIZE+1];
-  clock->getDateTimestamp(now);
-  printf("num items: %d", Item::NUM_ITEMS);
-  int64_t begin = clock->getMicroseconds();
-  int ro = 0;
-  // TM_BEGIN(ro);
-  local_exec_mode = 2;
-  TPCCGenerator generator(random, now, Item::NUM_ITEMS, District::NUM_PER_WAREHOUSE,
-  Customer::NUM_PER_DISTRICT, NewOrder::INITIAL_NUM_PER_DISTRICT);
-  generator.makeItemsTableSingleThread(tables);
-  for (int i = 0; i < num_warehouses; ++i)
-    generator.makeWarehouseSingleThread(tables, i+1);
-  // TM_END();
-  int64_t end = clock->getMicroseconds();
-  printf("%ld ms\n", (end - begin + 500)/1000);
-
+	init_warehouse(NULL);
 
   // Client owns all the parameters
   TPCCClient** clients = (TPCCClient**) malloc(num_clients * sizeof(TPCCClient*));
@@ -319,7 +303,6 @@ int main(int argc, char** argv)
 
   //TM_STARTUP(num_clients,42);
 
-  TM_THREAD_EXIT();
   P_MEMORY_SHUTDOWN();
   GOTO_SIM();
   thread_shutdown();

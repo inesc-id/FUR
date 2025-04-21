@@ -15,8 +15,8 @@
 // #include <boost/pool/object_pool.hpp>
 
 #include "tm.h"
-#    define Self                        TM_ARG_ALONE
-#    define TM_ARG_ALONE                0
+// #    define Self                        TM_ARG_ALONE
+// #    define TM_ARG_ALONE                0
 
 //DEBUG
 #include <iostream>
