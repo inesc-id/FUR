@@ -97,7 +97,11 @@ __attribute__((transaction_safe)) void * tm_memcpy(void *dst, const void *src, s
     return dst;
 }
 
-int64_t TPCCTables::stockLevel(TM_ARGDECL int64_t warehouse_id, int64_t district_id, int64_t threshold) {
+int64_t TPCCTables::stockLevel(
+	TM_ARGDECL int64_t warehouse_id,
+	int64_t district_id,
+	int64_t threshold
+) {
     /* EXEC SQL SELECT d_next_o_id INTO :o_id FROM district
         WHERE d_w_id=:w_id AND d_id=:d_id; */
     //~ printf("stock level %d %d %d\n", warehouse_id, district_id, threshold);
@@ -119,45 +123,44 @@ int64_t TPCCTables::stockLevel(TM_ARGDECL int64_t warehouse_id, int64_t district
     // seemed to be to simply save all the s_i_ids, then sort and eliminate duplicates at the end.
     //int64_t s_i_ids[10000];
 	long s_i_ids[100000];
-    // Average size is more like ~30.
-    uint64_t counter_s = 0; int x=0;
-/*    __transaction_atomic { */
-    // FIXME(nmld): transaction block here
-    //TM_THREAD_ENTER();
-     int ro = 0;
-    TM_BEGIN(ro);
-        District* d = findDistrict(TM_ARG warehouse_id, district_id);
+	// Average size is more like ~30.
+	uint64_t counter_s = 0; int64_t x=0;
+	/*    __transaction_atomic { */
+	// FIXME(nmld): transaction block here
+	//TM_THREAD_ENTER();
+	int ro = 0;
+	TM_BEGIN(ro);
+	District* d = findDistrict(TM_ARG warehouse_id, district_id);
         
 	//printf("address of d is %p\n",d);
 	int64_t o_id = d->d_next_o_id;
-        // Iterate over [o_id-20, o_id)
-        int64_t stock_quantity;
+	// Iterate over [o_id-20, o_id)
+	int64_t stock_quantity;
 	Stock * stock;
-        for (int64_t order_id = o_id - STOCK_LEVEL_ORDERS; order_id < o_id; ++order_id) {
-            for (int line_number = 1; line_number <= Order::MAX_OL_CNT; ++line_number) {
-                OrderLine* line = findOrderLine(TM_ARG warehouse_id, district_id, order_id, line_number);
-                if (line == NULL) {
-                    // We can break since we have reached the end of the lines for this order.
-                    // TODO: A btree iterate in (w_id, d_id, o_id) order would be a clean way to do this
-                    // printf("break com line_number=%d\n", line_number);
-                    break;
-                }
-                // Check if s_quantity < threshold
-                stock = findStock(TM_ARG warehouse_id, line->ol_i_id);
-                if(local_exec_mode == 1 || local_exec_mode == 3){
-		        stock_quantity = SLOW_PATH_SHARED_READ(stock->s_quantity);
-		        }
-                else{
-                	stock_quantity = FAST_PATH_SHARED_READ(stock->s_quantity);
-		        }
-                x += stock_quantity;
-                if (stock_quantity < threshold) {
-                    s_i_ids[counter_s] = line->ol_i_id;
-                    counter_s++;
-			//printf("%d\n",counter_s);
-                }
-            }
-        }
+	for (int64_t order_id = o_id - STOCK_LEVEL_ORDERS; order_id < o_id; ++order_id) {
+		for (int line_number = 1; line_number <= Order::MAX_OL_CNT; ++line_number) {
+			OrderLine* line = findOrderLine(TM_ARG warehouse_id, district_id, order_id, line_number);
+			if (line == NULL) {
+				// We can break since we have reached the end of the lines for this order.
+				// TODO: A btree iterate in (w_id, d_id, o_id) order would be a clean way to do this
+				// printf("break com line_number=%d\n", line_number);
+				break;
+			}
+			// Check if s_quantity < threshold
+			stock = findStock(TM_ARG warehouse_id, line->ol_i_id);
+			if (local_exec_mode == 1 || local_exec_mode == 3) {
+				stock_quantity = SLOW_PATH_SHARED_READ(stock->s_quantity);
+			} else {
+				stock_quantity = FAST_PATH_SHARED_READ(stock->s_quantity);
+			}
+			x += stock_quantity;
+			if (stock_quantity < threshold) {
+				s_i_ids[counter_s] = line->ol_i_id;
+				counter_s++;
+//printf("%d\n",counter_s);
+			}
+		}
+	}
 // 	if(stock_quantity>0){
 //     if(local_exec_mode == 1 || local_exec_mode == 3){
 // 	SLOW_PATH_SHARED_WRITE(stock->s_w_id,1);
@@ -189,7 +192,7 @@ int64_t TPCCTables::stockLevel(TM_ARGDECL int64_t warehouse_id, int64_t district
         }
     }*/
 
-    return 0;
+	// return 0L;
 }
 
 void TPCCTables::orderStatus(TM_ARGDECL int64_t warehouse_id, int64_t district_id, int64_t customer_id, OrderStatusOutput* output) {
@@ -591,77 +594,87 @@ __attribute__((transaction_safe)) void TPCCTables::internalPaymentRemote(TM_ARGD
 // forward declaration for delivery
 __attribute__((transaction_safe)) static int64_t makeNewOrderKey(int64_t w_id, int64_t d_id, int64_t o_id);
 
-void TPCCTables::delivery(TM_ARGDECL int64_t warehouse_id, int64_t carrier_id, const char* now,
-        std::vector<DeliveryOrderInfo>* orders, TPCCUndo** undo) {
+void TPCCTables::delivery(
+	TM_ARGDECL int64_t warehouse_id,
+	int64_t carrier_id,
+	const char* now,
+	std::vector<DeliveryOrderInfo>* orders,
+	TPCCUndo** undo
+) {
         
-    // printf("delivery %d %d %s\n", warehouse_id, carrier_id, now);
-    // deliveryCalled ++; //JOAO DEBUG
+	// printf("delivery %d %d %s\n", warehouse_id, carrier_id, now);
+	// deliveryCalled ++; //JOAO DEBUG
 
 /*    __transaction_atomic { */
-    // FIXME(nmld): transaction block here
-    //TM_THREAD_ENTER();
-     int ro = 0;
-    TM_BEGIN(ro);
-        for (int64_t d_id = 1; d_id <= District::NUM_PER_WAREHOUSE; ++d_id) {
-            // Find and remove the lowest numbered order for the district
+	// FIXME(nmld): transaction block here
+	//TM_THREAD_ENTER();
+	int ro = 0;
+	TM_BEGIN(ro);
+	for (int64_t d_id = 1; d_id <= District::NUM_PER_WAREHOUSE; ++d_id) {
+		// Find and remove the lowest numbered order for the district
 
-            int64_t key = makeNewOrderKey(warehouse_id, d_id, 0xFFFFFFFF);
-            key = key; // *1000000; //JOAO DEBUG (otherwise, delivery was rarely picking up new orders)
-            NewOrder* neworder;
-            int64_t foundKey = -1;
-	    if(local_exec_mode == 1 || local_exec_mode == 3){
-	            if (!neworders_.slow_findLastLessThan(TM_ARG key, &neworder, &foundKey)) {
-        	        neworder = NULL;
-          	    }
-	    } else{
-                    if (!neworders_.fast_findLastLessThan(TM_ARG key, &neworder, &foundKey)) {
-                        neworder = NULL;
-                    }
-	    }
+		int64_t key = makeNewOrderKey(warehouse_id, d_id, 0xFFFFFFFF);
+		key = key; // *1000000; //JOAO DEBUG (otherwise, delivery was rarely picking up new orders)
+		NewOrder* neworder;
+		int64_t foundKey = -1;
+		if(local_exec_mode == 1 || local_exec_mode == 3){
+			if (!neworders_.slow_findLastLessThan(TM_ARG key, &neworder, &foundKey)) {
+				neworder = NULL;
+			}
+		} else{
+			if (!neworders_.fast_findLastLessThan(TM_ARG key, &neworder, &foundKey)) {
+				neworder = NULL;
+			}
+		}
 
-            if (neworder == NULL || neworder->no_d_id != d_id || neworder->no_w_id != warehouse_id) {
-                // No orders for this district
-                // TODO: 2.7.4.2: If this occurs in max(1%, 1) of transactions, report it (???)
-                continue;
-            }
-            
-            // deliverySuccess ++;
+		if (neworder == NULL || neworder->no_d_id != d_id || neworder->no_w_id != warehouse_id) {
+			// No orders for this district
+			// TODO: 2.7.4.2: If this occurs in max(1%, 1) of transactions, report it (???)
+			continue;
+		}
+					
+		// deliverySuccess ++;
 
-            int64_t o_id = neworder->no_o_id;
-            if(local_exec_mode == 1 || local_exec_mode == 3)
-              neworders_.slow_del(TM_ARG foundKey);
-            else
-              neworders_.fast_del(TM_ARG foundKey);
-            // FIXME: delete neworder
+		int64_t o_id = neworder->no_o_id;
+		if(local_exec_mode == 1 || local_exec_mode == 3)
+			neworders_.slow_del(TM_ARG foundKey);
+		else
+			neworders_.fast_del(TM_ARG foundKey);
+		// FIXME: delete neworder
 
-            Order* o = findOrder(TM_ARG warehouse_id, d_id, o_id);
-	    o->o_carrier_id = carrier_id;
-
-            float total = 0;
-            // TODO: Select based on (w_id, d_id, o_id) rather than using ol_number?
-            for (int64_t i = 1; i <= o->o_ol_cnt; ++i) {
-                OrderLine* line = findOrderLine(TM_ARG warehouse_id, d_id, o_id, i);
-		char date_now[DATETIME_SIZE+1];
-                tm_strncpy(date_now, now, Clock::DATETIME_SIZE);
-                total += line->ol_amount;
-            }
-
-            Customer* c = findCustomer(TM_ARG warehouse_id, d_id, o->o_c_id);
-            if(local_exec_mode == 1 || local_exec_mode == 3){
-  	          float temp_float = SLOW_PATH_SHARED_READ_D(c->c_balance);
-  	          SLOW_PATH_SHARED_WRITE_D(c->c_balance, temp_float+total);
-              intptr_t temp_var = SLOW_PATH_SHARED_READ(c->c_delivery_cnt);
-  	          SLOW_PATH_SHARED_WRITE(c->c_delivery_cnt, temp_var+1);
-            } else{
-              float temp_float = FAST_PATH_SHARED_READ_D(c->c_balance);
-  	          FAST_PATH_SHARED_WRITE_D(c->c_balance, temp_float+total);
-              intptr_t temp_var = FAST_PATH_SHARED_READ(c->c_delivery_cnt);
-  	          FAST_PATH_SHARED_WRITE(c->c_delivery_cnt, temp_var+1);
-            }
-    }
-    TM_END();
-    // printf("delivery %d %d %s\n %d / %d\n", warehouse_id, carrier_id, now, deliveryCalled, deliverySuccess);
-    //TM_THREAD_EXIT();
+		Order* o = findOrder(TM_ARG warehouse_id, d_id, o_id);
+		if (o)
+		{
+			// TODO: BUG here, sometimes we get nulls
+			o->o_carrier_id = carrier_id;
+	
+			float total = 0;
+			// TODO: Select based on (w_id, d_id, o_id) rather than using ol_number?
+			for (int64_t i = 1; i <= o->o_ol_cnt; ++i) {
+				OrderLine* line = findOrderLine(TM_ARG warehouse_id, d_id, o_id, i);
+				char date_now[DATETIME_SIZE+1];
+				tm_strncpy(date_now, now, Clock::DATETIME_SIZE);
+				// if (line) // TODO: getting NULL lines
+				total += line->ol_amount;
+			}
+	
+			Customer* c = findCustomer(TM_ARG warehouse_id, d_id, o->o_c_id);
+			if (local_exec_mode == 1 || local_exec_mode == 3) {
+				float temp_float = SLOW_PATH_SHARED_READ_D(c->c_balance);
+				SLOW_PATH_SHARED_WRITE_D(c->c_balance, temp_float+total);
+				intptr_t temp_var = SLOW_PATH_SHARED_READ(c->c_delivery_cnt);
+				SLOW_PATH_SHARED_WRITE(c->c_delivery_cnt, temp_var+1);
+			} else {
+				float temp_float = FAST_PATH_SHARED_READ_D(c->c_balance);
+				FAST_PATH_SHARED_WRITE_D(c->c_balance, temp_float+total);
+				intptr_t temp_var = FAST_PATH_SHARED_READ(c->c_delivery_cnt);
+				FAST_PATH_SHARED_WRITE(c->c_delivery_cnt, temp_var+1);
+			}
+		}
+	}
+	TM_END();
+	// printf("delivery %d %d %s\n %d / %d\n", warehouse_id, carrier_id, now, deliveryCalled, deliverySuccess);
+	//TM_THREAD_EXIT();
 /*    } */
 }
 
@@ -740,7 +753,7 @@ __attribute__((transaction_safe)) static T* find_tm(TM_ARGDECL const BPlusTree<i
     else
       out = tree.fast_find(TM_ARG key, &output);
     if (out) {
-        return output;
+			return output;
     }
     return NULL;
 }
@@ -768,18 +781,18 @@ static void erase_tm(BPlusTree<KeyType, T*, TPCCTables::KEYS_PER_INTERNAL, TPCCT
 }
 
 void TPCCTables::insertItem(TM_ARGDECL Item* item) {
-    if(local_exec_mode == 1 || local_exec_mode == 3)
-      items_.slow_insert(TM_ARG item->i_id, item);
-    else
-      items_.fast_insert(TM_ARG item->i_id, item);
+	if(local_exec_mode == 1 || local_exec_mode == 3)
+		items_.slow_insert(TM_ARG item->i_id, item);
+	else
+		items_.fast_insert(TM_ARG item->i_id, item);
 }
 __attribute__((transaction_safe)) Item* TPCCTables::findItem(TM_ARGDECL int64_t id) {
 
-    return find_tm(TM_ARG items_, id);
+	return find_tm(TM_ARG items_, id);
 }
 
 void TPCCTables::insertWarehouse(TM_ARGDECL const Warehouse& w) {
-    insert_tm(TM_ARG &warehouses_, w.w_id, w);
+	insert_tm(TM_ARG &warehouses_, w.w_id, w);
 }
 void TPCCTables::insertWarehouseSingleThread(const Warehouse& w)
 {
@@ -794,7 +807,7 @@ __attribute__((transaction_safe)) static int64_t makeStockKey(int64_t w_id, int6
 }
 
 void TPCCTables::insertStock(TM_ARGDECL const Stock& stock) {
-    insert_tm(TM_ARG &stock_, makeStockKey(stock.s_w_id, stock.s_i_id), stock);
+	insert_tm(TM_ARG &stock_, makeStockKey(stock.s_w_id, stock.s_i_id), stock);
 }
 
 void TPCCTables::insertStockSingleThread(const Stock& stock)
@@ -803,15 +816,15 @@ void TPCCTables::insertStockSingleThread(const Stock& stock)
 }
 
 Stock* TPCCTables::findStock(TM_ARGDECL int64_t w_id, int64_t s_id) {
-    return find_tm(TM_ARG stock_, makeStockKey(w_id, s_id));
+	return find_tm(TM_ARG stock_, makeStockKey(w_id, s_id));
 }
 
 __attribute__((transaction_safe))  static int64_t makeDistrictKey(int64_t w_id, int64_t d_id) {
-    return d_id + (w_id * District::NUM_PER_WAREHOUSE);
+	return d_id + (w_id * District::NUM_PER_WAREHOUSE);
 }
 
 void TPCCTables::insertDistrict(TM_ARGDECL const District& district) {
-    insert_tm(TM_ARG &districts_, makeDistrictKey(district.d_w_id, district.d_id), district);
+	insert_tm(TM_ARG &districts_, makeDistrictKey(district.d_w_id, district.d_id), district);
 }
 
 void TPCCTables::insertDistrictSingleThread(const District& district)

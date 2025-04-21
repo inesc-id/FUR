@@ -49,9 +49,7 @@ __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t counters[80];
 
 __attribute__((aligned(CACHE_LINE_SIZE))) pthread_spinlock_t writers_lock = 0;
 
-__thread unsigned int local_exec_mode = 0;
 
-__thread unsigned int local_thread_id;
 
 __thread long rs_mask_2 = 0xffffffffffff0000;
 __thread long rs_mask_4 = 0xffffffff00000000;
@@ -62,6 +60,8 @@ __thread int16_t* i2p;
 __thread long moffset = 0;
 __thread long moffset_2 = 0;
 __thread long moffset_6 = 0;
+__thread unsigned int local_thread_id;
+__thread unsigned int local_exec_mode = 0;
 
 __thread void* rot_readset[1024];
 __thread char crot_readset[8192];
@@ -115,6 +115,40 @@ static struct option long_options[] = {
   {"maximum number of warehouses",      required_argument, NULL, 'm'},
   {NULL, 0, NULL, 0}
 };
+
+
+void init_warehouse(void *data)
+{
+	TM_isSequential = 1;
+	TM_THREAD_ENTER();
+	// GLOBAL_instrument_write = 0;
+
+	// Generate the data
+	printf("Loading %ld warehouses... ", num_warehouses);
+	fflush(stdout);
+	char now[Clock::DATETIME_SIZE+1];
+	local_clock->getDateTimestamp(now);
+	printf("num items: %d", Item::NUM_ITEMS);
+	int64_t begin = local_clock->getMicroseconds();
+	int ro = 1;
+	// TM_BEGIN_NO_LOG();
+	local_exec_mode = 2;
+	TPCCGenerator generator(local_random, now, Item::NUM_ITEMS, District::NUM_PER_WAREHOUSE,
+					Customer::NUM_PER_DISTRICT, NewOrder::INITIAL_NUM_PER_DISTRICT);
+	generator.makeItemsTableSingleThread(tables);
+	for (int i = 0; i < num_warehouses; ++i) {
+			generator.makeWarehouseSingleThread(tables, i+1);
+	}
+	// TM_END_NO_LOG();
+	int64_t end = local_clock->getMicroseconds();
+	printf("%ld ms\n", (end - begin + 500)/1000);
+
+	// GLOBAL_instrument_write = 1;
+
+	TM_THREAD_EXIT();
+	TM_isSequential = 0;
+}
+
 
 int main(int argc, char** argv)
 {
@@ -191,21 +225,22 @@ int main(int argc, char** argv)
         exit(1);
     }
   }
-
-  TPCCTables* tables = new TPCCTables();
-  SystemClock* clock = new SystemClock();
-
-  // Create a generator for filling the database.
-  tpcc::RealRandomGenerator* random = new tpcc::RealRandomGenerator();
-  tpcc::NURandC cLoad = tpcc::NURandC::makeRandom(random);
-  random->setC(cLoad);
-
-
+	
+	
   SIM_GET_NUM_CPU(num_clients);
   TM_STARTUP(num_clients,42);
   P_MEMORY_STARTUP(num_clients);
   thread_startup(num_clients);
+	
+		TPCCTables* tables = new TPCCTables();
+		SystemClock* clock = new SystemClock();
+	
+		// Create a generator for filling the database.
+		tpcc::RealRandomGenerator* random = new tpcc::RealRandomGenerator();
+		tpcc::NURandC cLoad = tpcc::NURandC::makeRandom(random);
+		random->setC(cLoad);
 
+	init_warehouse(client);
   TM_THREAD_ENTER();
 
   // Generate the data

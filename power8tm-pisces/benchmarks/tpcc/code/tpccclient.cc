@@ -116,39 +116,39 @@ void TPCCClient::doPayment(TM_ARGDECL_ALONE) {
     }
 }
 
-bool TPCCClient::doNewOrder(TM_ARGDECL_ALONE) {
-    int32_t w_id = generateWarehouse();
-    int ol_cnt = generator_->number(Order::MIN_OL_CNT, Order::MAX_OL_CNT);
+bool TPCCClient::doNewOrder(TM_ARGDECL_ALONE)
+{
+	int32_t w_id = generateWarehouse();
+	int ol_cnt = generator_->number(Order::MIN_OL_CNT, Order::MAX_OL_CNT);
 
-    // 1% of transactions roll back
-    bool rollback = generator_->number(1, 100) == 1;
+	// 1% of transactions roll back
+	bool rollback = generator_->number(1, 100) == 1;
 
-    vector<NewOrderItem> items(ol_cnt);
-    for (int i = 0; i < ol_cnt; ++i) {
-        if (rollback && i+1 == ol_cnt) {
-            items[i].i_id = Item::NUM_ITEMS + 1;
-        } else {
-            items[i].i_id = generateItemID();
-        }
+	vector<NewOrderItem> items(ol_cnt);
+	for (int i = 0; i < ol_cnt; ++i) {
+		if (rollback && i+1 == ol_cnt) {
+			items[i].i_id = Item::NUM_ITEMS + 1;
+		} else {
+			items[i].i_id = generateItemID();
+		}
 
-        // TPC-C suggests generating a number in range (1, 100) and selecting remote on 1
-        // This provides more variation, and lets us tune the fraction of "remote" transactions.
-        bool remote = generator_->number(1, 1000) <= remote_item_milli_p_;
-        if (global_num_warehouses > 1 && remote) {
-            items[i].ol_supply_w_id = generator_->numberExcluding(1, global_num_warehouses, w_id);
-        } else {
-            items[i].ol_supply_w_id = w_id;
-        }
-        items[i].ol_quantity = generator_->number(1, MAX_OL_QUANTITY);
-    }
+		// TPC-C suggests generating a number in range (1, 100) and selecting remote on 1
+		// This provides more variation, and lets us tune the fraction of "remote" transactions.
+		bool remote = generator_->number(1, 1000) <= remote_item_milli_p_;
+		if (global_num_warehouses > 1 && remote) {
+			items[i].ol_supply_w_id = generator_->numberExcluding(1, global_num_warehouses, w_id);
+		} else {
+			items[i].ol_supply_w_id = w_id;
+		}
+		items[i].ol_quantity = generator_->number(1, MAX_OL_QUANTITY);
+	}
 
-    char now[Clock::DATETIME_SIZE+1];
-    clock_->getDateTimestamp(now);
-    NewOrderOutput output;
-    bool result = db_->newOrder(TM_ARG 
-            w_id, generateDistrict(), generateCID(), items, now, &output, NULL);
-    assert(result == !rollback);
-    return result;
+	char now[Clock::DATETIME_SIZE+1];
+	clock_->getDateTimestamp(now);
+	NewOrderOutput output;
+	bool result = db_->newOrder(TM_ARG w_id, generateDistrict(), generateCID(), items, now, &output, NULL);
+	assert(result == !rollback);
+	return result;
 }
 
 void TPCCClient::doOne(TM_ARGDECL_ALONE) {

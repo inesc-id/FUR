@@ -41,6 +41,7 @@ __thread int16_t* i2p;
 __thread long moffset = 0;
 __thread long moffset_2 = 0;
 __thread long moffset_6 = 0;
+__thread unsigned int local_thread_id;
 
 unsigned int ucb_levers = 3;
 unsigned long ucb_trials[3];

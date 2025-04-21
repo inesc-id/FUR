@@ -7,7 +7,7 @@
 * #define _XOPEN_SOURCE 600 #endif
 */
 
-#include <assert_tpcc.h>
+#include "assert_tpcc.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -15,6 +15,8 @@
 // #include <boost/pool/object_pool.hpp>
 
 #include "tm.h"
+#    define Self                        TM_ARG_ALONE
+#    define TM_ARG_ALONE                0
 
 //DEBUG
 #include <iostream>
@@ -181,8 +183,6 @@ public:
         else
           return false;
       }
-    } else {
-      return false;
     }
     return false; // TODO: sometimes the code reaches this
   }
@@ -212,13 +212,12 @@ public:
           *value = temp_value;
         }
         if (temp_value)
-        return true;
+        	return true;
         else
-        return false;
+        	return false;
       }
-    } else {
-      return false;
     }
+		return false;
   }
 
 
@@ -442,8 +441,8 @@ private:
       }
       #endif
       unsigned long num_keys;
-      KEY keys[M+1];
-      VALUE values[M+1];
+      KEY keys[M+2];
+      VALUE values[M+2];
       //unsigned char _pad[LEAF_NODE_PADDING];
     };
 
@@ -464,8 +463,8 @@ private:
       }
       #endif
       unsigned long num_keys;
-      KEY keys[N];
-      void *children[N + 1];
+      KEY keys[N + 2];
+      void *children[N + 2];
       //unsigned char _pad[INNER_NODE_PADDING];
     };
 
@@ -1061,7 +1060,7 @@ private:
         void *temp_node = node->children[index];
         InnerNode *child = reinterpret_cast < InnerNode * >(temp_node);
 
-        was_split = inner_insert(TM_ARG child, current_depth - 1, key, value, &result);
+        was_split = inner_insert(child, current_depth - 1, key, value, &result);
       }
       if (was_split) {
         if (index == num_keys) {
