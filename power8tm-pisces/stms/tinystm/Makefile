@@ -40,9 +40,9 @@ include Makefile.common
 ########################################################################
 
 #DEFINES += -DDESIGN=WRITE_BACK_ETL
-DEFINES += -DDESIGN=WRITE_BACK_CTL
+# DEFINES += -DDESIGN=WRITE_BACK_CTL
 # DEFINES += -DDESIGN=WRITE_BACK_CTL_PSTM
-# DEFINES += -DDESIGN=WRITE_THROUGH
+DEFINES += -DDESIGN=WRITE_THROUGH
 # DEFINES += -DDESIGN=MODULAR
 
 ########################################################################

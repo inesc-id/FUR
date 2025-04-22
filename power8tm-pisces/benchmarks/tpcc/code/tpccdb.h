@@ -48,8 +48,8 @@ private:
 struct Item {
     static const int MIN_IM = 1;
     static const int MAX_IM = 10000;
-    static const float MIN_PRICE = 1.00;
-    static const float MAX_PRICE = 100.00;
+    static const double MIN_PRICE = 1.00;
+    static const double MAX_PRICE = 100.00;
     static const int MIN_NAME = 14;
     static const int MAX_NAME = 24;
     static const int MIN_DATA = 26;
@@ -58,15 +58,15 @@ struct Item {
 
     int64_t i_id;
     int64_t i_im_id;
-    float i_price;
+    double i_price;
     char i_name[MAX_NAME+1];
     char i_data[MAX_DATA+1];
 } __attribute__((packed, aligned(8)));
 
 struct Warehouse {
-    static const float MIN_TAX = 0;
-    static const float MAX_TAX = 0.2000f;
-    static const float INITIAL_YTD = 300000.00f;
+    static const double MIN_TAX = 0;
+    static const double MAX_TAX = 0.2000f;
+    static const double INITIAL_YTD = 300000.00f;
     static const int MIN_NAME = 6;
     static const int MAX_NAME = 10;
     // TPC-C 1.3.1 (page 11) requires 2*W. This permits testing up to 50 warehouses. This is an
@@ -74,8 +74,8 @@ struct Warehouse {
     static const int MAX_WAREHOUSE_ID = 128;
 
     int64_t w_id;
-    float w_tax;
-    float w_ytd;
+    double w_tax;
+    double w_ytd;
     char w_name[MAX_NAME+1];
     char w_street_1[Address::MAX_STREET+1];
     char w_street_2[Address::MAX_STREET+1];
@@ -85,9 +85,9 @@ struct Warehouse {
 } __attribute__((packed, aligned(8)));
 
 struct District {
-    static const float MIN_TAX = 0;
-    static const float MAX_TAX = 0.2000f;
-    static const float INITIAL_YTD = 30000.00;  // different from Warehouse
+    static const double MIN_TAX = 0;
+    static const double MAX_TAX = 0.2000f;
+    static const double INITIAL_YTD = 30000.00;  // different from Warehouse
     static const int INITIAL_NEXT_O_ID = 3001;
     static const int MIN_NAME = 6;
     static const int MAX_NAME = 10;
@@ -96,9 +96,9 @@ struct District {
     int64_t d_id;
     int64_t d_w_id;
     int64_t d_next_o_id; /* JOAO 28/june/2024 to avoid bug due to Pisces' bad float handling*/
-    float d_tax;
+    double d_tax;
 
-    float d_ytd;
+    double d_ytd;
     char d_name[MAX_NAME+1];
     char d_street_1[Address::MAX_STREET+1];
     char d_street_2[Address::MAX_STREET+1];
@@ -131,11 +131,11 @@ struct Stock {
 static const int DATETIME_SIZE = 14;
 
 struct Customer {
-    static const float INITIAL_CREDIT_LIM = 50000.00;
-    static const float MIN_DISCOUNT = 0.0000;
-    static const float MAX_DISCOUNT = 0.5000;
-    static const float INITIAL_BALANCE = -10.00;
-    static const float INITIAL_YTD_PAYMENT = 10.00;
+    static const double INITIAL_CREDIT_LIM = 50000.00;
+    static const double MIN_DISCOUNT = 0.0000;
+    static const double MAX_DISCOUNT = 0.5000;
+    static const double INITIAL_BALANCE = -10.00;
+    static const double INITIAL_YTD_PAYMENT = 10.00;
     static const int INITIAL_PAYMENT_CNT = 1;
     static const int INITIAL_DELIVERY_CNT = 0;
     static const int MIN_FIRST = 6;
@@ -155,10 +155,10 @@ struct Customer {
     int64_t c_w_id;
     int64_t c_payment_cnt;
     int64_t c_delivery_cnt;
-    float c_credit_lim;  /*JOAO 28/june: also reordered these floats, just to be sure */
-    float c_discount;
-    float c_balance;
-    float c_ytd_payment;
+    double c_credit_lim;  /*JOAO 28/june: also reordered these doubles, just to be sure */
+    double c_discount;
+    double c_balance;
+    double c_ytd_payment;
     char c_first[MAX_FIRST+1];
     char c_middle[MIDDLE+1];
     char c_last[MAX_LAST+1];
@@ -201,8 +201,8 @@ struct OrderLine {
     static const int MIN_I_ID = 1;
     static const int MAX_I_ID = 100000;  // Item::NUM_ITEMS
     static const int INITIAL_QUANTITY = 5;
-    static const float MIN_AMOUNT = 0.01f;
-    static const float MAX_AMOUNT = 9999.99f;
+    static const double MIN_AMOUNT = 0.01f;
+    static const double MAX_AMOUNT = 9999.99f;
     // new order has 10/1000 probability of selecting a remote warehouse for ol_supply_w_id
     static const int REMOTE_PROBABILITY_MILLIS = 10;
 
@@ -213,7 +213,7 @@ struct OrderLine {
     int64_t ol_i_id;
     int64_t ol_supply_w_id;
     int64_t ol_quantity;
-    float ol_amount;
+    double ol_amount;
     char ol_delivery_d[DATETIME_SIZE+1];
     char ol_dist_info[Stock::DIST+1];
 } __attribute__((packed, aligned(8)));
@@ -229,14 +229,14 @@ struct NewOrder {
 struct History {
     static const int MIN_DATA = 12;
     static const int MAX_DATA = 24;
-    static const float INITIAL_AMOUNT = 10.00f;
+    static const double INITIAL_AMOUNT = 10.00f;
 
     int64_t h_c_id;
     int64_t h_c_d_id;
     int64_t h_c_w_id;
     int64_t h_d_id;
     int64_t h_w_id;
-    float h_amount;
+    double h_amount;
     char h_date[DATETIME_SIZE+1];
     char h_data[MAX_DATA+1];
 } __attribute__((packed, aligned(8)));
@@ -245,7 +245,7 @@ struct History {
 struct OrderStatusOutput {
     // From customer
     int64_t c_id;  // unclear if this needs to be returned
-    float c_balance;
+    double c_balance;
 
     // From order
     int64_t o_id;
@@ -255,7 +255,7 @@ struct OrderStatusOutput {
         int64_t ol_i_id;
         int64_t ol_supply_w_id;
         int64_t ol_quantity;
-        float ol_amount;
+        double ol_amount;
         char ol_delivery_d[DATETIME_SIZE+1];
     };
 
@@ -289,22 +289,22 @@ struct NewOrderOutput {
     // From district d_next_o_id
     int64_t o_id;
 
-    float w_tax;
-    float d_tax;
+    double w_tax;
+    double d_tax;
 
-    float c_discount;
+    double c_discount;
 
     // TODO: Client can compute this from other values.
-    float total;
+    double total;
 
     struct ItemInfo {
         static const char BRAND = 'B';
         static const char GENERIC = 'G';
 
         int64_t s_quantity;
-        float i_price;
+        double i_price;
         // TODO: Client can compute this from other values.
-        float ol_amount;
+        double ol_amount;
         char brand_generic;
         char i_name[Item::MAX_NAME+1];
     } __attribute__((packed, aligned(8)));
@@ -332,9 +332,9 @@ struct PaymentOutput {
     char d_state[Address::STATE+1];
     char d_zip[Address::ZIP+1];
 
-    float c_credit_lim;
-    float c_discount;
-    float c_balance;
+    double c_credit_lim;
+    double c_discount;
+    double c_balance;
     char c_first[Customer::MAX_FIRST+1];
     char c_middle[Customer::MIDDLE+1];
     char c_last[Customer::MAX_LAST+1];
@@ -483,24 +483,24 @@ public:
     // Executes the TPC-C payment transaction. Add h_amount to the customer's account.
     // See TPC-C 2.5 (page 32).
     virtual void payment(TM_ARGDECL  int64_t warehouse_id, int64_t district_id, int64_t c_warehouse_id,
-            int64_t c_district_id, int64_t customer_id, float h_amount, const char* now,
+            int64_t c_district_id, int64_t customer_id, double h_amount, const char* now,
             PaymentOutput* output, TPCCUndo** undo) = 0;
 
     // Executes the TPC-C payment transaction. Add h_amount to the customer's account.
     // See TPC-C 2.5 (page 32).
     virtual void payment(TM_ARGDECL int64_t warehouse_id, int64_t district_id, int64_t c_warehouse_id,
-            int64_t c_district_id, const char* c_last, float h_amount, const char* now,
+            int64_t c_district_id, const char* c_last, double h_amount, const char* now,
             PaymentOutput* output, TPCCUndo** undo) = 0;
 
     // TODO: See CHEATS: c_id is invalid for customer by last name transactions
     virtual void paymentHome(TM_ARGDECL int64_t warehouse_id, int64_t district_id, int64_t c_warehouse_id,
-            int64_t c_district_id, int64_t c_id, float h_amount, const char* now,
+            int64_t c_district_id, int64_t c_id, double h_amount, const char* now,
             PaymentOutput* output, TPCCUndo** undo) = 0;
     virtual void paymentRemote(TM_ARGDECL int64_t warehouse_id, int64_t district_id, int64_t c_warehouse_id,
-            int64_t c_district_id, int64_t c_id, float h_amount, PaymentOutput* output,
+            int64_t c_district_id, int64_t c_id, double h_amount, PaymentOutput* output,
             TPCCUndo** undo) = 0;
     virtual void paymentRemote(TM_ARGDECL int64_t warehouse_id, int64_t district_id, int64_t c_warehouse_id,
-            int64_t c_district_id, const char* c_last, float h_amount, PaymentOutput* output,
+            int64_t c_district_id, const char* c_last, double h_amount, PaymentOutput* output,
             TPCCUndo** undo) = 0;
 
     // Combines results from paymentRemote in remote into the results from paymentHome in home.

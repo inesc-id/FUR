@@ -221,26 +221,28 @@ void TPCCTables::orderStatus(TM_ARGDECL int64_t warehouse_id, int64_t district_i
 }
 
 __attribute__((transaction_safe)) void TPCCTables::internalOrderStatus(TM_ARGDECL Customer* customer, OrderStatusOutput* output) {
-    output->c_id = customer->c_id;
-    if(customer->c_id > 2){
-    // retrieve from customer: balance, first, middle, last
-    if(local_exec_mode == 1 || local_exec_mode == 3){
-      output->c_balance = SLOW_PATH_SHARED_READ_D(customer->c_balance);
-    }
-    else{
-      output->c_balance = FAST_PATH_SHARED_READ_D(customer->c_balance);
-    }
+	output->c_id = customer->c_id;
+	if(customer->c_id > 2)
+	{
+		// retrieve from customer: balance, first, middle, last
+		if(local_exec_mode == 1 || local_exec_mode == 3){
+			output->c_balance = SLOW_PATH_SHARED_READ_D(customer->c_balance);
+		}
+		else{
+			output->c_balance = FAST_PATH_SHARED_READ_D(customer->c_balance);
+		}
 
-    // Find the row in the order table with largest o_id
-    Order* order = findLastOrderByCustomer(TM_ARG customer->c_w_id, customer->c_d_id, customer->c_id);
-    output->o_id = order->o_id;
-    output->o_carrier_id = order->o_carrier_id;
+		// Find the row in the order table with largest o_id
+		Order* order = findLastOrderByCustomer(TM_ARG customer->c_w_id, customer->c_d_id, customer->c_id);
+		output->o_id = order->o_id;
+		output->o_carrier_id = order->o_carrier_id;
 
-    for (int64_t line_number = 1; line_number <= order->o_ol_cnt; ++line_number) {
-        OrderLine* line = findOrderLine(TM_ARG customer->c_w_id, customer->c_d_id, order->o_id, line_number);
-	if (line && line->ol_amount < 0.0) { customer->c_credit_lim = line->ol_amount; }
-   }
-   }
+		for (int64_t line_number = 1; line_number <= order->o_ol_cnt; ++line_number) {
+			OrderLine* line = findOrderLine(TM_ARG customer->c_w_id, customer->c_d_id, order->o_id, line_number);
+			// TODO: getting uninitialized line sometimes
+			if (line && line->ol_amount < 0.0) { customer->c_credit_lim = line->ol_amount; }
+		}
+	}
 }
 
 bool TPCCTables::newOrder(TM_ARGDECL int64_t warehouse_id, int64_t district_id, int64_t customer_id,
@@ -654,8 +656,8 @@ void TPCCTables::delivery(
 				OrderLine* line = findOrderLine(TM_ARG warehouse_id, d_id, o_id, i);
 				char date_now[DATETIME_SIZE+1];
 				tm_strncpy(date_now, now, Clock::DATETIME_SIZE);
-				// if (line) // TODO: getting NULL lines
-				total += line->ol_amount;
+				if (line) // TODO: getting NULL lines
+					total += line->ol_amount;
 			}
 	
 			Customer* c = findCustomer(TM_ARG warehouse_id, d_id, o->o_c_id);

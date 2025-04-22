@@ -1598,7 +1598,7 @@ int_stm_load(stm_tx_t *tx, volatile stm_word_t *addr)
 static INLINE void
 int_stm_store(stm_tx_t *tx, volatile stm_word_t *addr, stm_word_t value)
 {
-  stm_write(tx, addr, value, ~(stm_word_t)0);
+  stm_write(tx, addr, value, ~(stm_word_t)0L);
 }
 
 static INLINE void

@@ -103,6 +103,7 @@ void* client(void *data)
 	 } while (((clock->getMicroseconds() - begin)) < duration_usecs);
 	//} while (rdtsc() < end_cycles);
 	TM_THREAD_EXIT();
+	return NULL;
 }
 
 static struct option long_options[] = {
@@ -165,6 +166,7 @@ int main(int argc, char** argv)
   int adapt_workload = 0;
   int num_clients;
   int i, c;
+	int64_t begin, end;
 
   workload_changes.reserve(128);
 

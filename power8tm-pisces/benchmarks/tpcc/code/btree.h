@@ -64,7 +64,7 @@ public:
 
   void insert(KEY key, VALUE value) {
     //GCC warns that this may be used uninitialized, even though that is untrue.
-    InsertionResult result = {KEY(), 0, 0};
+    InsertionResult result = {KEY(), 0L, 0L};
     bool was_split;
     unsigned long d = depth;
     if (d == 0) {
@@ -117,7 +117,8 @@ public:
       rootProxy->keys[0] = result.key;
       rootProxy->children[0] = result.left;
       rootProxy->children[1] = result.right;
-      FAST_PATH_SHARED_WRITE(depth, ++d);
+			++d;
+      FAST_PATH_SHARED_WRITE(depth, d);
       FAST_PATH_SHARED_WRITE_P(root, rootProxy);
     }
   }
@@ -146,7 +147,8 @@ public:
       rootProxy->keys[0] = result.key;
       rootProxy->children[0] = result.left;
       rootProxy->children[1] = result.right;
-      SLOW_PATH_SHARED_WRITE(depth, ++d);
+			++d;
+      SLOW_PATH_SHARED_WRITE(depth, d);
       SLOW_PATH_SHARED_WRITE_P(root, rootProxy);
     }
   }
@@ -157,9 +159,9 @@ public:
   // unless the pointer is null.
   __attribute__((transaction_safe)) bool fast_find(TM_ARGDECL const KEY & key, VALUE * value = 0)const {
     const InnerNode * inner;
-    register const void *node = FAST_PATH_SHARED_READ_P(root);
-    register unsigned long d = FAST_PATH_SHARED_READ(depth);
-    register unsigned index;
+    const void *node = FAST_PATH_SHARED_READ_P(root);
+    unsigned long d = FAST_PATH_SHARED_READ(depth);
+    unsigned long index;
     while (d-- != 0) {
       inner = reinterpret_cast < const InnerNode *>(node);
       unsigned long num_keys_1 = FAST_PATH_SHARED_READ(inner->num_keys);
@@ -189,9 +191,9 @@ public:
 
   __attribute__((transaction_safe)) bool slow_find(TM_ARGDECL const KEY & key, VALUE * value = 0)const {
     const InnerNode * inner;
-    register const void *node = SLOW_PATH_SHARED_READ_P(root);
-    register unsigned long d = SLOW_PATH_SHARED_READ(depth);
-    register unsigned index;
+    const void *node = SLOW_PATH_SHARED_READ_P(root);
+    unsigned long d = SLOW_PATH_SHARED_READ(depth);
+    unsigned index;
     while    (d-- != 0) {
       inner = reinterpret_cast < const InnerNode *>(node);
       unsigned long num_keys_1 = SLOW_PATH_SHARED_READ(inner->num_keys);
@@ -227,9 +229,9 @@ public:
   // Note:del currently leaks memory.Fix later.
   __attribute__((transaction_safe)) bool fast_del(TM_ARGDECL const KEY & key) {
     InnerNode *inner;
-    register void *node = FAST_PATH_SHARED_READ_P(root);
-    register unsigned long d = FAST_PATH_SHARED_READ(depth);
-    register unsigned index;
+    void *node = FAST_PATH_SHARED_READ_P(root);
+    unsigned long d = FAST_PATH_SHARED_READ(depth);
+    unsigned long index;
     while (d-- != 0) {
       inner = reinterpret_cast < InnerNode * >(node);
       unsigned long num_keys_1 = FAST_PATH_SHARED_READ(inner->num_keys);
@@ -254,9 +256,9 @@ public:
 
   __attribute__((transaction_safe)) bool slow_del(TM_ARGDECL const KEY & key){
     InnerNode *inner;
-    register void *node = SLOW_PATH_SHARED_READ_P(root);
-    register unsigned long d = SLOW_PATH_SHARED_READ(depth);
-    register unsigned index;
+    void *node = SLOW_PATH_SHARED_READ_P(root);
+    unsigned long d = SLOW_PATH_SHARED_READ(depth);
+    unsigned long index;
     while    (d-- != 0) {
       inner = reinterpret_cast < InnerNode * >(node);
       unsigned long num_keys_1 = SLOW_PATH_SHARED_READ(inner->num_keys);
