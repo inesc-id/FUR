@@ -35,19 +35,19 @@ public:
             const std::vector<NewOrderItem>& items, std::vector<int64_t>* out_quantities,
             TPCCUndo** undo, Item** item_tuples);
     virtual void payment(TM_ARGDECL int64_t warehouse_id, int64_t district_id, int64_t c_warehouse_id,
-            int64_t c_district_id, int64_t customer_id, float h_amount, const char* now,
+            int64_t c_district_id, int64_t customer_id, double h_amount, const char* now,
             PaymentOutput* output, TPCCUndo** undo);
     virtual void payment(TM_ARGDECL int64_t warehouse_id, int64_t district_id, int64_t c_warehouse_id,
-            int64_t c_district_id, const char* c_last, float h_amount, const char* now,
+            int64_t c_district_id, const char* c_last, double h_amount, const char* now,
             PaymentOutput* output, TPCCUndo** undo);
     __attribute__((transaction_safe)) virtual void paymentHome(TM_ARGDECL int64_t warehouse_id, int64_t district_id, int64_t c_warehouse_id,
-            int64_t c_district_id, int64_t c_id, float h_amount, const char* now,
+            int64_t c_district_id, int64_t c_id, double h_amount, const char* now,
             PaymentOutput* output, TPCCUndo** undo);
     __attribute__((transaction_safe)) virtual void paymentRemote(TM_ARGDECL int64_t warehouse_id, int64_t district_id, int64_t c_warehouse_id,
-            int64_t c_district_id, int64_t c_id, float h_amount, PaymentOutput* output,
+            int64_t c_district_id, int64_t c_id, double h_amount, PaymentOutput* output,
             TPCCUndo** undo);
     virtual void paymentRemote(TM_ARGDECL int64_t warehouse_id, int64_t district_id, int64_t c_warehouse_id,
-            int64_t c_district_id, const char* c_last, float h_amount, PaymentOutput* output,
+            int64_t c_district_id, const char* c_last, double h_amount, PaymentOutput* output,
             TPCCUndo** undo);
     virtual void delivery(TM_ARGDECL int64_t warehouse_id, int64_t carrier_id, const char* now,
             std::vector<DeliveryOrderInfo>* orders, TPCCUndo** undo);
@@ -107,7 +107,7 @@ private:
 
     // Implements payment transaction after the customer tuple has been located.
     __attribute__((transaction_safe)) void internalPaymentRemote(TM_ARGDECL int64_t warehouse_id, int64_t district_id, Customer* c,
-            float h_amount, PaymentOutput* output, TPCCUndo** undo);
+            double h_amount, PaymentOutput* output, TPCCUndo** undo);
 
     // Erases order from the database. NOTE: This is only for undoing transactions.
     void eraseOrder(const Order* order);
