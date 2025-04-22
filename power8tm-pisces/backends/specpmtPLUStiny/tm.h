@@ -86,22 +86,45 @@ extern PMT pmt;
 # define FAST_PATH_SHARED_WRITE_P(var, val) SLOW_PATH_SHARED_WRITE_P(var, val) 
 # define FAST_PATH_SHARED_WRITE_D(var, val) SLOW_PATH_SHARED_WRITE_D(var, val)
 
-// TODO: had to change the macro --> this is a GNU extension, also note that there are 2 instanciations of "var" and "val"
-// #  define SLOW_PATH_SHARED_READ(var)           ({ __typeof__(&var) _var = &(var); \
-// 																									stm_load((stm_word_t *)_var); /* TODO: tiny load before SpecPMT */ pmt.tm_read(_var); var; })
-// #  define SLOW_PATH_SHARED_READ_P(var)         ({ __typeof__(&var) _var = &(var); \
-// 																									stm_load_ptr((volatile void **)_var); pmt.tm_read(_var); var; })
-// #  define SLOW_PATH_SHARED_READ_D(var)         ({ __typeof__(&var) _var = &(var); \
-// 																									stm_load_double((volatile double *)_var); pmt.tm_read(_var); var; })
-#  define SLOW_PATH_SHARED_WRITE(var, val)     ({ long * _var = (long*)&(var); \
-																									long _val = (long)val; \
-																									stm_store_long(_var, _val); pmt.tm_write(_var); _val; })
-#  define SLOW_PATH_SHARED_WRITE_P(var, val)   ({ void** _var = (void**)&(var); \
-																									void* _val = (void*)val; \
-																									stm_store_ptr(_var, _val); pmt.tm_write(_var); _val; })
-// #  define SLOW_PATH_SHARED_WRITE_D(var, val)   ({ __typeof__(&var) _var = &(var); \
-// 																									__typeof__(val) _val = val; \
-// 																									stm_store_double((volatile double *)_var, (double)(_val)); pmt.tm_write(var); var; })
+// TODO: had to change the macro, uses GNU extensions and avoids multiple instanciations of "var" and "val"
+#  define SLOW_PATH_SHARED_READ(var)           ({ \
+	__typeof__(&var) _var = &(var); \
+	stm_load((stm_word_t *)_var); \
+	pmt.tm_read(_var); \
+	*_var; \
+})
+#  define SLOW_PATH_SHARED_READ_P(var)         ({ \
+	__typeof__(&var) _var = &(var); \
+	stm_load_ptr((volatile void **)_var); \
+	pmt.tm_read(_var); \
+	*_var; \
+})
+#  define SLOW_PATH_SHARED_READ_D(var)         ({ \
+	__typeof__(&var) _var = &(var); \
+	stm_load_double((volatile double *)_var); \
+	pmt.tm_read(_var); \
+	*_var; \
+})
+#  define SLOW_PATH_SHARED_WRITE(var, val)     ({ \
+	__typeof__(&var) _var = &(var); \
+	__typeof__(val) _val = val; \
+	stm_store(_var, _val); \
+	pmt.tm_write(_var); \
+	_val; })
+#  define SLOW_PATH_SHARED_WRITE_P(var, val)   ({ \
+	void** _var = (void**)&(var); \
+	void* _val = (void*)val; \
+	stm_store_ptr(_var, _val); \
+	pmt.tm_write(_var); \
+	_val; \
+})
+#  define SLOW_PATH_SHARED_WRITE_D(var, val)   ({ \
+	__typeof__(&var) _var = &(var); \
+	__typeof__(val) _val = val; \
+	stm_store_double((volatile double *)_var, (double)(_val)); \
+	pmt.tm_write(_var); \
+	_val; \
+})
 // //
 // #  define SLOW_PATH_SHARED_READ(var)           var
 // #  define SLOW_PATH_SHARED_READ_P(var)         var
@@ -110,12 +133,12 @@ extern PMT pmt;
 // #  define SLOW_PATH_SHARED_WRITE_P(var, val)   var = val
 // #  define SLOW_PATH_SHARED_WRITE_D(var, val)   var = val
 // //
-#  define SLOW_PATH_SHARED_READ(var)           ({ stm_load_long(&(var)); /* TODO: tiny load before SpecPMT */ pmt.tm_read(&(var)); var; })
-#  define SLOW_PATH_SHARED_READ_P(var)         ({ stm_load_ptr((volatile void **)&(var)); pmt.tm_read(&(var)); var; })
-#  define SLOW_PATH_SHARED_READ_D(var)         ({ stm_load_double((volatile double *)&(var)); pmt.tm_read(&(var)); var; })
-#  define SLOW_PATH_SHARED_WRITE(var, val)     ({ stm_store_long(&(var), (val)); pmt.tm_write(&(var)); var; })
-#  define SLOW_PATH_SHARED_WRITE_P(var, val)   ({ stm_store_ptr((volatile void **)&(var), (void *)(val)); pmt.tm_write(var); var; })
-#  define SLOW_PATH_SHARED_WRITE_D(var, val)   ({ stm_store_double((volatile double *)&(var), (double)(val)); pmt.tm_write(var); var; })
+// #  define SLOW_PATH_SHARED_READ(var)           ({ stm_load_long(&(var)); /* TODO: tiny load before SpecPMT */ pmt.tm_read(&(var)); var; })
+// #  define SLOW_PATH_SHARED_READ_P(var)         ({ stm_load_ptr((volatile void **)&(var)); pmt.tm_read(&(var)); var; })
+// #  define SLOW_PATH_SHARED_READ_D(var)         ({ stm_load_double((volatile double *)&(var)); pmt.tm_read(&(var)); var; })
+// #  define SLOW_PATH_SHARED_WRITE(var, val)     ({ stm_store_long(&(var), (val)); pmt.tm_write(&(var)); var; })
+// #  define SLOW_PATH_SHARED_WRITE_P(var, val)   ({ stm_store_ptr((volatile void **)&(var), (void *)(val)); pmt.tm_write(var); var; })
+// #  define SLOW_PATH_SHARED_WRITE_D(var, val)   ({ stm_store_double((volatile double *)&(var), (double)(val)); pmt.tm_write(var); var; })
 
 #  define TM_LOCAL_WRITE(var, val)      /* Tiny does nothing on local writes */ STM_LOCAL_WRITE(var, val)
 #  define TM_LOCAL_WRITE_P(var, val)    STM_LOCAL_WRITE_P(var, val)
