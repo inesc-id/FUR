@@ -457,7 +457,7 @@ __attribute__((transaction_safe)) bool TPCCTables::findAndValidateItems(TM_ARGDE
 
 
 void TPCCTables::payment(TM_ARGDECL int64_t warehouse_id, int64_t district_id, int64_t c_warehouse_id,
-        int64_t c_district_id, int64_t customer_id, float h_amount, const char* now,
+        int64_t c_district_id, int64_t customer_id, double h_amount, const char* now,
         PaymentOutput* output, TPCCUndo** undo) {
     //~ printf("payment %d %d %d %d %d %f %s\n", warehouse_id, district_id, c_warehouse_id, c_district_id, customer_id, h_amount, now);
 /*    __transaction_atomic { */
@@ -475,7 +475,7 @@ void TPCCTables::payment(TM_ARGDECL int64_t warehouse_id, int64_t district_id, i
 }
 
 void TPCCTables::payment(TM_ARGDECL int64_t warehouse_id, int64_t district_id, int64_t c_warehouse_id,
-        int64_t c_district_id, const char* c_last, float h_amount, const char* now,
+        int64_t c_district_id, const char* c_last, double h_amount, const char* now,
         PaymentOutput* output, TPCCUndo** undo) {
           printf("WTF, why am I here?!!!\n" );
     //~ printf("payment %d %d %d %d %s %f %s\n", warehouse_id, district_id, c_warehouse_id, c_district_id, c_last, h_amount, now);
@@ -507,14 +507,14 @@ __attribute__((transaction_safe)) static void zeroWarehouseDistrict(PaymentOutpu
 }
 
 void TPCCTables::paymentRemote(TM_ARGDECL int64_t warehouse_id, int64_t district_id, int64_t c_warehouse_id,
-        int64_t c_district_id, int64_t c_id, float h_amount, PaymentOutput* output,
+        int64_t c_district_id, int64_t c_id, double h_amount, PaymentOutput* output,
         TPCCUndo** undo) {
     Customer* customer = findCustomer(TM_ARG c_warehouse_id, c_district_id, c_id);
     internalPaymentRemote(TM_ARG warehouse_id, district_id, customer, h_amount, output, undo);
     zeroWarehouseDistrict(output);
 }
 void TPCCTables::paymentRemote(TM_ARGDECL int64_t warehouse_id, int64_t district_id, int64_t c_warehouse_id,
-        int64_t c_district_id, const char* c_last, float h_amount, PaymentOutput* output,
+        int64_t c_district_id, const char* c_last, double h_amount, PaymentOutput* output,
         TPCCUndo** undo) {
     Customer* customer = findCustomerByName(c_warehouse_id, c_district_id, c_last);
     internalPaymentRemote(TM_ARG warehouse_id, district_id, customer, h_amount, output, undo);
@@ -522,17 +522,17 @@ void TPCCTables::paymentRemote(TM_ARGDECL int64_t warehouse_id, int64_t district
 }
 
 __attribute__((transaction_safe)) void TPCCTables::paymentHome(TM_ARGDECL int64_t warehouse_id, int64_t district_id, int64_t c_warehouse_id,
-        int64_t c_district_id, int64_t customer_id, float h_amount, const char* now,
+        int64_t c_district_id, int64_t customer_id, double h_amount, const char* now,
         PaymentOutput* output, TPCCUndo** undo) {
     Warehouse* w = findWarehouse(TM_ARG warehouse_id);
     if(local_exec_mode == 1 || local_exec_mode == 3){
-      float temp_float = SLOW_PATH_SHARED_READ_D(w->w_ytd);
+      double temp_float = SLOW_PATH_SHARED_READ_D(w->w_ytd);
       SLOW_PATH_SHARED_WRITE_D(w->w_ytd, temp_float+h_amount);
       District* d = findDistrict(TM_ARG warehouse_id, district_id);
-      float temp_float_2 = SLOW_PATH_SHARED_READ_D(d->d_ytd);
+      double temp_float_2 = SLOW_PATH_SHARED_READ_D(d->d_ytd);
       SLOW_PATH_SHARED_WRITE_D(d->d_ytd, temp_float_2+h_amount);
     } else{
-      float temp_float = FAST_PATH_SHARED_READ_D(w->w_ytd);
+      double temp_float = FAST_PATH_SHARED_READ_D(w->w_ytd);
       FAST_PATH_SHARED_WRITE_D(w->w_ytd, temp_float+h_amount);
 
     //   District* d = findDistrict(TM_ARG warehouse_id, district_id);
@@ -564,11 +564,11 @@ __attribute__((transaction_safe)) void TPCCTables::paymentHome(TM_ARGDECL int64_
 }
 
 __attribute__((transaction_safe)) void TPCCTables::internalPaymentRemote(TM_ARGDECL int64_t warehouse_id, int64_t district_id, Customer* c,
-        float h_amount, PaymentOutput* output, TPCCUndo** undo) {
+        double h_amount, PaymentOutput* output, TPCCUndo** undo) {
     if(local_exec_mode == 1 || local_exec_mode == 3){
-      float temp_float = SLOW_PATH_SHARED_READ_D(c->c_balance);
+      double temp_float = SLOW_PATH_SHARED_READ_D(c->c_balance);
       SLOW_PATH_SHARED_WRITE_D(c->c_balance, temp_float-h_amount);
-      float temp_float_2 = SLOW_PATH_SHARED_READ_D(c->c_ytd_payment);
+      double temp_float_2 = SLOW_PATH_SHARED_READ_D(c->c_ytd_payment);
       SLOW_PATH_SHARED_WRITE_D(c->c_ytd_payment, temp_float_2+h_amount);
       intptr_t temp_var = SLOW_PATH_SHARED_READ(c->c_payment_cnt);
       SLOW_PATH_SHARED_WRITE(c->c_payment_cnt, temp_var+1);
@@ -577,9 +577,9 @@ __attribute__((transaction_safe)) void TPCCTables::internalPaymentRemote(TM_ARGD
       output->c_discount = c->c_discount;
       output->c_balance = SLOW_PATH_SHARED_READ_D(c->c_balance);
     } else{
-      float temp_float = FAST_PATH_SHARED_READ_D(c->c_balance);
+      double temp_float = FAST_PATH_SHARED_READ_D(c->c_balance);
       FAST_PATH_SHARED_WRITE_D(c->c_balance, temp_float-h_amount);
-      float temp_float_2 = FAST_PATH_SHARED_READ_D(c->c_ytd_payment);
+      double temp_float_2 = FAST_PATH_SHARED_READ_D(c->c_ytd_payment);
       FAST_PATH_SHARED_WRITE_D(c->c_ytd_payment, temp_float_2+h_amount);
       intptr_t temp_var = FAST_PATH_SHARED_READ(c->c_payment_cnt);
       FAST_PATH_SHARED_WRITE(c->c_payment_cnt, temp_var+1);
@@ -650,7 +650,7 @@ void TPCCTables::delivery(
 			// TODO: BUG here, sometimes we get nulls
 			o->o_carrier_id = carrier_id;
 	
-			float total = 0;
+			double total = 0;
 			// TODO: Select based on (w_id, d_id, o_id) rather than using ol_number?
 			for (int64_t i = 1; i <= o->o_ol_cnt; ++i) {
 				OrderLine* line = findOrderLine(TM_ARG warehouse_id, d_id, o_id, i);
@@ -662,12 +662,12 @@ void TPCCTables::delivery(
 	
 			Customer* c = findCustomer(TM_ARG warehouse_id, d_id, o->o_c_id);
 			if (local_exec_mode == 1 || local_exec_mode == 3) {
-				float temp_float = SLOW_PATH_SHARED_READ_D(c->c_balance);
+				double temp_float = SLOW_PATH_SHARED_READ_D(c->c_balance);
 				SLOW_PATH_SHARED_WRITE_D(c->c_balance, temp_float+total);
 				intptr_t temp_var = SLOW_PATH_SHARED_READ(c->c_delivery_cnt);
 				SLOW_PATH_SHARED_WRITE(c->c_delivery_cnt, temp_var+1);
 			} else {
-				float temp_float = FAST_PATH_SHARED_READ_D(c->c_balance);
+				double temp_float = FAST_PATH_SHARED_READ_D(c->c_balance);
 				FAST_PATH_SHARED_WRITE_D(c->c_balance, temp_float+total);
 				intptr_t temp_var = FAST_PATH_SHARED_READ(c->c_delivery_cnt);
 				FAST_PATH_SHARED_WRITE(c->c_delivery_cnt, temp_var+1);
