@@ -25,28 +25,30 @@ if __name__ == "__main__":
   # params.set_params("-n", [1, 2, 4, 8, 16, 32, 64])
   # nb_samples = 1
   locations = [
-   "../POWER8TM/benchmarks/tpcc",
-   "../POWER8TM/benchmarks/tpcc",
-   "../POWER8TM/benchmarks/tpcc",
-   "../POWER8TM/benchmarks/tpcc",
-   "../POWER8TM/benchmarks/tpcc",
-   "../POWER8TM/benchmarks/tpcc",
-  #  "../POWER8TM/benchmarks/tpcc",
     "../power8tm-pisces/benchmarks/tpcc",
+  #  "../POWER8TM/benchmarks/tpcc",
+  #  "../POWER8TM/benchmarks/tpcc",
+  #  "../POWER8TM/benchmarks/tpcc",
+  #  "../POWER8TM/benchmarks/tpcc",
+  #  "../POWER8TM/benchmarks/tpcc",
+  #  "../POWER8TM/benchmarks/tpcc",
+  #  "../POWER8TM/benchmarks/tpcc",
+    # "../power8tm-pisces/benchmarks/tpcc",
     # "../POWER8TM/benchmarks/tpcc",
 #     "../POWER8TM/benchmarks/tpcc",
   ]
   # The backend name goes here (don't forget to match the position in the
   # "backends" list with the position in the "locations" list)
   backends = [
-   "psi",
-   "psi-strong",
-   "htm-sgl",
-   "si-htm",
-   "spht",
-   "spht-log-linking", 
+    "specpmtPLUStiny",
+  #  "psi",
+  #  "psi-strong",
+  #  "htm-sgl",
+  #  "si-htm",
+  #  "spht",
+  #  "spht-log-linking", 
   #  "spht-quiescence-naive",
-   "pisces",
+  #  "pisces",
   #  "psi-bug",
   #  "psi-strong-bug",
   #  "spht-dumbo-readers",
@@ -75,6 +77,7 @@ if __name__ == "__main__":
     "ureads-strong": "ureads-strong", 
     "ureads-p8tm": "ureads-p8tm",
     "spht-quiescence-naive": "DUMBO-naive",
+    "specpmtPLUStiny": "SpecPMT"
   }
   
  
