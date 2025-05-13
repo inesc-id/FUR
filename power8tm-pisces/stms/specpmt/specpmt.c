@@ -110,25 +110,39 @@ AtomicAdd (volatile intptr_t* addr, intptr_t dx)
     return (v+dx);
 }
 
-volatile long StartTally         = 0;
-volatile long AbortTally         = 0;
+__thread long loc_aux_tx_timeTally          = 0;
 
-volatile long flush_timeTally = 0;
+__thread long loc_StartTally                = 0;
+__thread long loc_AbortTally                = 0;
+__thread long loc_flush_timeTally           = 0;
+__thread long loc_upd_dur_commit_timeTally  = 0;
+__thread long loc_ro_wait_timeTally         = 0;
+__thread long loc_isolation_wait_timeTally  = 0;
+__thread long loc_ro_tx_timeTally           = 0;
+__thread long loc_upd_tx_timeTally          = 0;
+__thread long loc_abort_timeTally           = 0;
+__thread long loc_stm_commitsTally          = 0;
+__thread long loc_stm_ro_commitsTally       = 0;
+__thread long loc_stm_upd_commitsTally      = 0;
+__thread long loc_ReadOverflowTally         = 0;
+__thread long loc_WriteOverflowTally        = 0;
+__thread long loc_LocalOverflowTally        = 0;
+
+volatile long StartTally                = 0;
+volatile long AbortTally                = 0;
+volatile long flush_timeTally           = 0;
 volatile long upd_dur_commit_timeTally  = 0;
-volatile long ro_wait_timeTally = 0;
-volatile long isolation_wait_timeTally = 0;
-volatile long ro_tx_timeTally = 0;
-volatile long upd_tx_timeTally = 0;
-volatile long abort_timeTally = 0;
-volatile long stm_commitsTally = 0;
-
-volatile long stm_ro_commitsTally = 0;
-volatile long stm_upd_commitsTally = 0;
-
-
-volatile long ReadOverflowTally  = 0;
-volatile long WriteOverflowTally = 0;
-volatile long LocalOverflowTally = 0;
+volatile long ro_wait_timeTally         = 0;
+volatile long isolation_wait_timeTally  = 0;
+volatile long ro_tx_timeTally           = 0;
+volatile long upd_tx_timeTally          = 0;
+volatile long abort_timeTally           = 0;
+volatile long stm_commitsTally          = 0;
+volatile long stm_ro_commitsTally       = 0;
+volatile long stm_upd_commitsTally      = 0;
+volatile long ReadOverflowTally         = 0;
+volatile long WriteOverflowTally        = 0;
+volatile long LocalOverflowTally        = 0;
 #define pisces_TALLY_MAX          (((unsigned long)(-1)) >> 1)
 
 

@@ -9,6 +9,64 @@
 #include <cstring>
 #include "util.h"
 
+
+
+
+# define delay_for_pm 70
+# define emulate_pm_slowdown() \
+{ \
+  volatile int i; \
+  for (i = 0; i < delay_for_pm; ++i) \
+    __asm__ volatile ("nop" ::: "memory"); \
+}
+
+static unsigned long start_time, end_time;
+
+#ifndef READ_TIMESTAMP
+#	if defined(__i386__)
+#		error "READ_TIMESTAMP not refined for __i386__"
+#	elif defined(__x86_64__)
+static __inline__ unsigned long long
+rdtsc_x86_64( void )
+{ 
+	unsigned long long res; 
+	__asm__ __volatile__ ( 
+	"xor %%rax,%%rax \n\t" 
+	"rdtsc           \n\t" 
+	"shl $32,%%rdx   \n\t" 
+	"or  %%rax,%%rdx \n\t" 
+	"mov %%rdx,%0    \n\t" 
+	: "=r"(res) 
+	: 
+	: "rax", "rdx"); 
+	return res; 
+}
+
+static __inline__ unsigned long long
+rdtscp_x86_64( void ) 
+{
+	unsigned long long res;
+	__asm__ __volatile__ (
+	"xor %%rax,%%rax \n\t"
+	"rdtscp          \n\t"
+	"shl $32,%%rdx   \n\t"
+	"or  %%rax,%%rdx \n\t"
+	"mov %%rdx,%0    \n\t"
+	: "=r"(res)
+	:
+	: "rax", "rdx", "ecx");
+	return res;
+}
+
+# 	define READ_TIMESTAMP(dest) dest = rdtsc_x86_64()
+
+#	elif defined(__powerpc__)
+# 	define READ_TIMESTAMP(dest) __asm__ volatile("0: \n\tmfspr   %0,268 \n": "=r"(dest));
+#	endif /* ARCH options */
+#endif /* READ_TIMESTAMP */
+
+
+
 using namespace std;
 
 class SPLog;
@@ -100,10 +158,18 @@ public:
   }
 
   void flush_log(){
+		unsigned long aux_ts1, aux_ts2;
+		READ_TIMESTAMP(aux_ts1);
+		emulate_pm_slowdown(); /* TODO: times number of cache lines flushed ((current_pos - start_pos)/CACHELINE_SIZE) */
     clwb(start_pos, current_pos - start_pos);
+		READ_TIMESTAMP(aux_ts2);
+		extern __thread long loc_flush_timeTally;
+		loc_flush_timeTally += aux_ts2 - aux_ts1;
   }
 
   void commit_log(uint64_t timestamp){
+		unsigned long aux_ts1, aux_ts2;
+		READ_TIMESTAMP(aux_ts1);
     timestamp |= end_mark;
     insertValue(current_pos, timestamp);
     setValue(start_pos, 0LL); //TODO: calculate checksum
@@ -112,6 +178,9 @@ public:
     flush_log();
     if(current_pos > log_area + roll_capacity) //start from begining
       current_pos = start_pos = log_area;
+		READ_TIMESTAMP(aux_ts2);
+		extern __thread long loc_upd_dur_commit_timeTally;
+		loc_upd_dur_commit_timeTally += aux_ts2 - aux_ts1;
   }
 
   void output(){ //print all log records
