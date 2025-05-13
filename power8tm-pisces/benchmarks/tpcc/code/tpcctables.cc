@@ -245,41 +245,48 @@ __attribute__((transaction_safe)) void TPCCTables::internalOrderStatus(TM_ARGDEC
 	}
 }
 
-bool TPCCTables::newOrder(TM_ARGDECL int64_t warehouse_id, int64_t district_id, int64_t customer_id,
-        const std::vector<NewOrderItem>& items, const char* now, NewOrderOutput* output,TPCCUndo** undo) {
+bool TPCCTables::newOrder(
+	TM_ARGDECL int64_t warehouse_id,
+	int64_t district_id,
+	int64_t customer_id,
+	const std::vector<NewOrderItem>& items,
+	const char* now,
+	NewOrderOutput* output,
+	TPCCUndo** undo
+) {
     uint64_t items_size = items.size();
     int64_t* warehouse_set = (int64_t*) malloc(items_size * sizeof(int64_t));
     Item** item_tuples = (Item**) malloc(items_size * sizeof(Item*));
 
 /*    __transaction_atomic { */
-    // FIXME(nmld): transaction block here
-        // perform the home part
-        int ro = 0;
-       //TM_THREAD_ENTER();
+	// FIXME(nmld): transaction block here
+	// perform the home part
+	int ro = 0;
+	//TM_THREAD_ENTER();
 	bool result;
-       TM_BEGIN(ro);
-        result = newOrderHome(TM_ARG warehouse_id, district_id, customer_id, items, now, output, undo, item_tuples);
-        if (!result) {
-	    TM_END();
-            return false;
-        }
-        // Process all remote warehouses
-        // printf("neworder %d items\n", items_size);
-        for (size_t i = 0; i < items_size; ++i) {
-            if (items[i].ol_supply_w_id != warehouse_id) {
-                warehouse_set[i] = items[i].ol_supply_w_id;
-            }
-        }
+	TM_BEGIN(ro);
+	result = newOrderHome(TM_ARG warehouse_id, district_id, customer_id, items, now, output, undo, item_tuples);
+	if (!result) {
+		TM_END();
+		return false;
+	}
+	// Process all remote warehouses
+	// printf("neworder %d items\n", items_size);
+	for (size_t i = 0; i < items_size; ++i) {
+		if (items[i].ol_supply_w_id != warehouse_id) {
+			warehouse_set[i] = items[i].ol_supply_w_id;
+		}
+	}
 
-        for (size_t i = 0; i < items_size; ++i) {
-            result = newOrderRemote(TM_ARG warehouse_id, warehouse_set[i], items, NULL, undo, item_tuples);
-        }
-      TM_END();
-      //TM_THREAD_EXIT();
+	for (size_t i = 0; i < items_size; ++i) {
+		result = newOrderRemote(TM_ARG warehouse_id, warehouse_set[i], items, NULL, undo, item_tuples);
+	}
+	TM_END();
+//TM_THREAD_EXIT();
 /*    } */
 
-    free(warehouse_set);
-    return true;
+	free(warehouse_set);
+	return true;
 }
 
 template <typename T>
@@ -299,8 +306,8 @@ __attribute__((transaction_safe)) bool TPCCTables::newOrderHome(TM_ARGDECL int64
     // 2.4.3.4. requires that we display c_last, c_credit, and o_id for rolled back transactions:
     // read those values first
     District* d = findDistrict(TM_ARG warehouse_id, district_id);
-    output->d_tax = d->d_tax;
-    output->o_id = d->d_next_o_id;
+    output->d_tax = d->d_tax; // TODO: this violates tx Atomicity (d is shared)
+    output->o_id = d->d_next_o_id; // TODO: this violates tx Atomicity (d is shared)
     Customer* c = findCustomer(TM_ARG warehouse_id, district_id, customer_id);
     output->c_discount = c->c_discount;
 
@@ -324,7 +331,7 @@ __attribute__((transaction_safe)) bool TPCCTables::newOrderHome(TM_ARGDECL int64
     output->status[0] = '\0';
 
     // Modify the order id to assign it
-    d->d_next_o_id = d->d_next_o_id + 1;
+    d->d_next_o_id = d->d_next_o_id + 1; // TODO: this violates tx Atomicity (d is shared)
 
     Warehouse* w = findWarehouse(TM_ARG warehouse_id);
     output->w_tax = w->w_tax;

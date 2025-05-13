@@ -264,7 +264,7 @@ __attribute__((transaction_safe)) bool TPCCTables::newOrderHome(int64_t warehous
     // read those values first
     District* d = findDistrict(warehouse_id, district_id);
     output->d_tax = d->d_tax;
-    	output->o_id = FAST_PATH_SHARED_READ(d->d_next_o_id);
+		output->o_id = FAST_PATH_SHARED_READ(d->d_next_o_id);
 
     Customer* c = findCustomer(warehouse_id, district_id, customer_id);
     output->c_discount = c->c_discount;
@@ -290,7 +290,7 @@ __attribute__((transaction_safe)) bool TPCCTables::newOrderHome(int64_t warehous
     output->status[0] = '\0';
 
     // Modify the order id to assign it
-    FAST_PATH_SHARED_WRITE(d->d_next_o_id, d->d_next_o_id + 1);
+    FAST_PATH_SHARED_WRITE(d->d_next_o_id, output->o_id + 1);
 
     Warehouse* w = findWarehouse(warehouse_id);
     output->w_tax = w->w_tax;
