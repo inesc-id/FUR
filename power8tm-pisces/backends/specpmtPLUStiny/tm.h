@@ -117,17 +117,23 @@ extern PMT pmt;
 #    define TM_BEGIN_EXT(b,ro) \
 	local_exec_mode = ro; \
 	loc_aux_tx_timeTally = rdtsc(); \
+	loc_StartTally += 1; \
 	do { /* sigsetjmp(local_tx_longjmp, 0); */ \
 		stm_tx_attr_t _a = {{.id = thread_getId(), .read_only = ro}}; \
 		pmt.tm_begin(thread_getId()); /* TODO: maybe before stm_start(_a)? maybe after the jump? */ \
 		sigjmp_buf *buf = stm_start(_a); \
-		sigsetjmp(*buf, 0); /* On abort the STM rolls back and jumps here */ \
+		if (sigsetjmp(*buf, 0) /* On abort the STM rolls back and jumps here */ != 0) { \
+			loc_AbortTally += 1; \
+			loc_abort_timeTally += rdtsc() - loc_aux_tx_timeTally; \
+			loc_aux_tx_timeTally = rdtsc(); \
+		} \
 	} while(0); \
 	//
-#    define TM_BEGIN(ro)                TM_BEGIN_EXT(0, ro)
-#    define TM_BEGIN_RO()               TM_BEGIN_EXT(0, 1)
-#    define TM_END() \
+	#    define TM_BEGIN(ro)                TM_BEGIN_EXT(0, ro)
+	#    define TM_BEGIN_RO()               TM_BEGIN_EXT(0, 1)
+	#    define TM_END() \
 	stm_commit(); \
+	STM_END() \
 	loc_stm_commitsTally += 1; \
 	if (local_exec_mode /* is RO */) { \
 		loc_stm_ro_commitsTally += 1; \
@@ -136,7 +142,6 @@ extern PMT pmt;
 		loc_stm_upd_commitsTally += 1; \
 		loc_upd_tx_timeTally += rdtsc() - loc_aux_tx_timeTally; \
 	} \
-	STM_END() \
 //
 #    define FAST_PATH_RESTART()         stm_abort(1); STM_RESTART()
 #    define SLOW_PATH_RESTART()         stm_abort(1); STM_RESTART()
