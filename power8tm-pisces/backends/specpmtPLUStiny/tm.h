@@ -133,7 +133,7 @@ extern PMT pmt;
 	#    define TM_BEGIN_RO()               TM_BEGIN_EXT(0, 1)
 	#    define TM_END() \
 	stm_commit(); \
-	STM_END() \
+	STM_END(); \
 	loc_stm_commitsTally += 1; \
 	if (local_exec_mode /* is RO */) { \
 		loc_stm_ro_commitsTally += 1; \
