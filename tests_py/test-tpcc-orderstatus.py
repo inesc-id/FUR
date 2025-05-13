@@ -25,7 +25,7 @@ if __name__ == "__main__":
   # params.set_params("-n", [1, 2, 4, 8, 16, 32, 64])
   # nb_samples = 1
   locations = [
-    # "../power8tm-pisces/benchmarks/tpcc",
+    "../power8tm-pisces/benchmarks/tpcc",
   #  "../POWER8TM/benchmarks/tpcc",
   #  "../POWER8TM/benchmarks/tpcc",
   #  "../POWER8TM/benchmarks/tpcc",
