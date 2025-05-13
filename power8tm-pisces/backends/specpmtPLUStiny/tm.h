@@ -89,7 +89,7 @@ extern PMT pmt;
                                         STM_INIT_THREAD(TM_ARG_ALONE, thread_getId())
 #    define TM_THREAD_EXIT() \
 	stm_exit_thread(); \
-	STM_FREE_THREAD(TM_ARG_ALONE) \
+	STM_FREE_THREAD(TM_ARG_ALONE); \
 	__atomic_add_fetch(&StartTally, loc_StartTally, __ATOMIC_RELEASE); \
 	__atomic_add_fetch(&AbortTally, loc_AbortTally, __ATOMIC_RELEASE); \
 	__atomic_add_fetch(&flush_timeTally, loc_flush_timeTally, __ATOMIC_RELEASE); \
