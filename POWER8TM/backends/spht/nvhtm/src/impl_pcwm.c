@@ -185,8 +185,8 @@ void state_fprintf_profiling_info_pcwm(char *filename)
 
 static inline void fetch_log(int threadId)
 {
-  write_log_thread[writeLogEnd] = 0;
-  write_log_thread[(writeLogEnd + 8) & (gs_appInfo->info.allocLogSize - 1)] = 0;
+  write_log_thread[PCWM_writeLogEnd] = 0;
+  write_log_thread[(PCWM_writeLogEnd + 8) & (gs_appInfo->info.allocLogSize - 1)] = 0;
 }
 
 void on_before_htm_begin_pcwm(int threadId, int ro)
@@ -200,7 +200,7 @@ void on_before_htm_begin_pcwm(int threadId, int ro)
   //   nbSamplesDone++;
   // }
   
-  writeLogEnd = writeLogStart = G_next[threadId].log_ptrs.write_log_next;
+  PCWM_writeLogEnd = PCWM_writeLogStart = G_next[threadId].log_ptrs.write_log_next;
   fetch_log(threadId);
 
   if (log_replay_flags & LOG_REPLAY_CONCURRENT) {
@@ -222,8 +222,8 @@ void on_before_htm_begin_pcwm(int threadId, int ro)
 
   if (gs_ts_array[threadId].pcwm.isUpdate != 0)
     __atomic_store_n(&gs_ts_array[threadId].pcwm.isUpdate, 0, __ATOMIC_RELEASE);
-  readonly_tx = ro;
-  if (!readonly_tx)
+  PCWM_readonly_tx = ro;
+  if (!PCWM_readonly_tx)
     __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, rdtsc(), __ATOMIC_RELEASE);
   else {
     //For RO txs (which run non-transactionally), we set their ts to infinity
@@ -235,29 +235,29 @@ void on_before_htm_begin_pcwm(int threadId, int ro)
 
 void on_htm_abort_pcwm(int threadId)
 {
-  if (!readonly_tx)
+  if (!PCWM_readonly_tx)
     __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, onesBit63(0), __ATOMIC_RELEASE);
     // __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, rdtsc(), __ATOMIC_RELEASE);
 }
 
 void on_before_htm_write_8B_pcwm(int threadId, void *addr, uint64_t val)
 {
-  write_log_thread[writeLogEnd] = (uint64_t)addr;
-  writeLogEnd = (writeLogEnd + 1) & (gs_appInfo->info.allocLogSize - 1);
-  write_log_thread[writeLogEnd] = (uint64_t)val;
-  writeLogEnd = (writeLogEnd + 1) & (gs_appInfo->info.allocLogSize - 1);
+  write_log_thread[PCWM_writeLogEnd] = (uint64_t)addr;
+  PCWM_writeLogEnd = (PCWM_writeLogEnd + 1) & (gs_appInfo->info.allocLogSize - 1);
+  write_log_thread[PCWM_writeLogEnd] = (uint64_t)val;
+  PCWM_writeLogEnd = (PCWM_writeLogEnd + 1) & (gs_appInfo->info.allocLogSize - 1);
 }
 
 void on_before_htm_commit_pcwm(int threadId)
 {
-  readClockVal = rdtscp();
+  PCWM_readClockVal = rdtscp();
 }
 
 static inline void smart_close_log_pcwm(uint64_t marker, uint64_t *marker_pos)
 {
   // if (loc_var.exec_mode == 0) printf("will flush\n");
-  intptr_t lastCL  = ((uintptr_t)(&write_log_thread[writeLogEnd]) >> 6) << 6;
-  intptr_t firstCL = ((uintptr_t)(&write_log_thread[writeLogStart]) >> 6) << 6;
+  intptr_t lastCL  = ((uintptr_t)(&write_log_thread[PCWM_writeLogEnd]) >> 6) << 6;
+  intptr_t firstCL = ((uintptr_t)(&write_log_thread[PCWM_writeLogStart]) >> 6) << 6;
 
   void *logStart = (void*) (write_log_thread + 0);
   void *logEnd   = (void*) (write_log_thread + gs_appInfo->info.allocLogSize);
@@ -283,8 +283,8 @@ static inline void smart_close_log_pcwm(uint64_t marker, uint64_t *marker_pos)
 void on_before_sgl_commit_pcwm(int threadId) {
   // printf("called on_before_sgl_commit (%d)\n", loc_var.exec_mode);
   smart_close_log_pcwm(
-  /* commit value */ onesBit63(readClockVal),
-  /* marker position */ (uint64_t*)&(write_log_thread[writeLogEnd])
+  /* commit value */ onesBit63(PCWM_readClockVal),
+  /* marker position */ (uint64_t*)&(write_log_thread[PCWM_writeLogEnd])
   );
   FENCE_PREV_FLUSHES();
   //emulating durmarker flush
@@ -301,30 +301,30 @@ void on_after_htm_commit_pcwm(int threadId)
 {
   // if (loc_var.exec_mode == 2) {printf("loc_var.exec_mode == 2"); return;} //In SGL commit, we don't need to do anything
 
-  if (writeLogStart == writeLogEnd)
+  if (PCWM_writeLogStart == PCWM_writeLogEnd)
     INC_PERFORMANCE_COUNTER(timeTotalTS1, timeAfterTXTS1, timeTX_ro);
   else
     INC_PERFORMANCE_COUNTER(timeTotalTS1, timeAfterTXTS1, timeTX_upd);
 
   int didTheFlush = 0;
 
-  // gs_ts_array[threadId].pcwm.ts = readClockVal; // currently has the TS of begin
+  // gs_ts_array[threadId].pcwm.ts = PCWM_readClockVal; // currently has the TS of begin
   // tells the others my TS taken within the TX
   // TODO: remove the atomic
-  if (!readonly_tx) 
-    __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, readClockVal, __ATOMIC_RELEASE);
+  if (!PCWM_readonly_tx) 
+    __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, PCWM_readClockVal, __ATOMIC_RELEASE);
 
-  // printf("[%i] did TX=%lx\n", threadId, readClockVal);
+  // printf("[%i] did TX=%lx\n", threadId, PCWM_readClockVal);
 
-  if (writeLogStart == writeLogEnd) {
+  if (PCWM_writeLogStart == PCWM_writeLogEnd) {
     /* Read-only transaction is about to return */
 
-    if (!readonly_tx)
+    if (!PCWM_readonly_tx)
     // tells the others to move on
-      __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, onesBit63(readClockVal), __ATOMIC_RELEASE);
+      __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, onesBit63(PCWM_readClockVal), __ATOMIC_RELEASE);
 
     /* RO durability wait (bug fix by Joao)*/
-    RO_wait_for_durable_reads(threadId, readClockVal);
+    RO_wait_for_durable_reads(threadId, PCWM_readClockVal);
 
     goto ret;
   }
@@ -334,60 +334,60 @@ void on_after_htm_commit_pcwm(int threadId)
 #ifndef DISABLE_PCWM_OPT
   // says to the others that it intends to write this value in the marker
   // TODO: now using gs_ts_array[threadId].pcwm.ts as TS intention
-  // __atomic_store_n(&gs_ts_array[threadId].comm2.globalMarkerIntent, readClockVal, __ATOMIC_RELEASE);
+  // __atomic_store_n(&gs_ts_array[threadId].comm2.globalMarkerIntent, PCWM_readClockVal, __ATOMIC_RELEASE);
 #endif
 
   // if ((nbSamples & (PCWM_NB_SAMPLES - 1)) == (PCWM_NB_SAMPLES - 1)) {
-    MEASURE_TS(timeFlushTS1);
+    MEASURE_TS(PCWM_timeFlushTS1);
   // }
 
-  // int prevWriteLogEnd = writeLogEnd;
-  // writeLogEnd = (writeLogEnd + 1) & (gs_appInfo->info.allocLogSize - 1); // needed
+  // int prevWriteLogEnd = PCWM_writeLogEnd;
+  // PCWM_writeLogEnd = (PCWM_writeLogEnd + 1) & (gs_appInfo->info.allocLogSize - 1); // needed
   smart_close_log_pcwm(
-    /* commit value */ onesBit63(readClockVal),
-    /* marker position */ (uint64_t*)&(write_log_thread[writeLogEnd])
+    /* commit value */ onesBit63(PCWM_readClockVal),
+    /* marker position */ (uint64_t*)&(write_log_thread[PCWM_writeLogEnd])
   );
-  // writeLogEnd = prevWriteLogEnd;
+  // PCWM_writeLogEnd = prevWriteLogEnd;
 
   // -------------------
   /** OLD */
   // flush log entries
-  // writeLogEnd = (writeLogEnd + gs_appInfo->info.allocLogSize - 1) & (gs_appInfo->info.allocLogSize - 1);
-  // FLUSH_RANGE(&write_log_thread[writeLogStart], &write_log_thread[writeLogEnd],
+  // PCWM_writeLogEnd = (PCWM_writeLogEnd + gs_appInfo->info.allocLogSize - 1) & (gs_appInfo->info.allocLogSize - 1);
+  // FLUSH_RANGE(&write_log_thread[PCWM_writeLogStart], &write_log_thread[PCWM_writeLogEnd],
   //   &write_log_thread[0], write_log_thread + gs_appInfo->info.allocLogSize);
-  // writeLogEnd = (writeLogEnd + 1) & (gs_appInfo->info.allocLogSize - 1);
+  // PCWM_writeLogEnd = (PCWM_writeLogEnd + 1) & (gs_appInfo->info.allocLogSize - 1);
   // FENCE_PREV_FLUSHES();
   // /* Commits the write log (commit marker) */
-  // write_log_thread[writeLogEnd] = onesBit63(readClockVal);
-  // FLUSH_CL(&write_log_thread[writeLogEnd]);
+  // write_log_thread[PCWM_writeLogEnd] = onesBit63(PCWM_readClockVal);
+  // FLUSH_CL(&write_log_thread[PCWM_writeLogEnd]);
   /** OLD */
   // -------------------
 
   // tells the others flush done!
   FENCE_PREV_FLUSHES();
-  __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, onesBit63(readClockVal), __ATOMIC_RELEASE);
+  __atomic_store_n(&gs_ts_array[threadId].pcwm.ts, onesBit63(PCWM_readClockVal), __ATOMIC_RELEASE);
 
   // if ((nbSamples & (PCWM_NB_SAMPLES - 1)) == (PCWM_NB_SAMPLES - 1)) {
-    MEASURE_TS(timeFlushTS2);
+    MEASURE_TS(PCWM_timeFlushTS2);
   // }
-  INC_PERFORMANCE_COUNTER(timeFlushTS1, timeFlushTS2, timeFlushing);
+  INC_PERFORMANCE_COUNTER(PCWM_timeFlushTS1, PCWM_timeFlushTS2, timeFlushing);
 
   // now: is it safe to return to the application?
   // first wait preceding TXs
-  canJumpToWait = 0;
+  PCWM_canJumpToWait = 0;
   wait_commit_fn(threadId);
   // all preceding TXs flushed their logs, and we know the intention
 
-  if (canJumpToWait) goto waitTheMarker;
+  if (PCWM_canJumpToWait) goto waitTheMarker;
 
   // second verify it the checkpointer will reproduce our log
   volatile uint64_t oldVal, oldVal2;
 putTheMarker:
-  if ((oldVal = __atomic_load_n(&P_last_safe_ts->ts, __ATOMIC_ACQUIRE)) < readClockVal) {
+  if ((oldVal = __atomic_load_n(&P_last_safe_ts->ts, __ATOMIC_ACQUIRE)) < PCWM_readClockVal) {
     int success = 0;
     // it will not be reproduced, need to change it
-    while (__atomic_load_n(&P_last_safe_ts->ts, __ATOMIC_ACQUIRE) < readClockVal) {
-      oldVal2 = __sync_val_compare_and_swap(&P_last_safe_ts->ts, oldVal, readClockVal);
+    while (__atomic_load_n(&P_last_safe_ts->ts, __ATOMIC_ACQUIRE) < PCWM_readClockVal) {
+      oldVal2 = __sync_val_compare_and_swap(&P_last_safe_ts->ts, oldVal, PCWM_readClockVal);
       success = (oldVal2 == oldVal);
       oldVal = oldVal2;
     }
@@ -397,15 +397,15 @@ putTheMarker:
       didTheFlush = 1;
 // -------------------------------
       // tells the others that I've managed to flush up to my TS
-      // __atomic_store_n(&gs_ts_array[threadId].comm2.globalMarkerTS, readClockVal, __ATOMIC_RELEASE);
+      // __atomic_store_n(&gs_ts_array[threadId].comm2.globalMarkerTS, PCWM_readClockVal, __ATOMIC_RELEASE);
       // TODO: now using the same cacheline
-      __atomic_store_n(&gs_ts_array[threadId].pcwm.flushedMarker, readClockVal, __ATOMIC_RELEASE);
+      __atomic_store_n(&gs_ts_array[threadId].pcwm.flushedMarker, PCWM_readClockVal, __ATOMIC_RELEASE);
 // -------------------------------
       // this may fail, I guess a more recent transaction will update the TS...
       // at this point it should be guaranteed that the checkpointer sees:
-      //  P_last_safe_ts->ts >= readClockVal (it ignores bit 63)
+      //  P_last_safe_ts->ts >= PCWM_readClockVal (it ignores bit 63)
       // TODO: while enabling this do not forget zeroBit63 whenever you read P_last_safe_ts
-      // __sync_val_compare_and_swap(&P_last_safe_ts->ts, readClockVal, onesBit63(readClockVal));
+      // __sync_val_compare_and_swap(&P_last_safe_ts->ts, PCWM_readClockVal, onesBit63(PCWM_readClockVal));
     }
   }
 waitTheMarker:
@@ -414,7 +414,7 @@ waitTheMarker:
 // -------------------------------
     volatile uint64_t spinCount = 0;
     while (1) {
-      // while (__atomic_load_n(&P_last_safe_ts->ts, __ATOMIC_ACQUIRE) < readClockVal) {
+      // while (__atomic_load_n(&P_last_safe_ts->ts, __ATOMIC_ACQUIRE) < PCWM_readClockVal) {
       //   _mm_pause();
       //   spinCount++;
       //   if (spinCount > 10000) {
@@ -425,8 +425,8 @@ waitTheMarker:
       spinCount++;
       int i;
       for (i = 0; i < gs_appInfo->info.nbThreads; ++i) {
-            // if (gs_ts_array[i].comm2.globalMarkerTS >= readClockVal) {
-        if (__atomic_load_n(&gs_ts_array[i].pcwm.flushedMarker, __ATOMIC_ACQUIRE) >= readClockVal) {
+            // if (gs_ts_array[i].comm2.globalMarkerTS >= PCWM_readClockVal) {
+        if (__atomic_load_n(&gs_ts_array[i].pcwm.flushedMarker, __ATOMIC_ACQUIRE) >= PCWM_readClockVal) {
           goto outerLoop;
         }
       }
@@ -441,16 +441,16 @@ waitTheMarker:
   }
 outerLoop:
   
-  G_next[threadId].log_ptrs.write_log_next = (writeLogEnd + 1) & (gs_appInfo->info.allocLogSize - 1);
+  G_next[threadId].log_ptrs.write_log_next = (PCWM_writeLogEnd + 1) & (gs_appInfo->info.allocLogSize - 1);
 ret:
 
-if (readonly_tx) {
-  MEASURE_INC(countROCommitPhases);
+if (PCWM_readonly_tx) {
+  MEASURE_INC(PCWM_countROCommitPhases);
 } else {
   uint64_t ts2;
   MEASURE_TS(ts2);
-  INC_PERFORMANCE_COUNTER(timeFlushTS2, ts2, dur_commit_time);
-  MEASURE_INC(countUpdCommitPhases);
+  INC_PERFORMANCE_COUNTER(PCWM_timeFlushTS2, ts2, dur_commit_time);
+  MEASURE_INC(PCWM_countUpdCommitPhases);
 }
 
 /* TODO: this might not be needed for every case (it's just for safety) */
@@ -480,7 +480,7 @@ MEASURE_TS(ts1);
   }
 
 MEASURE_TS(ts2);
-// if (readonly_tx) 
+// if (PCWM_readonly_tx) 
 INC_PERFORMANCE_COUNTER(ts1, ts2, ro_durability_wait_time);
 
 #ifdef DETAILED_BREAKDOWN_PROFILING
