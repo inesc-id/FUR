@@ -1,4 +1,4 @@
 #!/bin/bash
 
-cat /proc/cpuinfo | grep "@.*GHz" | sed -n '1p' | sed -e 's/model.*@//g' | sed -e 's/GHz.*//g' > CPU_FREQ_GHZ.txt
-echo "$(cat CPU_FREQ_GHZ.txt) * 1000000" | bc > CPU_FREQ_kHZ.txt
+cat /proc/cpuinfo | grep ".*MHz" | sed -n '1p' | sed -e 's/clock.*: //g' | sed -e 's/MHz.*//g' > CPU_FREQ_MHZ.txt
+echo "$(cat CPU_FREQ_MHZ.txt) * 1000" | bc > CPU_FREQ_kHZ.txt
