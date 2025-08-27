@@ -26,6 +26,20 @@ extern "C" {
 #define ASSERT(x)                       /* assert(x) */
 #define CTASSERT(x)                     ({ int a[1-(2*!(x))]; a[0] = 0;})
 
+/* =============================================================================
+ * intp2double
+ * =============================================================================
+ */
+static __inline__ double
+intp2double (intptr_t val)
+{
+    union {
+        intptr_t i;
+        double   d;
+    } convert;
+    convert.i = val;
+    return convert.d;
+}
 
 /*
  * Shorthand for type conversion routines
@@ -40,6 +54,20 @@ extern "C" {
 #define IP2VP(v)                        intp2voidp(v)
 #define VP2IP(v)                        voidp2intp(v)
 
+/* =============================================================================
+ * intp2double
+ * =============================================================================
+ */
+static __inline__ double
+intp2double (intptr_t val)
+{
+    union {
+        intptr_t i;
+        double   d;
+    } convert;
+    convert.i = val;
+    return convert.d;
+}
 
 /* =============================================================================
  * intp2float
@@ -119,6 +147,21 @@ floatp2intpp (float* val)
         float*    f;
     } convert;
     convert.f = val;
+    return convert.i;
+}
+
+/* =============================================================================
+ * doublep2intpp
+ * =============================================================================
+ */
+static __inline__ intptr_t*
+doublep2intpp (double* val)
+{
+    union {
+        intptr_t* i;
+        double*  d;
+    } convert;
+    convert.d = val;
     return convert.i;
 }
 
