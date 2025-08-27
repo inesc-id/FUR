@@ -53,8 +53,8 @@ volatile uint64_t PCWM_incWaiting = 0;
 volatile uint64_t PCWM_incFlushing = 0;
 volatile uint64_t PCWM_incTXTime_upd = 0;
 volatile uint64_t PCWM_incTXTime_ro = 0;
-volatile uint64_t PCWM_inc_PCWM_ro_durability_wait_time = 0;
-volatile uint64_t PCWM_inc_PCWM_dur_commit_time = 0;
+volatile uint64_t PCWM_inc_ro_durability_wait_time = 0;
+volatile uint64_t PCWM_inc_dur_commit_time = 0;
 
 
 
@@ -96,20 +96,20 @@ void state_gather_profiling_info_pcwm(int threadId)
   // __sync_fetch_and_add(&PCWM_incNbSamples, nbSamplesDone);
   __sync_fetch_and_add(&PCWM_incTimeTotal, timeTotal);
   __sync_fetch_and_add(&PCWM_incAfterTx, timeAfterTXSuc);
-  __sync_fetch_and_add(&PCWM_incWaiting, PCWM_timeWaiting);
-  __sync_fetch_and_add(&PCWM_incFlushing, PCWM_timeFlushing);
-  __sync_fetch_and_add(&PCWM_incTXTime_upd, PCWM_timeTX_upd);
-  __sync_fetch_and_add(&PCWM_incTXTime_ro, PCWM_timeTX_ro);
-  __sync_fetch_and_add(&PCWM_inc_PCWM_dur_commit_time, PCWM_dur_commit_time);
-  __sync_fetch_and_add(&PCWM_inc_PCWM_ro_durability_wait_time, PCWM_ro_durability_wait_time);
+  __sync_fetch_and_add(&PCWM_incWaiting, timeWaiting);
+  __sync_fetch_and_add(&PCWM_incFlushing, timeFlushing);
+  __sync_fetch_and_add(&PCWM_incTXTime_upd, timeTX_upd);
+  __sync_fetch_and_add(&PCWM_incTXTime_ro, timeTX_ro);
+  __sync_fetch_and_add(&PCWM_inc_dur_commit_time, dur_commit_time);
+  __sync_fetch_and_add(&PCWM_inc_ro_durability_wait_time, ro_durability_wait_time);
   __sync_fetch_and_add(&timeSGL_global, timeSGL);
   __sync_fetch_and_add(&timeAbortedTX_global, timeAbortedUpdTX);
   __sync_fetch_and_add(&timeAbortedTX_global, timeAbortedROTX);
 
   stats_array[threadId].htm_commits = PCWM_countUpdCommitPhases + PCWM_countROCommitPhases;
-  stats_array[threadId].flush_time = PCWM_timeFlushing;
-  stats_array[threadId].tx_time_upd_txs = PCWM_timeTX_upd;
-  stats_array[threadId].tx_time_ro_txs = PCWM_timeTX_ro;
+  stats_array[threadId].flush_time = timeFlushing;
+  stats_array[threadId].tx_time_upd_txs = timeTX_upd;
+  stats_array[threadId].tx_time_ro_txs = timeTX_ro;
   stats_array[threadId].dur_commit_time = PCWM_dur_commit_time;
   stats_array[threadId].readonly_durability_wait_time = PCWM_ro_durability_wait_time;
   stats_array[threadId].time_aborted_upd_txs = timeAbortedUpdTX;
@@ -119,12 +119,12 @@ void state_gather_profiling_info_pcwm(int threadId)
   timeSGL = 0;
   timeAbortedUpdTX = 0;
   timeAbortedROTX = 0;
-  PCWM_timeTX_upd = 0;
-  PCWM_timeTX_ro = 0;
+  timeTX_upd = 0;
+  timeTX_ro = 0;
   PCWM_dur_commit_time = 0;
   PCWM_ro_durability_wait_time = 0;
   timeAfterTXSuc = 0;
-  PCWM_timeWaiting = 0;
+  timeWaiting = 0;
   timeTotal = 0;
   PCWM_countUpdCommitPhases = 0;
   PCWM_countROCommitPhases = 0;
@@ -273,7 +273,7 @@ void on_before_sgl_commit_pcwm(int threadId) {
 void wait_commit_pcwm(int threadId)
 {
   // if ((nbSamples & (PCWM_NB_SAMPLES - 1)) == (PCWM_NB_SAMPLES - 1)) {
-    MEASURE_TS(PCWM_timeWaitingTS1);
+    MEASURE_TS(timeWaitingTS1);
   // }
   volatile uintptr_t myTS = gs_ts_array[threadId].pcwm.ts;
   volatile uint64_t snapshotTS[gs_appInfo->info.nbThreads];
@@ -307,8 +307,8 @@ int i;
   }
 
   // if ((nbSamples & (PCWM_NB_SAMPLES - 1)) == (PCWM_NB_SAMPLES - 1)) {
-    MEASURE_TS(PCWM_timeWaitingTS2);
-    INC_PERFORMANCE_COUNTER(PCWM_timeWaitingTS1, PCWM_timeWaitingTS2, PCWM_timeWaiting);
+    MEASURE_TS(timeWaitingTS2);
+    INC_PERFORMANCE_COUNTER(timeWaitingTS1, timeWaitingTS2, timeWaiting);
   // }
 }
 
