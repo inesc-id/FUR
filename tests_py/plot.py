@@ -79,7 +79,7 @@ class LinesPlot:
       ax.legend()
     ax.set_ylim(bottom=0, top=max_y+0.04*max_y)
     plt.tight_layout()
-    plt.savefig(self.folder + self.filename)
+    plt.savefig(self.folder + "/" + self.filename)
     fig.clear()
     plt.close()
 
@@ -199,7 +199,7 @@ class LinesPlot:
 
       # plt.tight_layout()
       # print(f"stack_{idx}_{self.filename}")
-      plt.savefig(f"{self.folder}stack_{idx}_{self.filename}")
+      plt.savefig(f"{self.folder}/stack_{idx}_{self.filename}")
       fig.clear()
       plt.close()
       idx += 1
