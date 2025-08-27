@@ -907,7 +907,7 @@ int
 TxCommit (Thread* Self)
 {
 
-    printf("Loads: %d, \tStores: %d \n", Self->numLoads, Self->numStores);
+    // printf("Loads: %d, \tStores: %d \n", Self->numLoads, Self->numStores);
         
     unsigned long tBeforeCommit;
     READ_TIMESTAMP(tBeforeCommit);
