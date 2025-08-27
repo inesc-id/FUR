@@ -4,6 +4,9 @@ from common import BenchmarkParameters, CollectData
 from parse_sol import Parser
 from plot import LinesPlot, BackendDataset
 
+# parameters for the run here:
+from common import nb_samples, locations, backends, name_map, thr_list
+
 if __name__ == "__main__":
   params = BenchmarkParameters(["-w", "-m", "-s", "-d", "-o", "-p", "-r", "-n", "-t"])
   params.set_params("-w", [8]) # nb warehouses
@@ -18,61 +21,8 @@ if __name__ == "__main__":
   params.set_params("-p", [100], True)
   params.set_params("-r", [0], True)
 
-#   params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 28, 32, 40, 48, 56, 64])
-  params.set_params("-n", [4, 8, 16, 32])
+  params.set_params("-n", thr_list)
 
-  nb_samples = 1
-  locations = [
-   "../POWER8TM/benchmarks/tpcc",
-   "../POWER8TM/benchmarks/tpcc",
-#    "../POWER8TM/benchmarks/tpcc",
-#    "../POWER8TM/benchmarks/tpcc",
-#    "../POWER8TM/benchmarks/tpcc",
-    # "../POWER8TM/benchmarks/tpcc",
-    # "../power8tm-pisces/benchmarks/tpcc",
-    # "../POWER8TM/benchmarks/tpcc",
-#     "../POWER8TM/benchmarks/tpcc",
-  ]
-  # The backend name goes here (don't forget to match the position in the
-  # "backends" list with the position in the "locations" list)
-  backends = [
-#    "psi",
-#    "psi-strong",
-#    "htm-sgl",
-#    "si-htm",
-  #  "psi-bug",
-  #  "psi-strong-bug",
-  #  "spht-FUR-readers",
-   "spht",
-   "spht-log-linking",
-  #  "pstm",
-  #  "pisces",
-  #  "psi",
-    # "htm-sgl",
-    # "htm-sgl-sr",
-    # "si-htm",
-    # "ureads-strong",
-    # "ureads-p8tm"
-  ]
-# Label names in the plots
-  name_map = {
-    "psi" : "FUR-SI",
-    "psi-strong" : "FUR-opaq",
-    "psi-bug" : "FUR-SI-bug",
-    "psi-strong-bug" : "FUR--opaq-bug",
-    "spht-FUR-readers" : "FUR-read",
-    "spht" : "SPHT",
-    "pstm" : "PSTM", 
-    "spht-log-linking" : "SPHT-LL",
-    "pisces" : "Pisces",
-    "htm-sgl" : "HTM",
-    "htm-sgl-sr" : "HTM+sus",
-    "si-htm" : "SI-TM",
-    "ureads-strong": "ureads-strong", 
-    "ureads-p8tm": "ureads-p8tm"
-  }
-  
- 
   datasets_thr = {}
   datasets_aborts = {}
   for loc,backend in zip(locations,backends):

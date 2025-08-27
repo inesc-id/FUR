@@ -5,6 +5,9 @@ from parse_sol import Parser
 from plot import LinesPlot, BackendDataset
 # import numpy as np
 
+# parameters for the run here:
+from common import nb_samples, locations, backends, name_map, thr_list
+
 # Besides the parameters below, the PM latency in:
 # POWER8TM/backends/extra_MACROS.h (look up #define delay_for_pm)
 # may be relevant
@@ -24,54 +27,8 @@ if __name__ == "__main__":
   # params.set_params("-i", [1000])
   params.set_params("-r", [2000000])
   params.set_params("-b", [1000000])
-  # params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32])
-  #params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60, 62, 64])
-  params.set_params("-n", [1, 2, 4, 8, 16, 32])
-
-  # Set the number of times each run is repeated (for average/stardard deviation computation).
-  nb_samples = 5
-
-  # Set the location of the benchmark here. Each backend needs to be associated with
-  # a benchmark (allows to compare with "exotic" implementations).
-  locations = [
-    "../POWER8TM/benchmarks/datastructures",
-    "../POWER8TM/benchmarks/datastructures",
-    # "../POWER8TM/benchmarks/datastructures",
-    # "../POWER8TM/benchmarks/datastructures",
-    # "../power8tm-pisces/benchmarks/datastructures",
-    # "../POWER8TM/benchmarks/datastructures",
-    # "../POWER8TM/benchmarks/datastructures",
-    # "../POWER8TM/benchmarks/datastructures",
-    # "../POWER8TM/benchmarks/datastructures",
-  ]
-  # The backend name goes here (don't forget to match the position in the
-  # "backends" list with the position in the "locations" list)
-  backends = [
-    # "psi",
-    # "psi-strong",
-    "spht",
-    # "spht-log-linking",
-    # "pisces",
-    # "htm-sgl",
-    # "htm-sgl-sr",
-    "si-htm",
-    # "ureads-strong",
-    # "ureads-p8tm"
-  ]
-
-  # Label names in the plots
-  name_map = {
-    "psi" : "FUR-SI",
-    "psi-strong" : "FUR-Opa",
-    "pisces" : "Pisces",
-    "htm-sgl" : "HTM",
-    "htm-sgl-sr" : "HTM+sus",
-    "spht" : "SPHT",
-    "spht-log-linking" : "SPHT-LL",
-    "si-htm" : "SI-TM",
-    "ureads-strong": "ureads-strong", 
-    "ureads-p8tm": "ureads-p8tm"
-  }
+ 
+  params.set_params("-n", thr_list)
 
   # IMPORTANT: set the name of the dataset here, this folder needs to be
   # empty when taking new samples (else it can overwrite/append the stdout

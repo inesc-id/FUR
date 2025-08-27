@@ -4,6 +4,9 @@ from common import BenchmarkParameters, CollectData
 from parse_sol import Parser
 from plot import LinesPlot, BackendDataset
 
+# parameters for the run here:
+from common import nb_samples, locations, backends, name_map, thr_list
+
 if __name__ == "__main__":
   params = BenchmarkParameters(["-w", "-m", "-s", "-d", "-o", "-p", "-r", "-n", "-t"])
   
@@ -19,67 +22,7 @@ if __name__ == "__main__":
   params.set_params("-m", [64]) # max nb warehouses (put the same as -w)
   params.set_params("-t", [5])
 
-  params.set_params("-n", [1, 2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 28, 32, 40, 48, 56, 64])
-  nb_samples = 3
-
-  # params.set_params("-n", [1, 2, 4, 8, 16, 32, 64])
-  # nb_samples = 1
-  locations = [
-    "../power8tm-pisces/benchmarks/tpcc",
-  #  "../POWER8TM/benchmarks/tpcc",
-  #  "../POWER8TM/benchmarks/tpcc",
-  #  "../POWER8TM/benchmarks/tpcc",
-  #  "../POWER8TM/benchmarks/tpcc",
-  #  "../POWER8TM/benchmarks/tpcc",
-  #  "../POWER8TM/benchmarks/tpcc",
-  #  "../POWER8TM/benchmarks/tpcc",
-    # "../power8tm-pisces/benchmarks/tpcc",
-    # "../POWER8TM/benchmarks/tpcc",
-#     "../POWER8TM/benchmarks/tpcc",
-  ]
-  # The backend name goes here (don't forget to match the position in the
-  # "backends" list with the position in the "locations" list)
-  backends = [
-	"specpmtPLUStiny",
-  #  "psi",
-  #  "psi-strong",
-  #  "htm-sgl",
-  #  "si-htm",
-  #  "spht",
-  #  "spht-log-linking", 
-  #  "spht-quiescence-naive",
-  #  "pisces",
-  #  "psi-bug",
-  #  "psi-strong-bug",
-  #  "spht-FUR-readers",
-  #  "pstm",
-  #  "psi",
-    # "htm-sgl",
-    # "htm-sgl-sr",
-    # "si-htm",
-    # "ureads-strong",
-    # "ureads-p8tm"
-  ]
-# Label names in the plots
-  name_map = {
-    "psi" : "FUR-SI",
-    "psi-strong" : "FUR-opaq",
-    "psi-bug" : "FUR-SI-bug",
-    "psi-strong-bug" : "FUR--opaq-bug",
-    "spht-FUR-readers" : "FUR-read",
-    "spht" : "SPHT",
-    "pstm" : "PSTM", 
-    "spht-log-linking" : "SPHT-LL",
-    "pisces" : "Pisces",
-    "htm-sgl" : "HTM",
-    "htm-sgl-sr" : "HTM+sus",
-    "si-htm" : "SI-HTM",
-    "ureads-strong": "ureads-strong", 
-    "ureads-p8tm": "ureads-p8tm",
-    "spht-quiescence-naive": "FUR-naive",
-    "specpmtPLUStiny": "SpecPMT"
-  }
-  
+  params.set_params("-n", thr_list)
  
   datasets_thr = {}
   datasets_aborts = {}

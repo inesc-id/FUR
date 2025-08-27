@@ -1,6 +1,41 @@
 import os
 import subprocess
 
+nb_samples = 2
+thr_list = [2, 4, 8, 12, 16, 24, 32, 48, 64]
+# For the plots in the paper we used the following:
+# thr_list = [1, 2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 28, 32, 40, 48, 56, 64]
+
+# path where the backend is implemented
+locations = [
+  "../power8tm-pisces/benchmarks/tpcc",
+  "../power8tm-pisces/benchmarks/tpcc",
+  "../POWER8TM/benchmarks/tpcc",
+  "../POWER8TM/benchmarks/tpcc",
+  "../POWER8TM/benchmarks/tpcc",
+  "../POWER8TM/benchmarks/tpcc",
+]
+
+# The backend name goes here (don't forget to match the position in the "backends" list with the position in the "locations" list)
+backends = [
+  "specpmtPLUStiny",
+  "pisces",
+  "psi",
+  "psi-strong",
+  "htm-sgl",
+  "spht-log-linking"
+]
+
+# Label names in the plots
+name_map = {
+  "specpmtPLUStiny": "SpecPMT",
+  "pisces" : "Pisces",
+  "psi" : "FUR-SI",
+  "psi-strong" : "FUR-opaq",
+  "htm-sgl" : "HTM",
+  "spht-log-linking" : "SPHT",
+}
+
 class RunnableBench:
   def run_benchmark(self, exec):
     pass
