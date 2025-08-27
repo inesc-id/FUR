@@ -61,8 +61,8 @@ if __name__ == "__main__":
 
   # Label names in the plots
   name_map = {
-    "psi" : "DUMBO-SI",
-    "psi-strong" : "DUMBO-Opa",
+    "psi" : "FUR-SI",
+    "psi-strong" : "FUR-Opa",
     "pisces" : "Pisces",
     "htm-sgl" : "HTM",
     "htm-sgl-sr" : "HTM+sus",

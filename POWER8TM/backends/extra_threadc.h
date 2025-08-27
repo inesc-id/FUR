@@ -144,7 +144,6 @@ replaylog()
       }
     }
   }
-  //todo write the log transaction in thread cur thread into the persistant heap 
   if ( curThread != -1 )
   {
     log_start = log_pointer[curThread];

@@ -54,27 +54,24 @@ static void seql_destroy()
   seql_global_ptr[SEQL_COUNTER_TO_IDX(_c)].start_addr.flags = SEQL_F_STARTED; \
   seql_global_ptr[SEQL_COUNTER_TO_IDX(_c)].start_addr.tid = _tid; \
   seql_global_ptr[SEQL_COUNTER_TO_IDX(_c)].start_addr.addr = _start_ptr; \
-  /* __atomic_thread_fence(__ATOMIC_RELEASE); */ /* TODO: I think it is not needed */ \
 // end of SEQL_BEGIN
 
 #define SEQL_COMMIT(_c, _end_ptr) \
   seql_global_ptr[SEQL_COUNTER_TO_IDX(_c)].start_addr.flags = SEQL_F_COMMITTED; \
   /* *** flush+fence *** */ \
-  __dcbst(&(seql_global_ptr[SEQL_COUNTER_TO_IDX(_c)].start_addr), 0); /* TODO: sometimes it breaks the ROTs */ \
+  __dcbst(&(seql_global_ptr[SEQL_COUNTER_TO_IDX(_c)].start_addr), 0); \
   emulate_pm_slowdown(); \
   /* *** *********** *** */ \
   seql_global_ptr[SEQL_COUNTER_TO_IDX(_c)].end_addr = _end_ptr; \
-  /* TODO: flush+flush */ \
-  __dcbst(&(seql_global_ptr[SEQL_COUNTER_TO_IDX(_c)].end_addr), 0); /* TODO: sometimes it breaks the ROTs */ \
+  __dcbst(&(seql_global_ptr[SEQL_COUNTER_TO_IDX(_c)].end_addr), 0); \
   emulate_pm_slowdown(); \
   /* *** *********** *** */ \
 // end of SEQL_COMMIT
-// TODO: we now assume that the background replayer is fast enough to clear the log (more or less the same as infinite log)
 
 #define SEQL_ABORT(_c) \
   seql_global_ptr[SEQL_COUNTER_TO_IDX(_c)].start_addr.flags = SEQL_F_ABORTED; \
   /* *** flush+fence *** */ \
-  __dcbst(&(seql_global_ptr[SEQL_COUNTER_TO_IDX(_c)].start_addr), 0); /* TODO: sometimes it breaks the ROTs */ \
+  __dcbst(&(seql_global_ptr[SEQL_COUNTER_TO_IDX(_c)].start_addr), 0); \
   //emulate_pm_slowdown(); \
   /* *** *********** *** */ \
 // end of SEQL_COMMIT

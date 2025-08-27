@@ -134,7 +134,7 @@ typedef struct padded_statistics {
     unsigned long time_aborted_upd_txs;
     unsigned long time_aborted_ro_txs;
     unsigned long sus_time;       //time from htmSuspend to htmResume (contains Isolation wait)
-    unsigned long flush_time;     //time to flush redo log entries (in Dumbo, exclusing time to issue flush inside sus-res)
+    unsigned long flush_time;     //time to flush redo log entries (in FUR, exclusing time to issue flush inside sus-res)
     unsigned long dur_commit_time;     //time from persistent redo logs until the tx is durable (and can return)
     unsigned long readonly_durability_wait_time;     //time that a readonly tx must wait to ensure that its reads are durable
     unsigned long tx_time_upd_txs;

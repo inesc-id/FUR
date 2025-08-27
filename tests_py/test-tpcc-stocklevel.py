@@ -49,7 +49,7 @@ if __name__ == "__main__":
   #  "pisces",
   #  "psi-bug",
   #  "psi-strong-bug",
-  #  "spht-dumbo-readers",
+  #  "spht-FUR-readers",
   #  "pstm",
   #  "psi",
     # "htm-sgl",
@@ -60,11 +60,11 @@ if __name__ == "__main__":
   ]
 # Label names in the plots
   name_map = {
-    "psi" : "DUMBO-SI",
-    "psi-strong" : "DUMBO-opaq",
-    "psi-bug" : "DUMBO-SI-bug",
-    "psi-strong-bug" : "DUMBO--opaq-bug",
-    "spht-dumbo-readers" : "DUMBO-read",
+    "psi" : "FUR-SI",
+    "psi-strong" : "FUR-opaq",
+    "psi-bug" : "FUR-SI-bug",
+    "psi-strong-bug" : "FUR--opaq-bug",
+    "spht-FUR-readers" : "FUR-read",
     "spht" : "SPHT",
     "pstm" : "PSTM", 
     "spht-log-linking" : "SPHT-LL",
@@ -74,7 +74,7 @@ if __name__ == "__main__":
     "si-htm" : "SI-HTM",
     "ureads-strong": "ureads-strong", 
     "ureads-p8tm": "ureads-p8tm",
-    "spht-quiescence-naive": "DUMBO-naive",
+    "spht-quiescence-naive": "FUR-naive",
     "specpmtPLUStiny": "SpecPMT"
   }
   
@@ -185,9 +185,9 @@ if __name__ == "__main__":
   colors = {
     "SGL commit" : "#a83232",
     "Abort": "#404040", 
-    # "DUMBO-opaq" : "#AF2126",
-    # "DUMBO-SI" : "#F99F1E",
-    # # "DUMBO-read" : "#9999ff",
+    # "FUR-opaq" : "#AF2126",
+    # "FUR-SI" : "#F99F1E",
+    # # "FUR-read" : "#9999ff",
     # "Pisces" : "#D3BEDA", 
 
   }

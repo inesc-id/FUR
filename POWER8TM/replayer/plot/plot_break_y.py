@@ -12,7 +12,7 @@ files = [
 solutions = [
     "SPHT",
     "SPHT-LL",
-    "DUMBO"
+    "FUR"
 ]
 
 X = []
