@@ -253,33 +253,6 @@ void on_before_htm_commit_pcwm(int threadId)
   PCWM_readClockVal = rdtscp();
 }
 
-static inline void smart_close_log_pcwm(uint64_t marker, uint64_t *marker_pos)
-{
-  // if (loc_var.exec_mode == 0) printf("will flush\n");
-  intptr_t lastCL  = ((uintptr_t)(&write_log_thread[PCWM_writeLogEnd]) >> 6) << 6;
-  intptr_t firstCL = ((uintptr_t)(&write_log_thread[PCWM_writeLogStart]) >> 6) << 6;
-
-  void *logStart = (void*) (write_log_thread + 0);
-  void *logEnd   = (void*) (write_log_thread + gs_appInfo->info.allocLogSize);
-
-  if (firstCL == lastCL) {
-    // same cache line
-    *marker_pos = marker;
-    FLUSH_RANGE(firstCL, lastCL, logStart, logEnd);
-  } else {
-    intptr_t lastCLMinus1;
-    if (lastCL == (uintptr_t)logStart) {
-      lastCLMinus1 = (uintptr_t)logEnd;
-    } else {
-      lastCLMinus1 = lastCL - 1;
-    }
-    FLUSH_RANGE(firstCL, lastCLMinus1, logStart, logEnd);
-    FENCE_PREV_FLUSHES();
-    *marker_pos = marker;
-    FLUSH_CL((void*)lastCL);
-  }
-}
-
 void on_before_sgl_commit_pcwm(int threadId) {
   // printf("called on_before_sgl_commit (%d)\n", loc_var.exec_mode);
   smart_close_log_pcwm(
