@@ -16,6 +16,7 @@ cp ../../backends/spht/nvhtm/include/containers.h $2
 cp ../../backends/spht/nvhtm/include/global_structs.h $2
 cp ../../backends/spht/nvhtm/include/impl.h $2
 cp ../../backends/spht/nvhtm/include/htm_impl.h $2
+cp ../../backends/spht/nvhtm/include/htm_pcwm.h $2
 cp ../../backends/spht/nvhtm/include/spins.h $2
 
 cp ../../backends/spht/deps/input_handler/include/input_handler.h $2

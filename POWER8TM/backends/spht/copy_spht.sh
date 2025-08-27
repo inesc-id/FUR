@@ -15,6 +15,7 @@ cp ../../backends/$1/nvhtm/include/array_utils.h $2
 cp ../../backends/$1/nvhtm/include/containers.h $2
 cp ../../backends/$1/nvhtm/include/global_structs.h $2
 cp ../../backends/$1/nvhtm/include/impl.h $2
+cp ../../backends/$1/nvhtm/include/impl_pcwm.h $2
 cp ../../backends/$1/nvhtm/include/htm_impl.h $2
 cp ../../backends/$1/nvhtm/include/spins.h $2
 
