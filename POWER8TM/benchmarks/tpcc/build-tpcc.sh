@@ -50,6 +50,10 @@ fi
 cd code;
 rm tpcc
 
+if [[ $backend == spht* ]] ; then
+    bash ../../../backends/spht/nvhtm/get_cpu_data.sh
+fi
+
 if [[ $backend == htm-sgl || $backend == hybrid-norec ]]; then
 	make_command="make HTM_RETRIES=-DHTM_RETRIES=$htm_retries RETRY_POLICY=-DRETRY_POLICY=$retry_policy"
 else
