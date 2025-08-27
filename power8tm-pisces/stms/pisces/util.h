@@ -26,21 +26,6 @@ extern "C" {
 #define ASSERT(x)                       /* assert(x) */
 #define CTASSERT(x)                     ({ int a[1-(2*!(x))]; a[0] = 0;})
 
-/* =============================================================================
- * intp2double
- * =============================================================================
- */
-static __inline__ double
-intp2double (intptr_t val)
-{
-    union {
-        intptr_t i;
-        double   d;
-    } convert;
-    convert.i = val;
-    return convert.d;
-}
-
 /*
  * Shorthand for type conversion routines
  */
