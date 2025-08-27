@@ -32,6 +32,7 @@ extern volatile __thread uint64_t PCWM_timeWaitingTS1;
 extern volatile __thread uint64_t PCWM_timeWaitingTS2;
 extern volatile __thread uint64_t PCWM_timeWaiting;
 extern volatile __thread uint64_t PCWM_timeFlushing;
+extern volatile __thread uint64_t PCWM_timeScanning;
 extern volatile __thread uint64_t PCWM_timeTX_upd;
 extern volatile __thread uint64_t PCWM_timeTX_ro;
 extern volatile __thread uint64_t PCWM_ro_durability_wait_time;

@@ -33,6 +33,7 @@ volatile __thread uint64_t PCWM_timeWaitingTS1 = 0;
 volatile __thread uint64_t PCWM_timeWaitingTS2 = 0;
 volatile __thread uint64_t PCWM_timeWaiting = 0;
 volatile __thread uint64_t PCWM_timeFlushing = 0;
+volatile __thread uint64_t PCWM_timeScanning = 0;
 volatile __thread uint64_t PCWM_timeTX_upd = 0;
 volatile __thread uint64_t PCWM_timeTX_ro = 0;
 volatile __thread uint64_t PCWM_ro_durability_wait_time = 0;
