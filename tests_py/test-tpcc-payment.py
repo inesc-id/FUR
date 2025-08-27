@@ -141,6 +141,6 @@ if __name__ == "__main__":
   for u,v in datasets_thr.items():
     # print(u)
     # print(v)
-    lines_plot = LinesPlot(f"[-s, -d, -o, -p, -r] = {u}", f"tpcc_{u}.pdf", figsize=(8, 4), colors=colors)
+    lines_plot = LinesPlot(f"[-s, -d, -o, -p, -r] = {u}", f"tpcc_{u}.pdf", data_folder, figsize=(8, 4), colors=colors)
     lines_plot.plot(v)
     lines_plot.plot_stack(v, filter_out_backends=["HTM", "SI-HTM", "Pisces", "SPHT-LL"])

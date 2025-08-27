@@ -47,9 +47,10 @@ class BackendDataset:
     self.y_stack[(title, y_label, is_percent, label_size, fix_100)] = y_stack
 
 class LinesPlot:
-  def __init__(self, title, filename, figsize=(5, 4), colors={}):
+  def __init__(self, title, filename, folder="./", figsize=(5, 4), colors={}):
     print(f"LinesPlot title {title}")
     self.title = title
+    self.folder = folder
     self.filename = filename
     self.figsize = figsize
     self.colors = colors
@@ -78,7 +79,7 @@ class LinesPlot:
       ax.legend()
     ax.set_ylim(bottom=0, top=max_y+0.04*max_y)
     plt.tight_layout()
-    plt.savefig(self.filename)
+    plt.savefig(self.folder + self.filename)
     fig.clear()
     plt.close()
 
@@ -198,7 +199,7 @@ class LinesPlot:
 
       # plt.tight_layout()
       # print(f"stack_{idx}_{self.filename}")
-      plt.savefig(f"stack_{idx}_{self.filename}")
+      plt.savefig(f"{self.folder}stack_{idx}_{self.filename}")
       fig.clear()
       plt.close()
       idx += 1

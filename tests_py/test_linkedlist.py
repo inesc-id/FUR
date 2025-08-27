@@ -143,7 +143,7 @@ if __name__ == "__main__":
   for u,v in datasets_thr.items():
     for i,z in v.items():
       for b,w in z.items():
-        lines_plot = LinesPlot(f"{u}% updates, {i/1000}k initial items", f"linkedlist_thr_{u}upds_{i}items_{b}buckets.pdf", figsize=(8, 4))
+        lines_plot = LinesPlot(f"{u}% updates, {i/1000}k initial items", f"linkedlist_thr_{u}upds_{i}items_{b}buckets.pdf", data_folder, figsize=(8, 4))
         
         # throughput plot
         lines_plot.plot(w)

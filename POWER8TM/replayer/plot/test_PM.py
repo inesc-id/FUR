@@ -101,7 +101,7 @@ if __name__ == "__main__":
   # this for-loop does the actual plotting (in the previous ones we are just
   # setting up the data that we want to plot).
   for n,w in datasets_thr.items():
-    lines_plot = LinesPlot(f"{n} worker threads (write logs)", f"repl_{n}_worker_thrs.pdf", figsize=(8, 4))
+    lines_plot = LinesPlot(f"{n} worker threads (write logs)", f"repl_{n}_worker_thrs.pdf", data_folder, figsize=(8, 4))
     
     # throughput plot
     lines_plot.plot(w)

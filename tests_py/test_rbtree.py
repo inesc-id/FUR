@@ -135,7 +135,7 @@ if __name__ == "__main__":
   # setting up the data that we want to plot).
   for u,v in datasets_thr.items():
     for i,w in v.items():
-        lines_plot = LinesPlot(f"{u}% updates, {i/1000}k initial items", f"rbtree_thr_{u}upds_{i}items.pdf", figsize=(8, 4))
+        lines_plot = LinesPlot(f"{u}% updates, {i/1000}k initial items", f"rbtree_thr_{u}upds_{i}items.pdf", data_folder, figsize=(8, 4))
         
         # throughput plot
         lines_plot.plot(w)

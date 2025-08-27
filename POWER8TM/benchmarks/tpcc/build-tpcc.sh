@@ -57,6 +57,6 @@ fi
 if [[ $backend == htm-sgl || $backend == hybrid-norec ]]; then
 	make_command="make HTM_RETRIES=-DHTM_RETRIES=$htm_retries RETRY_POLICY=-DRETRY_POLICY=$retry_policy"
 else
-	make_command="make HTM_RETRIES=-DHTM_RETRIES=$htm_retries ROT_RETRIES=-DROT_RETRIES=$rot_retries  RETRY_POLICY=-DRETRY_POLICY=$retry_policy"
+	make_command="make HTM_RETRIES=-DHTM_RETRIES=$htm_retries ROT_RETRIES=-DROT_RETRIES=$rot_retries RETRY_POLICY=-DRETRY_POLICY=$retry_policy"
 fi
 $make_command
