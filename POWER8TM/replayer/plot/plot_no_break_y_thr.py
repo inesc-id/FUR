@@ -10,9 +10,9 @@ files = [
     "replayer/seq_log-s{}.csv"
 ]
 solutions = [
+    "prior PHTs",
     "SPHT",
-    "SPHT-LL",
-    "DUMBO"
+    "FUR"
 ]
 
 X = []
@@ -28,26 +28,33 @@ for f in files:
         r = pd.concat((r, aux))
     if len(X) == 0:
         X = r["-n"].unique()
-    Ys += [[r[r["-n"] == x].mean()["throughput"] for x in X]]
-    err += [[r[r["-n"] == x].std()["throughput"] for x in X]]
+    Ys += [[r[r["-n"] == x].mean()["throughput"] / 1000 for x in X]]
+    err += [[r[r["-n"] == x].std()["throughput"] / 1000 for x in X]]
 
 # Create the first subplot
-fig, axs = plt.subplots(figsize=(7,3), nrows=1, ncols=1)
-axs.set_ylim([2e5,2.9e5])
+fig, axs = plt.subplots(figsize=(6,2.5), nrows=1, ncols=1)
+# axs.set_ylim([2e5,2.9e5])
+axs.set_ylim([0,2.9e2])
 
 for y,e,s in zip(Ys,err,solutions):
-    axs.errorbar(X, y, yerr=e, label=s)
+	if s == "prior PHTs":
+		axs.errorbar(X, y, yerr=e, label=s, lw=3, markersize=11, marker="o")
+	if s == "SPHT":
+		axs.errorbar(X, y, yerr=e, label=s, lw=3, markersize=11, marker="d")
+	if s == "FUR":
+		axs.errorbar(X, y, yerr=e, label=s, lw=3, markersize=11, marker="*")
 
-axs.set_ylabel('Throughput (TXs/s)')
-axs.set_xlabel('Nb per-thread write logs')
+axs.set_ylabel('Throughput\n(x1000 TXs/s)', fontsize=13)
+axs.yaxis.set_label_coords(-0.08, 0.5)
+axs.set_xlabel('No. of per-thread write logs', fontsize=13)
 #axs[1].set_xticklabels([])
 
 # Adjust layout to prevent clipping of the second y-axis label
-plt.subplots_adjust(left=0.12, right=0.985, top=0.925, bottom=0.145, hspace=0.05, wspace=0.05)
+plt.subplots_adjust(left=0.14, right=0.995, top=0.995, bottom=0.19, hspace=0.05, wspace=0.05)
 axs.margins(x=0.01)
 
 # Show the plot
-axs.legend(loc=(0.01, 0.05)) #bbox_to_anchor=(0.5, 0.83, 0.3, 0.8)
+axs.legend(fontsize=12, loc="lower left", bbox_to_anchor=(0.0, 0.0))
 axs.set_title("Replay throughput")
 plt.savefig(f"replayer_70_delay.pdf")
 #plt.show()
