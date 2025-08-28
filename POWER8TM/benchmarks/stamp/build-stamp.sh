@@ -33,7 +33,7 @@ cp ../../backends/$backend/Makefile .
 cp ../../backends/$backend/Makefile.flags .
 cp ../../backends/$backend/thread.h lib/
 cp ../../backends/$backend/thread.c lib/
-cp ../../backends/$backend/tm.h lib/
+cp ../../backends/POWER_common.h lib/
 
 if [[ $backend == spht* || $backend == pstm ]] ; then
     bash ../../backends/$backend/copy_spht.sh $backend ./lib ./lib
