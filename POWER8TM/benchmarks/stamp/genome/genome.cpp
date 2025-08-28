@@ -120,7 +120,7 @@ __thread long moffset = 0;
 __thread long moffset_2 = 0;
 __thread long moffset_6 = 0;
 
-__thread unsigned long rs_counter = 0;
+// __thread unsigned long rs_counter = 0;
 
 
 unsigned int allow_stms = 0;
