@@ -179,13 +179,13 @@ extern PMT pmt;
 #  define SLOW_PATH_SHARED_WRITE(var, val)     ({ \
 	__typeof__(&var) _var = &(var); \
 	__typeof__(val) _val = val; \
-	stm_store(_var, _val); \
+	stm_store((void*)_var, _val); \
 	pmt.tm_write(_var); \
 	_val; })
 #  define SLOW_PATH_SHARED_WRITE_P(var, val)   ({ \
 	void** _var = (void**)&(var); \
 	void* _val = (void*)val; \
-	stm_store_ptr(_var, _val); \
+	stm_store_ptr((void**)_var, _val); \
 	pmt.tm_write(_var); \
 	_val; \
 })
