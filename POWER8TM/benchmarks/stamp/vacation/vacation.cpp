@@ -100,7 +100,7 @@ __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t exists_sw;
 __thread unsigned long backoff = MIN_BACKOFF;
 __thread unsigned long cm_seed = 123456789UL;
 
-__attribute__((aligned(CACHE_LINE_SIZE))) padded_statistics_t stats_array[80];
+// __attribute__((aligned(CACHE_LINE_SIZE))) padded_statistics_t stats_array[80];
 
 // __attribute__((aligned(CACHE_LINE_SIZE))) pthread_spinlock_t single_global_lock = 0;
 __attribute__((aligned(CACHE_LINE_SIZE))) pthread_spinlock_t fallback_in_use = 0;
@@ -113,9 +113,9 @@ __attribute__((aligned(CACHE_LINE_SIZE))) pthread_spinlock_t reader_locks[80];
 
 __attribute__((aligned(CACHE_LINE_SIZE))) padded_statistics_t statistics_array[80];
 
-__thread unsigned int local_exec_mode = 0;
+// __thread unsigned int local_exec_mode = 0;
 
-__thread unsigned int local_thread_id;
+// __thread unsigned int local_thread_id;
 
 __thread void* rot_readset[1024];
 __thread char crot_readset[8192];
@@ -132,7 +132,7 @@ __thread long moffset = 0;
 __thread long moffset_2 = 0;
 __thread long moffset_6 = 0;
 
-__thread unsigned long rs_counter = 0;
+// __thread unsigned long rs_counter = 0;
 
 
 unsigned int ucb_levers = 4;
