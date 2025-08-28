@@ -201,6 +201,8 @@ extern __thread int PCWM_readonly_tx;
 //
 
 # define TM_RESTART()                  HTM_abort();
+# define FAST_PATH_RESTART()                  HTM_abort();
+# define SLOW_PATH_RESTART()                  HTM_abort();
 # define TM_EARLY_RELEASE(var)
 
 # define TM_LOCAL_WRITE(var, val)      ({ var = val; var; })
