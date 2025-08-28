@@ -145,6 +145,7 @@ class LinesPlot:
       axs.set_ylabel(s_title[1])
 
       for d in fix_dataset:
+        xs = None
         bottom = np.array([0 for _ in d.x_param.transpose()])
         # breakpoint()
         # (_, ss) = d.y_stack.items()
@@ -184,12 +185,13 @@ class LinesPlot:
           else:
             axs.bar(xs, ys, width, yerr = y_err, bottom=bottom, color=color)
           bottom = bottom + ys
-        for x,y in zip(xs,bottom):
-          axs.annotate(d.name, (x, y), textcoords="offset points", xytext=(0,4), ha='center', va='baseline', rotation=90)
-          break
-        axs.set_xlabel(d.x_label)
-        axs.set_xticks(np.array([k for k in range(len(x_array))]))
-        axs.set_xticklabels([int(x) for x in x_array])
+        if not xs is None:
+          for x,y in zip(xs,bottom):
+            axs.annotate(d.name, (x, y), textcoords="offset points", xytext=(0,4), ha='center', va='baseline', rotation=90)
+            break
+          axs.set_xlabel(d.x_label)
+          axs.set_xticks(np.array([k for k in range(len(x_array))]))
+          axs.set_xticklabels([int(x) for x in x_array])
 
       bottom, top = axs.get_ylim()
       if is_percent and fix_100:

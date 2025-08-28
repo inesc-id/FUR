@@ -45,7 +45,7 @@ if __name__ == "__main__":
       ds = BackendDataset(
         name_map[backend],
         [f"{data_folder}/{backend}-s{sample}.csv" for sample in range(nb_samples)],
-        lambda e: e["-n"], "Nb. Threads",
+        lambda e: e["-c"], "Nb. Threads",
         lambda e: e["total-commits"]/e["time"], "Throughput (T/s)",
         {"-n":n, "-q":q, "-r":r, "-t":t, "-u":u}
       )
