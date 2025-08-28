@@ -31,6 +31,7 @@ rm lib/tm.h
 cp ../../backends/$backend/Defines.common.mk .
 cp ../../backends/$backend/Makefile .
 cp ../../backends/$backend/Makefile.flags .
+cp ../../backends/$backend/tm.h lib/
 cp ../../backends/$backend/thread.h lib/
 cp ../../backends/$backend/thread.c lib/
 cp ../../backends/POWER_common.h lib/
