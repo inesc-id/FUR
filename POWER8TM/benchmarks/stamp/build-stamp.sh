@@ -35,6 +35,8 @@ cp ../../backends/$backend/tm.h lib/
 cp ../../backends/$backend/thread.h lib/
 cp ../../backends/$backend/thread.c lib/
 cp ../../backends/POWER_common.h lib/
+cp ../../backends/extra_threadc.h lib/
+cp ../../backends/extra_MACROS.h lib/
 
 if [[ $backend == spht* || $backend == pstm ]] ; then
     bash ../../backends/$backend/copy_spht.sh $backend ./lib ./lib
