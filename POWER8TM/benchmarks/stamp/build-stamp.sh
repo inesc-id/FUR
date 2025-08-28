@@ -1,6 +1,6 @@
 #!/bin/bash
 # FOLDERS="genome intruder vacation labyrinth ssca2 kmeans yada"
-FOLDERS="vacation"
+FOLDERS="vacation genome"
 
 if [ $# -eq 0 ] ; then
     echo " === ERROR At the very least, we need the backend name in the first parameter. === "
