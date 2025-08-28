@@ -35,13 +35,11 @@ cp ../../backends/$backend/thread.c lib/
 cp ../../backends/$backend/tm.h lib/
 
 if [[ $backend == spht* || $backend == pstm ]] ; then
-    rm lib/rdtsc.h
-    mkdir lib/
     bash ../../backends/$backend/copy_spht.sh $backend ./lib ./lib
 fi
 
 if [[ $backend == spht* ]] ; then
-    bash ../../../backends/spht/nvhtm/get_cpu_data.sh
+    bash ../../backends/spht/nvhtm/get_cpu_data.sh
 fi
 
 for F in $FOLDERS
