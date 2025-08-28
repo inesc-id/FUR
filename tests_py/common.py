@@ -114,7 +114,7 @@ class CollectData(RunnableBench):
     out = None
     my_env = os.environ.copy()
     my_env["LD_LIBRARY_PATH"] = "/home/eurosys/FUR/power8tm-pisces/stms/specpmt/"
-    while out == None or out.returncode != 0 and attempts < 3:
+    while out == None or out.returncode != 0 and attempts < 5 or len(out.stdout) == 0:
       out = subprocess.run(f"timeout 10m {exec}".split(), stdout=subprocess.PIPE, text=True, env=my_env)
       attempts += 1
       
