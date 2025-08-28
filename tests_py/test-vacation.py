@@ -21,11 +21,6 @@ if __name__ == "__main__":
   params.set_params("-u", [80], True)  
   data_folder = "datavacation"
 
-
-  params.set_params("-w", [64]) # nb warehouses
-  params.set_params("-m", [64]) # max nb warehouses (put the same as -w)
-  params.set_params("-t", [5])
-
   params.set_params("-c", thr_list)
  
   datasets_thr = {}
