@@ -174,15 +174,15 @@ __inline__ unsigned long long tick()
   #endif
 }
 
-#if defined(__powerpc__) || defined(__ppc__) || defined(__PPC__)
-void bindThread(long threadId) {
-    cpu_set_t my_set;
-    CPU_ZERO(&my_set);
-    // int number_of_cores=4;
-    // int offset = threadId / number_of_cores;
-    //CPU_SET((threadId % number_of_cores)*8+offset, &my_set); //core first
-    CPU_SET(threadId, &my_set); // SMT first
-    sched_setaffinity(0, sizeof(cpu_set_t), &my_set);
-}
-#endif
+// #if defined(__powerpc__) || defined(__ppc__) || defined(__PPC__)
+// void bindThread(long threadId) {
+//     cpu_set_t my_set;
+//     CPU_ZERO(&my_set);
+//     // int number_of_cores=4;
+//     // int offset = threadId / number_of_cores;
+//     //CPU_SET((threadId % number_of_cores)*8+offset, &my_set); //core first
+//     CPU_SET(threadId, &my_set); // SMT first
+//     sched_setaffinity(0, sizeof(cpu_set_t), &my_set);
+// }
+// #endif
 
