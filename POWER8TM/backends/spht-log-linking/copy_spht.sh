@@ -34,6 +34,7 @@ cp ../../backends/spht/deps/arch_dep/include/htm_arch.h $2
 cp ../../backends/spht/deps/htm_alg/include/htm_retry_template.h $2
 cp ../../backends/extra_MACROS.h $2
 cp ../../backends/extra_threadc.h $2
+cp ../../backends/seq_log.h $2
 cp ../../backends/spht/deps/htm_alg/src/htm.cpp $2
 
 cp ../../backends/spht/tm.h $3
