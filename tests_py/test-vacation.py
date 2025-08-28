@@ -124,7 +124,7 @@ if __name__ == "__main__":
         # "proc. aborted txs": lambda e: (checkIfROAbortStats(e, "total-abort-ro-tx-time"))
       }, is_percent=True, filter_x_fn=filter_threads)
       
-      datasets_thr[(s,d,o,p,r)] += [ds]
+      datasets_thr[(n,q,r,t,u)] += [ds]
 
   colors = {
     "SGL commit" : "#a83232",
@@ -139,6 +139,6 @@ if __name__ == "__main__":
   for u,v in datasets_thr.items():
     # print(u)
     # print(v)
-    lines_plot = LinesPlot(f"[-s, -d, -o, -p, -r] = {u}", f"tpcc_{u}.pdf", data_folder, figsize=(8, 4), colors=colors)
+    lines_plot = LinesPlot(f"[n,q,r,t,u] = {u}", f"vacation_{u}.pdf", data_folder, figsize=(8, 4), colors=colors)
     lines_plot.plot(v)
     lines_plot.plot_stack(v, filter_out_backends=["HTM", "SI-HTM", "Pisces", "SPHT-LL"])
