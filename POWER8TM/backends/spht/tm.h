@@ -160,17 +160,17 @@
 
 # define TM_THREAD_EXIT() \
   TM_THREAD_EXIT_PROFILE(); \
-  int i = local_thread_id; \
+  int _i = local_thread_id; \
   /* stats_array[i].htm_commits = HTM_get_status_count(HTM_SUCCESS, NULL); */\
-  stats_array[i].htm_self_conflicts = HTM_get_status_count(HTM_SELF, NULL); \
-  stats_array[i].htm_trans_conflicts = HTM_get_status_count(HTM_TRANS, NULL); \
-  stats_array[i].htm_nontrans_conflicts = HTM_get_status_count(HTM_NON_TRANS, NULL); \
-  stats_array[i].htm_conflict_aborts = stats_array[i].htm_self_conflicts + stats_array[i].htm_trans_conflicts + stats_array[i].htm_nontrans_conflicts; \
-  stats_array[i].htm_persistent_aborts = HTM_get_status_count(HTM_PERSISTENT, NULL); \
-  stats_array[i].htm_capacity_aborts = HTM_get_status_count(HTM_CAPACITY, NULL); \
-  stats_array[i].htm_other_aborts = HTM_get_status_count(HTM_OTHER, NULL); \
-  stats_array[i].htm_user_aborts = HTM_get_status_count(HTM_EXPLICIT, NULL); \
-  stats_array[i].gl_commits = HTM_get_status_count(HTM_FALLBACK, NULL); \
+  stats_array[_i].htm_self_conflicts = HTM_get_status_count(HTM_SELF, NULL); \
+  stats_array[_i].htm_trans_conflicts = HTM_get_status_count(HTM_TRANS, NULL); \
+  stats_array[_i].htm_nontrans_conflicts = HTM_get_status_count(HTM_NON_TRANS, NULL); \
+  stats_array[_i].htm_conflict_aborts = stats_array[_i].htm_self_conflicts + stats_array[_i].htm_trans_conflicts + stats_array[_i].htm_nontrans_conflicts; \
+  stats_array[_i].htm_persistent_aborts = HTM_get_status_count(HTM_PERSISTENT, NULL); \
+  stats_array[_i].htm_capacity_aborts = HTM_get_status_count(HTM_CAPACITY, NULL); \
+  stats_array[_i].htm_other_aborts = HTM_get_status_count(HTM_OTHER, NULL); \
+  stats_array[_i].htm_user_aborts = HTM_get_status_count(HTM_EXPLICIT, NULL); \
+  stats_array[_i].gl_commits = HTM_get_status_count(HTM_FALLBACK, NULL); \
   __atomic_fetch_add(&stats_nbSuccess,  HTM_get_status_count(HTM_SUCCESS, NULL),  __ATOMIC_SEQ_CST); \
   __atomic_fetch_add(&stats_nbAbort,    HTM_get_status_count(HTM_ABORT, NULL),    __ATOMIC_SEQ_CST); \
   __atomic_fetch_add(&stats_nbConfl,    HTM_get_status_count(HTM_CONFLICT, NULL), __ATOMIC_SEQ_CST); \

@@ -73,6 +73,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <getopt.h>
+#include <string.h>
 #include "client.h"
 #include "customer-struct.h"
 #include "manager-htm.h"
@@ -101,7 +102,7 @@ __thread unsigned long cm_seed = 123456789UL;
 
 __attribute__((aligned(CACHE_LINE_SIZE))) padded_statistics_t stats_array[80];
 
-__attribute__((aligned(CACHE_LINE_SIZE))) pthread_spinlock_t single_global_lock = 0;
+// __attribute__((aligned(CACHE_LINE_SIZE))) pthread_spinlock_t single_global_lock = 0;
 __attribute__((aligned(CACHE_LINE_SIZE))) pthread_spinlock_t fallback_in_use = 0;
 
 __attribute__((aligned(CACHE_LINE_SIZE))) padded_scalar_t counters[80];
