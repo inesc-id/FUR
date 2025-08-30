@@ -175,6 +175,9 @@ Pbitmap_free (bitmap_t* bitmapPtr)
 bool_t
 bitmap_set (bitmap_t* bitmapPtr, long i)
 {
+    if (i < 0) {
+        i += bitmapPtr->numBit;
+    }
     if ((i < 0) || (i >= bitmapPtr->numBit)) {
         return FALSE;
     }
@@ -241,6 +244,9 @@ bitmap_isClear (bitmap_t* bitmapPtr, long i)
 bool_t
 bitmap_isSet (bitmap_t* bitmapPtr, long i)
 {
+    if (i < 0) {
+        i += bitmapPtr->numBit;
+    }
     if ((i >= 0) && (i < bitmapPtr->numBit) &&
         (bitmapPtr->bits[i/NUM_BIT_PER_WORD] & (1UL << (i % NUM_BIT_PER_WORD)))) {
         return TRUE;

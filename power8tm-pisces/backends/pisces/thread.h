@@ -109,6 +109,7 @@ typedef struct padded_statistics {
 #include <pthread.h>
 #include <stdlib.h>
 #include "types.h"
+#include <sched.h>
 #ifdef OTM
 #include "omp.h"
 #endif

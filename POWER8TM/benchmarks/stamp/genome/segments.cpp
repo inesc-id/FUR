@@ -198,8 +198,10 @@ segments_create (segments_t* segmentsPtr, gene_t* genePtr, random_t* randomPtr)
             memcpy(string, &(geneString[i]), segmentLength * sizeof(char));
             bool_t status = vector_pushBack(segmentsContentsPtr, (void*)string);
             assert(status);
-            status = bitmap_set(startBitmapPtr, i);
-            assert(status);
+            if (i >= 0) {
+                status = bitmap_set(startBitmapPtr, i);
+                assert(status);
+            }
         }
     }
 }

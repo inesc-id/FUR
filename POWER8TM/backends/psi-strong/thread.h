@@ -78,6 +78,7 @@
 #include <pthread.h>
 //#include "timer.h"
 #include "extra_MACROS.h"
+#include <sched.h>
 
 extern __thread long rot_readset_values[];
 extern __thread void* rot_readset[];
