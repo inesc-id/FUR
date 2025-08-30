@@ -73,9 +73,9 @@
 #define SEQUENCER_H 1
 
 
-#include "hashtable-struct.h"
+#include "hashtable.h"
 #include "segments.h"
-#include "table-struct.h"
+#include "table.h"
 #include "tm.h"
 
 
