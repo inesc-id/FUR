@@ -395,7 +395,7 @@ sequencer_run (void* argPtr)
                 startHash = (ulong_t)segment[j-1] +
                             (startHash << 6) + (startHash << 16) - startHash;
                 TM_BEGIN(0);
-                status = TMTABLE_INSERT(startHashToConstructEntryTables[j],
+                status = table_stm::TMtable_insert(startHashToConstructEntryTables[j],
                                         (ulong_t)startHash,
                                         (void*)constructEntryPtr );
                 TM_END();
@@ -408,7 +408,7 @@ sequencer_run (void* argPtr)
             startHash = (ulong_t)segment[j-1] +
                         (startHash << 6) + (startHash << 16) - startHash;
             TM_BEGIN(0);
-            status = TMTABLE_INSERT(hashToConstructEntryTable,
+            status = table_stm::TMtable_insert(hashToConstructEntryTable,
                                     (ulong_t)startHash,
                                     (void*)constructEntryPtr);
             TM_END();
