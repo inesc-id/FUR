@@ -22,7 +22,7 @@ SRCS := \
 	pair.c \
 	queue.c \
 	random.c \
-        rbtree.c \
+	rbtree.c \
 	thread.c \
 	tm.c \
 	tmalloc.c \
@@ -38,7 +38,7 @@ PROG_TEST := \
 	test_pair \
 	test_queue \
 	test_random \
-        test_rbtree \
+	test_rbtree \
 	test_thread \
 	test_tmalloc \
 	test_vector \

@@ -84,8 +84,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "hash.h"
-#include "hashtable-stm.h"
-#include "hashtable-htm.h"
+#include "hashtable.h"
 #include "segments.h"
 #include "sequencer.h"
 #include "table-stm.h"

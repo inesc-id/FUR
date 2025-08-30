@@ -15,17 +15,13 @@ SRCS += \
 	genome.cpp \
 	segments.cpp \
 	sequencer.cpp \
-	table-stm.cpp \
-	table-htm.cpp \
+	table.c \
 	$(LIB)/bitmap.c \
 	$(LIB)/hash.c \
-	$(LIB)/hashtable-stm.cpp \
-	$(LIB)/hashtable-htm.cpp \
-	$(LIB)/pair-stm.cpp \
-	$(LIB)/pair-htm.cpp \
+	$(LIB)/hashtable.c \
+	$(LIB)/pair.c \
 	$(LIB)/random.c \
-	$(LIB)/list-stm.cpp \
-	$(LIB)/list-htm.cpp \
+	$(LIB)/list.c \
 	$(LIB)/mt19937ar.c \
 	$(LIB)/thread.c \
 	$(LIB)/vector.c \
