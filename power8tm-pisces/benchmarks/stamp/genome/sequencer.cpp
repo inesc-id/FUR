@@ -195,7 +195,7 @@ sequencer_alloc (long geneLength, long segmentLength, segments_t* segmentsPtr)
     }
     for (i = 1; i < segmentLength; i++) { /* 0 is dummy entry */
         sequencerPtr->startHashToConstructEntryTables[i] =
-            table_alloc(geneLength, NULL);
+            table_stm::table_alloc(geneLength, NULL);
         if (sequencerPtr->startHashToConstructEntryTables[i] == NULL) {
             return NULL;
         }
@@ -219,7 +219,7 @@ sequencer_alloc (long geneLength, long segmentLength, segments_t* segmentsPtr)
         constructEntryPtr->overlap = 0;
         constructEntryPtr->length = segmentLength;
     }
-    sequencerPtr->hashToConstructEntryTable = table_alloc(geneLength, NULL);
+    sequencerPtr->hashToConstructEntryTable = table_stm::table_alloc(geneLength, NULL);
     if (sequencerPtr->hashToConstructEntryTable == NULL) {
         return NULL;
     }
@@ -629,16 +629,16 @@ sequencer_free (sequencer_t* sequencerPtr)
 {
     long i;
 
-    table_free(sequencerPtr->hashToConstructEntryTable);
+    table_stm::table_free(sequencerPtr->hashToConstructEntryTable);
     free(sequencerPtr->constructEntries);
     for (i = 1; i < sequencerPtr->segmentLength; i++) {
-        table_free(sequencerPtr->startHashToConstructEntryTables[i]);
+        table_stm::table_free(sequencerPtr->startHashToConstructEntryTables[i]);
     }
     free(sequencerPtr->startHashToConstructEntryTables);
     free(sequencerPtr->endInfoEntries);
 #if 0
     /* TODO: fix mixed sequential/parallel allocation */
-    hashtable_free(sequencerPtr->uniqueSegmentsPtr);
+    table_stm::hashtable_free(sequencerPtr->uniqueSegmentsPtr);
     if (sequencerPtr->sequence != NULL) {
         free(sequencerPtr->sequence);
     }
