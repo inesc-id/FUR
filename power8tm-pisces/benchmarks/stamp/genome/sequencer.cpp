@@ -175,7 +175,7 @@ sequencer_alloc (long geneLength, long segmentLength, segments_t* segmentsPtr)
     }
 
     sequencerPtr->uniqueSegmentsPtr =
-        hashtable_alloc(geneLength, &hashSegment, &compareSegment, -1, -1);
+        hashtable_stm::hashtable_alloc(geneLength, &hashSegment, &compareSegment, -1, -1);
     if (sequencerPtr->uniqueSegmentsPtr == NULL) {
         return NULL;
     }
@@ -289,13 +289,13 @@ sequencer_run (void* argPtr)
     i_stop = numSegment;
 #endif /* !(HTM || STM) */
     for (i = i_start; i < i_stop; i+=CHUNK_STEP1) {
-        TM_BEGIN();
+        TM_BEGIN(0);
         {
             long ii;
             long ii_stop = MIN(i_stop, (i+CHUNK_STEP1));
             for (ii = i; ii < ii_stop; ii++) {
                 void* segment = vector_at(segmentsContentsPtr, ii);
-                TMHASHTABLE_INSERT(uniqueSegmentsPtr,
+                hashtable_stm::TMhashtable_insert(uniqueSegmentsPtr,
                                    segment,
                                    segment);
             } /* ii */
@@ -326,7 +326,7 @@ sequencer_run (void* argPtr)
      */
 
     /* uniqueSegmentsPtr is constant now */
-    numUniqueSegment = hashtable_getSize(uniqueSegmentsPtr);
+    numUniqueSegment = hashtable_stm::hashtable_getSize(uniqueSegmentsPtr);
     entryIndex = 0;
 
 #if defined(HTM) || defined(STM)
@@ -356,19 +356,19 @@ sequencer_run (void* argPtr)
 
         list_t* chainPtr = uniqueSegmentsPtr->buckets[i];
         list_iter_t it;
-        list_iter_reset(&it, chainPtr);
+        list_stm::list_iter_reset(&it, chainPtr);
 
-        while (list_iter_hasNext(&it, chainPtr)) {
+        while (list_stm::list_iter_hasNext(&it, chainPtr)) {
 
             char* segment =
-                (char*)((pair_t*)list_iter_next(&it, chainPtr))->firstPtr;
+                (char*)((pair_t*)list_stm::list_iter_next(&it, chainPtr))->firstPtr;
             constructEntry_t* constructEntryPtr;
             long j;
             ulong_t startHash;
             bool_t status;
 
             /* Find an empty constructEntries entry */
-            TM_BEGIN();
+            TM_BEGIN(0);
             while (((void*)TM_SHARED_READ_P(constructEntries[entryIndex].segment)) != NULL) {
                 entryIndex = (entryIndex + 1) % numUniqueSegment; /* look for empty */
             }
@@ -394,7 +394,7 @@ sequencer_run (void* argPtr)
             for (j = 1; j < segmentLength; j++) {
                 startHash = (ulong_t)segment[j-1] +
                             (startHash << 6) + (startHash << 16) - startHash;
-                TM_BEGIN();
+                TM_BEGIN(0);
                 status = TMTABLE_INSERT(startHashToConstructEntryTables[j],
                                         (ulong_t)startHash,
                                         (void*)constructEntryPtr );
@@ -407,7 +407,7 @@ sequencer_run (void* argPtr)
              */
             startHash = (ulong_t)segment[j-1] +
                         (startHash << 6) + (startHash << 16) - startHash;
-            TM_BEGIN();
+            TM_BEGIN(0);
             status = TMTABLE_INSERT(hashToConstructEntryTable,
                                     (ulong_t)startHash,
                                     (void*)constructEntryPtr);
@@ -464,18 +464,18 @@ sequencer_run (void* argPtr)
 
             list_t* chainPtr = buckets[endHash % numBucket]; /* buckets: constant data */
             list_iter_t it;
-            list_iter_reset(&it, chainPtr);
+            list_stm::list_iter_reset(&it, chainPtr);
 
             /* Linked list at chainPtr is constant */
-            while (list_iter_hasNext(&it, chainPtr)) {
+            while (list_stm::list_iter_hasNext(&it, chainPtr)) {
 
                 constructEntry_t* startConstructEntryPtr =
-                    (constructEntry_t*)list_iter_next(&it, chainPtr);
+                    (constructEntry_t*)list_stm::list_iter_next(&it, chainPtr);
                 char* startSegment = startConstructEntryPtr->segment;
                 long newLength = 0;
 
                 /* endConstructEntryPtr is local except for properties startPtr/endPtr/length */
-                TM_BEGIN();
+                TM_BEGIN(0);
 
                 /* Check if matches */
                 if (TM_SHARED_READ(startConstructEntryPtr->isStart) &&
