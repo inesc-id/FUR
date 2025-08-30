@@ -194,7 +194,7 @@ sequencer_alloc (long geneLength, long segmentLength, segments_t* segmentsPtr)
     }
     for (i = 1; i < segmentLength; i++) { /* 0 is dummy entry */
         sequencerPtr->startHashToConstructEntryTables[i] =
-            table_stm::table_alloc(geneLength, NULL);
+            table_alloc(geneLength, NULL);
         if (sequencerPtr->startHashToConstructEntryTables[i] == NULL) {
             return NULL;
         }
@@ -218,7 +218,7 @@ sequencer_alloc (long geneLength, long segmentLength, segments_t* segmentsPtr)
         constructEntryPtr->overlap = 0;
         constructEntryPtr->length = segmentLength;
     }
-    sequencerPtr->hashToConstructEntryTable = table_stm::table_alloc(geneLength, NULL);
+    sequencerPtr->hashToConstructEntryTable = table_alloc(geneLength, NULL);
     if (sequencerPtr->hashToConstructEntryTable == NULL) {
         return NULL;
     }
@@ -355,12 +355,12 @@ sequencer_run (void* argPtr)
 
         list_t* chainPtr = uniqueSegmentsPtr->buckets[i];
         list_iter_t it;
-        list_stm::list_iter_reset(&it, chainPtr);
+        list_iter_reset(&it, chainPtr);
 
-        while (list_stm::list_iter_hasNext(&it, chainPtr)) {
+        while (list_iter_hasNext(&it, chainPtr)) {
 
             char* segment =
-                (char*)((pair_t*)list_stm::list_iter_next(&it, chainPtr))->firstPtr;
+                (char*)((pair_t*)list_iter_next(&it, chainPtr))->firstPtr;
             constructEntry_t* constructEntryPtr;
             long j;
             ulong_t startHash;
@@ -394,7 +394,7 @@ sequencer_run (void* argPtr)
                 startHash = (ulong_t)segment[j-1] +
                             (startHash << 6) + (startHash << 16) - startHash;
                 TM_BEGIN(0);
-                status = table_stm::TMtable_insert(startHashToConstructEntryTables[j],
+                status = TMtable_insert(startHashToConstructEntryTables[j],
                                         (ulong_t)startHash,
                                         (void*)constructEntryPtr );
                 TM_END();
@@ -407,7 +407,7 @@ sequencer_run (void* argPtr)
             startHash = (ulong_t)segment[j-1] +
                         (startHash << 6) + (startHash << 16) - startHash;
             TM_BEGIN(0);
-            status = table_stm::TMtable_insert(hashToConstructEntryTable,
+            status = TMtable_insert(hashToConstructEntryTable,
                                     (ulong_t)startHash,
                                     (void*)constructEntryPtr);
             TM_END();
@@ -463,13 +463,13 @@ sequencer_run (void* argPtr)
 
             list_t* chainPtr = buckets[endHash % numBucket]; /* buckets: constant data */
             list_iter_t it;
-            list_stm::list_iter_reset(&it, chainPtr);
+            list_iter_reset(&it, chainPtr);
 
             /* Linked list at chainPtr is constant */
-            while (list_stm::list_iter_hasNext(&it, chainPtr)) {
+            while (list_iter_hasNext(&it, chainPtr)) {
 
                 constructEntry_t* startConstructEntryPtr =
-                    (constructEntry_t*)list_stm::list_iter_next(&it, chainPtr);
+                    (constructEntry_t*)list_iter_next(&it, chainPtr);
                 char* startSegment = startConstructEntryPtr->segment;
                 long newLength = 0;
 
@@ -628,16 +628,16 @@ sequencer_free (sequencer_t* sequencerPtr)
 {
     long i;
 
-    table_stm::table_free(sequencerPtr->hashToConstructEntryTable);
+    table_free(sequencerPtr->hashToConstructEntryTable);
     free(sequencerPtr->constructEntries);
     for (i = 1; i < sequencerPtr->segmentLength; i++) {
-        table_stm::table_free(sequencerPtr->startHashToConstructEntryTables[i]);
+        table_free(sequencerPtr->startHashToConstructEntryTables[i]);
     }
     free(sequencerPtr->startHashToConstructEntryTables);
     free(sequencerPtr->endInfoEntries);
 #if 0
     /* TODO: fix mixed sequential/parallel allocation */
-    table_stm::hashtable_free(sequencerPtr->uniqueSegmentsPtr);
+    hashtable_free(sequencerPtr->uniqueSegmentsPtr);
     if (sequencerPtr->sequence != NULL) {
         free(sequencerPtr->sequence);
     }
