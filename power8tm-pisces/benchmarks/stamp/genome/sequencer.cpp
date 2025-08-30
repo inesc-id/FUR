@@ -84,10 +84,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include "hash.h"
-#include "hashtable.h"
+#include "hashtable-stm.h"
+#include "hashtable-htm.h"
 #include "segments.h"
 #include "sequencer.h"
-#include "table.h"
+#include "table-stm.h"
+#include "table-htm.h"
 #include "thread.h"
 #include "utility.h"
 #include "vector.h"
