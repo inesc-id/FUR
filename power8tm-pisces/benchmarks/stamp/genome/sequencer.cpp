@@ -174,7 +174,7 @@ sequencer_alloc (long geneLength, long segmentLength, segments_t* segmentsPtr)
     }
 
     sequencerPtr->uniqueSegmentsPtr =
-        hashtable_stm::hashtable_alloc(geneLength, &hashSegment, &compareSegment, -1, -1);
+        hashtable_alloc(geneLength, &hashSegment, &compareSegment, -1, -1);
     if (sequencerPtr->uniqueSegmentsPtr == NULL) {
         return NULL;
     }
@@ -294,7 +294,7 @@ sequencer_run (void* argPtr)
             long ii_stop = MIN(i_stop, (i+CHUNK_STEP1));
             for (ii = i; ii < ii_stop; ii++) {
                 void* segment = vector_at(segmentsContentsPtr, ii);
-                hashtable_stm::TMhashtable_insert(uniqueSegmentsPtr,
+                TMhashtable_insert(uniqueSegmentsPtr,
                                    segment,
                                    segment);
             } /* ii */
@@ -325,7 +325,7 @@ sequencer_run (void* argPtr)
      */
 
     /* uniqueSegmentsPtr is constant now */
-    numUniqueSegment = hashtable_stm::hashtable_getSize(uniqueSegmentsPtr);
+    numUniqueSegment = hashtable_getSize(uniqueSegmentsPtr);
     entryIndex = 0;
 
 #if defined(HTM) || defined(STM)
