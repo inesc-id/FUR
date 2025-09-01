@@ -43,6 +43,7 @@
 #  define P_MALLOC(size)                malloc(size)
 #  define P_FREE(ptr)                   free(ptr)
 #  define TM_MALLOC(size)               malloc(size)
+#  define TM_FREE(ptr)                  free(ptr)
 #  define FAST_PATH_FREE(ptr)            free(ptr)
 #  define SLOW_PATH_FREE(ptr)            free(ptr)
 
