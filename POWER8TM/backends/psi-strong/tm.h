@@ -42,6 +42,7 @@
 #  define P_MALLOC(size)                ({ void* _res = malloc(size); PRE_TOUCH_CACHELINES(_res, size); _res; })
 #  define P_FREE(ptr)                   free(ptr)
 #  define TM_MALLOC(size)               ({ void* _res = malloc(size); PRE_TOUCH_CACHELINES(_res, size); _res; })
+#  define TM_FREE(ptr)                  free(ptr)
 #  define FAST_PATH_FREE(ptr)           free(ptr)
 #  define SLOW_PATH_FREE(ptr)           free(ptr)
 

@@ -67,8 +67,8 @@
 //  } \
 //  _PTR; \
 //})
-//# define TM_FREE(ptr)                   ({ onBeforeWrite(HTM_SGL_tid, ptr, 0); nvfree(ptr); })
 
+# define TM_FREE(ptr)                   free(ptr) /*({ onBeforeWrite(HTM_SGL_tid, ptr, 0); nvfree(ptr); })*/
 #  define P_MALLOC(size)                ({ void* _res = malloc(size); PRE_TOUCH_CACHELINES(_res, size); _res; })
 #  define P_FREE(ptr)                   free(ptr)
 #  define TM_MALLOC(size)               ({ void* _res = malloc(size); PRE_TOUCH_CACHELINES(_res, size); _res; })
