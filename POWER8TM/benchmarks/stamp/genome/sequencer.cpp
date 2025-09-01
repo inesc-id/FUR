@@ -267,6 +267,7 @@ sequencer_run (void* argPtr)
     long numUniqueSegment;
     long substringLength;
     long entryIndex;
+    long entryIndexBac;
 
     /*
      * Step 1: Remove duplicate segments
@@ -370,8 +371,10 @@ sequencer_run (void* argPtr)
             /* Find an empty constructEntries entry */
             ro = 0;
             TM_BEGIN(ro);
+            entryIndexBac = entryIndex;
             while (((void*)TM_SHARED_READ_P(constructEntries[entryIndex].segment)) != NULL) {
                 entryIndex = (entryIndex + 1) % numUniqueSegment; /* look for empty */
+                if (entryIndexBac == entryIndex) break; // TODO: should not happen
             }
             constructEntryPtr = &constructEntries[entryIndex];
             TM_SHARED_WRITE_P(constructEntryPtr->segment, segment);
