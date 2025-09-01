@@ -306,11 +306,11 @@ printf("summary\t%lf\t%0.6lf\n", tmp_time, tmp_energy);
         char* sequence = sequencerPtr->sequence;
         int result = strcmp(gene, sequence);
 //        printf("Sequence matches gene: %s\n", (result ? "no" : "yes"));
-        if (result) {
-            printf("gene     = %s\n", gene);
-            printf("sequence = %s\n", sequence);
-        }
-        fflush(stdout);
+        // if (result) {
+        //     printf("gene     = %s\n", gene);
+        //     printf("sequence = %s\n", sequence);
+        // }
+        // fflush(stdout);
         // TODO: failing here...
         // assert(strlen(sequence) >= strlen(gene));
     }
