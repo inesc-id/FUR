@@ -83,6 +83,9 @@ typedef struct table {
     long numBucket;
 } table_t;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* =============================================================================
  * table_alloc
@@ -130,6 +133,9 @@ table_free (table_t* tablePtr);
 
 #define TMTABLE_INSERT(t, h, d)         TMtable_insert(TM_ARG  t, h, d)
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* TABLE_H */
 
