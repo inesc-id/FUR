@@ -84,19 +84,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include "hash.h"
-#include "hashtable-stm.h"
-#include "hashtable-htm.h"
+#include "hashtable.h"
 #include "segments.h"
 #include "sequencer.h"
-#include "table-stm.h"
-#include "table-htm.h"
+#include "table.h"
 #include "thread.h"
 #include "utility.h"
 #include "vector.h"
 #include "types.h"
 
-using namespace hashtable_htm;
-using namespace table_htm;
 
 struct endInfoEntry {
     bool_t isEnd;
@@ -177,7 +173,7 @@ sequencer_alloc (long geneLength, long segmentLength, segments_t* segmentsPtr)
     }
 
     sequencerPtr->uniqueSegmentsPtr =
-        hashtable_htm::hashtable_alloc(geneLength, &hashSegment, &compareSegment, -1, -1);
+        hashtable_alloc(geneLength, &hashSegment, &compareSegment, -1, -1);
     if (sequencerPtr->uniqueSegmentsPtr == NULL) {
         return NULL;
     }
@@ -274,6 +270,7 @@ sequencer_run (void* argPtr)
     /*
      * Step 1: Remove duplicate segments
      */
+#if defined(HTM) || defined(STM)
     long numThread = thread_getNumThread();
     {
         /* Choose disjoint segments [i_start,i_stop) for each thread */
@@ -285,30 +282,21 @@ sequencer_run (void* argPtr)
             i_stop = i_start + partitionSize;
         }
     }
+#else /* !(HTM || STM) */
+    i_start = 0;
+    i_stop = numSegment;
+#endif /* !(HTM || STM) */
     for (i = i_start; i < i_stop; i+=CHUNK_STEP1) {
-    	int ro = 0;
-	local_exec_mode = 1;
         TM_BEGIN(0);
         {
-        	if (local_exec_mode != 1 && local_exec_mode != 3) {
-                long ii;
-                long ii_stop = MIN(i_stop, (i+CHUNK_STEP1));
-                for (ii = i; ii < ii_stop; ii++) {
-                    void* segment = vector_at(segmentsContentsPtr, ii);
-                    hashtable_htm::TMhashtable_insert(TM_ARG uniqueSegmentsPtr,
-                                       segment,
-                                       segment);
-                } /* ii */
-        	} else {
-                long ii;
-                long ii_stop = MIN(i_stop, (i+CHUNK_STEP1));
-                for (ii = i; ii < ii_stop; ii++) {
-                    void* segment = vector_at(segmentsContentsPtr, ii);
-                    hashtable_stm::TMhashtable_insert(TM_ARG uniqueSegmentsPtr,
-                                       segment,
-                                       segment);
-                } /* ii */
-        	}
+            long ii;
+            long ii_stop = MIN(i_stop, (i+CHUNK_STEP1));
+            for (ii = i; ii < ii_stop; ii++) {
+                void* segment = vector_at(segmentsContentsPtr, ii);
+                TMhashtable_insert(uniqueSegmentsPtr,
+                                   segment,
+                                   segment);
+            } /* ii */
         }
         TM_END();
     }
@@ -336,9 +324,10 @@ sequencer_run (void* argPtr)
      */
 
     /* uniqueSegmentsPtr is constant now */
-    numUniqueSegment = hashtable_htm::hashtable_getSize(uniqueSegmentsPtr);
+    numUniqueSegment = hashtable_getSize(uniqueSegmentsPtr);
     entryIndex = 0;
 
+#if defined(HTM) || defined(STM)
     {
         /* Choose disjoint segments [i_start,i_stop) for each thread */
         long num = uniqueSegmentsPtr->numBucket;
@@ -355,41 +344,34 @@ sequencer_run (void* argPtr)
         long partitionSize = (numUniqueSegment + numThread/2) / numThread; /* with rounding */
         entryIndex = threadId * partitionSize;
     }
+#else /* !(HTM || STM) */
+    i_start = 0;
+    i_stop = uniqueSegmentsPtr->numBucket;
+    entryIndex = 0;
+#endif /* !(HTM || STM) */
 
     for (i = i_start; i < i_stop; i++) {
 
         list_t* chainPtr = uniqueSegmentsPtr->buckets[i];
         list_iter_t it;
-        list_htm::list_iter_reset(&it, chainPtr);
+        list_iter_reset(&it, chainPtr);
 
-        while (list_htm::list_iter_hasNext(&it, chainPtr)) {
+        while (list_iter_hasNext(&it, chainPtr)) {
 
             char* segment =
-                (char*)((pair_t*)list_htm::list_iter_next(&it, chainPtr))->firstPtr;
+                (char*)((pair_t*)list_iter_next(&it, chainPtr))->firstPtr;
             constructEntry_t* constructEntryPtr;
             long j;
             ulong_t startHash;
             bool_t status;
 
             /* Find an empty constructEntries entry */
-            int ro = 0;
-	    local_exec_mode = 0;
             TM_BEGIN(0);
-            if (local_exec_mode != 1 && local_exec_mode != 3) {
-                while (((void*)FAST_PATH_SHARED_READ_P(constructEntries[entryIndex].segment)) != NULL) {
-                    entryIndex = (entryIndex + 1) % numUniqueSegment; /* look for empty */
-                }
-                constructEntryPtr = &constructEntries[entryIndex];
-                FAST_PATH_SHARED_WRITE_P(constructEntryPtr->segment, segment);
-            } else {
-		volatile void* temp_p2 = (void*)SLOW_PATH_SHARED_READ_P(constructEntries[entryIndex].segment); 
-                while (temp_p2 != NULL) {
-                    entryIndex = (entryIndex + 1) % numUniqueSegment; /* look for empty */
-		    temp_p2 = (void*)SLOW_PATH_SHARED_READ_P(constructEntries[entryIndex].segment);
-                }
-                constructEntryPtr = &constructEntries[entryIndex];
-                SLOW_PATH_SHARED_WRITE_P(constructEntryPtr->segment, segment);
+            while (((void*)TM_SHARED_READ_P(constructEntries[entryIndex].segment)) != NULL) {
+                entryIndex = (entryIndex + 1) % numUniqueSegment; /* look for empty */
             }
+            constructEntryPtr = &constructEntries[entryIndex];
+            TM_SHARED_WRITE_P(constructEntryPtr->segment, segment);
             TM_END();
             entryIndex = (entryIndex + 1) % numUniqueSegment;
 
@@ -410,17 +392,10 @@ sequencer_run (void* argPtr)
             for (j = 1; j < segmentLength; j++) {
                 startHash = (ulong_t)segment[j-1] +
                             (startHash << 6) + (startHash << 16) - startHash;
-		local_exec_mode = 1;
                 TM_BEGIN(0);
-                if (local_exec_mode != 1 && local_exec_mode != 3) {
-                    status = table_htm::TMtable_insert(TM_ARG startHashToConstructEntryTables[j],
-                                            (ulong_t)startHash,
-                                            (void*)constructEntryPtr );
-                } else {
-                    status = table_stm::TMtable_insert(TM_ARG startHashToConstructEntryTables[j],
-                                            (ulong_t)startHash,
-                                            (void*)constructEntryPtr );
-                }
+                status = TMtable_insert(startHashToConstructEntryTables[j],
+                                        (ulong_t)startHash,
+                                        (void*)constructEntryPtr );
                 TM_END();
                 assert(status);
             }
@@ -430,17 +405,10 @@ sequencer_run (void* argPtr)
              */
             startHash = (ulong_t)segment[j-1] +
                         (startHash << 6) + (startHash << 16) - startHash;
-	    local_exec_mode = 0;
             TM_BEGIN(0);
-            if (local_exec_mode != 1 && local_exec_mode != 3) {
-                status = table_htm::TMtable_insert(TM_ARG hashToConstructEntryTable,
-                                        (ulong_t)startHash,
-                                        (void*)constructEntryPtr);
-            } else {
-                status = table_stm::TMtable_insert(TM_ARG hashToConstructEntryTable,
-                                        (ulong_t)startHash,
-                                        (void*)constructEntryPtr);
-            }
+            status = TMtable_insert(hashToConstructEntryTable,
+                                    (ulong_t)startHash,
+                                    (void*)constructEntryPtr);
             TM_END();
             assert(status);
         }
@@ -461,6 +429,7 @@ sequencer_run (void* argPtr)
         long index_start;
         long index_stop;
 
+#if defined(HTM) || defined(STM)
         {
             /* Choose disjoint segments [index_start,index_stop) for each thread */
             long partitionSize = (numUniqueSegment + numThread/2) / numThread; /* with rounding */
@@ -471,6 +440,11 @@ sequencer_run (void* argPtr)
                 index_stop = index_start + partitionSize;
             }
         }
+#else /* !(HTM || STM) */
+        index_start = 0;
+        index_stop = numUniqueSegment;
+#endif /* !(HTM || STM) */
+
         /* Iterating over disjoint itervals in the range [0, numUniqueSegment) */
         for (entryIndex = index_start;
              entryIndex < index_stop;
@@ -488,94 +462,55 @@ sequencer_run (void* argPtr)
 
             list_t* chainPtr = buckets[endHash % numBucket]; /* buckets: constant data */
             list_iter_t it;
-            list_htm::list_iter_reset(&it, chainPtr);
+            list_iter_reset(&it, chainPtr);
 
             /* Linked list at chainPtr is constant */
-            while (list_htm::list_iter_hasNext(&it, chainPtr)) {
+            while (list_iter_hasNext(&it, chainPtr)) {
 
                 constructEntry_t* startConstructEntryPtr =
-                    (constructEntry_t*)list_htm::list_iter_next(&it, chainPtr);
+                    (constructEntry_t*)list_iter_next(&it, chainPtr);
                 char* startSegment = startConstructEntryPtr->segment;
                 long newLength = 0;
 
                 /* endConstructEntryPtr is local except for properties startPtr/endPtr/length */
-                int ro = 0;
-		local_exec_mode = 0;
                 TM_BEGIN(0);
-                if (local_exec_mode != 1 && local_exec_mode != 3) {
-                    /* Check if matches */
-                    if (FAST_PATH_SHARED_READ(startConstructEntryPtr->isStart) &&
-                        (FAST_PATH_SHARED_READ_P(endConstructEntryPtr->startPtr) != startConstructEntryPtr) &&
-                        (strncmp(startSegment,
-                                 &endSegment[segmentLength - substringLength],
-                                 substringLength) == 0))
-                    {
-                    	FAST_PATH_SHARED_WRITE(startConstructEntryPtr->isStart, FALSE);
 
-                        constructEntry_t* startConstructEntry_endPtr;
-                        constructEntry_t* endConstructEntry_startPtr;
+                /* Check if matches */
+                if (TM_SHARED_READ(startConstructEntryPtr->isStart) &&
+                    (TM_SHARED_READ_P(endConstructEntryPtr->startPtr) != startConstructEntryPtr) &&
+                    (strncmp(startSegment,
+                             &endSegment[segmentLength - substringLength],
+                             substringLength) == 0))
+                {
+                    TM_SHARED_WRITE(startConstructEntryPtr->isStart, FALSE);
 
-                        /* Update endInfo (appended something so no longer end) */
-                        TM_LOCAL_WRITE(endInfoEntries[entryIndex].isEnd, FALSE);
+                    constructEntry_t* startConstructEntry_endPtr;
+                    constructEntry_t* endConstructEntry_startPtr;
 
-                        /* Update segment chain construct info */
-                        startConstructEntry_endPtr =
-                            (constructEntry_t*)FAST_PATH_SHARED_READ_P(startConstructEntryPtr->endPtr);
-                        endConstructEntry_startPtr =
-                            (constructEntry_t*)FAST_PATH_SHARED_READ_P(endConstructEntryPtr->startPtr);
+                    /* Update endInfo (appended something so no longer end) */
+                    TM_LOCAL_WRITE(endInfoEntries[entryIndex].isEnd, FALSE);
 
-                        assert(startConstructEntry_endPtr);
-                        assert(endConstructEntry_startPtr);
-                        FAST_PATH_SHARED_WRITE_P(startConstructEntry_endPtr->startPtr,
-                                          endConstructEntry_startPtr);
-                        TM_LOCAL_WRITE_P(endConstructEntryPtr->nextPtr,
-                                         startConstructEntryPtr);
-                        FAST_PATH_SHARED_WRITE_P(endConstructEntry_startPtr->endPtr,
-                                          startConstructEntry_endPtr);
-                        FAST_PATH_SHARED_WRITE(endConstructEntryPtr->overlap, substringLength);
-                        newLength = (long)FAST_PATH_SHARED_READ(endConstructEntry_startPtr->length) +
-                                    (long)FAST_PATH_SHARED_READ(startConstructEntryPtr->length) -
-                                    substringLength;
-                        FAST_PATH_SHARED_WRITE(endConstructEntry_startPtr->length, newLength);
-                    } /* if (matched) */
-                } else {
-                    /* Check if matches */
-	   	    intptr_t temp_l = SLOW_PATH_SHARED_READ(startConstructEntryPtr->isStart);
-		    void* temp_p = (constructEntry_t*)SLOW_PATH_SHARED_READ_P(endConstructEntryPtr->startPtr);
-                    if (temp_l && (temp_p != startConstructEntryPtr) &&
-                        (strncmp(startSegment,
-                                 &endSegment[segmentLength - substringLength],
-                                 substringLength) == 0))
-                    {
-                    	SLOW_PATH_SHARED_WRITE(startConstructEntryPtr->isStart, FALSE);
+                    /* Update segment chain construct info */
+                    startConstructEntry_endPtr =
+                        (constructEntry_t*)TM_SHARED_READ_P(startConstructEntryPtr->endPtr);
+                    endConstructEntry_startPtr =
+                        (constructEntry_t*)TM_SHARED_READ_P(endConstructEntryPtr->startPtr);
 
-                        constructEntry_t* startConstructEntry_endPtr;
-                        constructEntry_t* endConstructEntry_startPtr;
+                    assert(startConstructEntry_endPtr);
+                    assert(endConstructEntry_startPtr);
+                    TM_SHARED_WRITE_P(startConstructEntry_endPtr->startPtr,
+                                      endConstructEntry_startPtr);
+                    TM_LOCAL_WRITE_P(endConstructEntryPtr->nextPtr,
+                                     startConstructEntryPtr);
+                    TM_SHARED_WRITE_P(endConstructEntry_startPtr->endPtr,
+                                      startConstructEntry_endPtr);
+                    TM_SHARED_WRITE(endConstructEntryPtr->overlap, substringLength);
+                    newLength = (long)TM_SHARED_READ(endConstructEntry_startPtr->length) +
+                                (long)TM_SHARED_READ(startConstructEntryPtr->length) -
+                                substringLength;
+                    TM_SHARED_WRITE(endConstructEntry_startPtr->length, newLength);
+                } /* if (matched) */
 
-                        /* Update endInfo (appended something so no longer end) */
-                        TM_LOCAL_WRITE(endInfoEntries[entryIndex].isEnd, FALSE);
-
-                        /* Update segment chain construct info */
-                        startConstructEntry_endPtr =
-                            (constructEntry_t*)SLOW_PATH_SHARED_READ_P(startConstructEntryPtr->endPtr);
-                        endConstructEntry_startPtr =
-                            (constructEntry_t*)SLOW_PATH_SHARED_READ_P(endConstructEntryPtr->startPtr);
-
-                        assert(startConstructEntry_endPtr);
-                        assert(endConstructEntry_startPtr);
-                        SLOW_PATH_SHARED_WRITE_P(startConstructEntry_endPtr->startPtr,
-                                          endConstructEntry_startPtr);
-                        TM_LOCAL_WRITE_P(endConstructEntryPtr->nextPtr,
-                                         startConstructEntryPtr);
-                        SLOW_PATH_SHARED_WRITE_P(endConstructEntry_startPtr->endPtr,
-                                          startConstructEntry_endPtr);
-                        SLOW_PATH_SHARED_WRITE(endConstructEntryPtr->overlap, substringLength);
-			intptr_t temp_l2 = (long)SLOW_PATH_SHARED_READ(endConstructEntry_startPtr->length);
-			intptr_t temp_l3 = (long)SLOW_PATH_SHARED_READ(startConstructEntryPtr->length);
-                        newLength = temp_l2 + temp_l3 - substringLength;
-                        SLOW_PATH_SHARED_WRITE(endConstructEntry_startPtr->length, newLength);
-                    } /* if (matched) */
-                }
                 TM_END();
 
                 if (!endInfoEntries[entryIndex].isEnd) { /* if there was a match */
@@ -585,7 +520,7 @@ sequencer_run (void* argPtr)
 
         } /* for (endIndex < numUniqueSegment) */
 
-    thread_barrier_wait();
+        thread_barrier_wait();
 
         /*
          * Step 2c: Update jump values and hashes
@@ -624,7 +559,7 @@ sequencer_run (void* argPtr)
             }
         }
 
-    thread_barrier_wait();
+        thread_barrier_wait();
 
     } /* for (substringLength > 0) */
 
