@@ -227,12 +227,14 @@ extern __thread int PCWM_readonly_tx;
 #  define FAST_PATH_FREE(ptr)           free(ptr)
 #  define SLOW_PATH_FREE(ptr)           free(ptr)
 
-#define SLOW_PATH_SHARED_READ TM_SHARED_READ
-#define FAST_PATH_SHARED_READ TM_SHARED_READ
-#define SLOW_PATH_SHARED_READ_D TM_SHARED_READ_D
-#define FAST_PATH_SHARED_READ_D TM_SHARED_READ_D
-#define SLOW_PATH_SHARED_READ_P TM_SHARED_READ_P
-#define FAST_PATH_SHARED_READ_P TM_SHARED_READ_P
+#define TM_SHARED_READ(var)           var;
+#define TM_SHARED_READ_P(var)         var;
+#define TM_SHARED_READ_D(var)         var;
+#define TM_SHARED_READ_F(var)         var;
+#define TM_SHARED_WRITE(var, val)     FAST_PATH_SHARED_WRITE(var, val)
+#define TM_SHARED_WRITE_P(var, val)   FAST_PATH_SHARED_WRITE_P(var, val)
+#define TM_SHARED_WRITE_D(var, val)   FAST_PATH_SHARED_WRITE_D(var, val)
+#define TM_SHARED_WRITE_F(var, val)   FAST_PATH_SHARED_WRITE_F(var, val)
 
 #define SLOW_PATH_SHARED_WRITE TM_SHARED_WRITE
 #define FAST_PATH_SHARED_WRITE TM_SHARED_WRITE
