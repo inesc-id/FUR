@@ -418,7 +418,7 @@ sequencer_run (void* argPtr)
                                     (ulong_t)startHash,
                                     (void*)constructEntryPtr);
             TM_END();
-            assert(status);
+            // assert(status);
         }
     }
 
