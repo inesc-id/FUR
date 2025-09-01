@@ -295,7 +295,7 @@ sequencer_run (void* argPtr)
             long ii_stop = MIN(i_stop, (i+CHUNK_STEP1));
             for (ii = i; ii < ii_stop; ii++) {
                 void* segment = vector_at(segmentsContentsPtr, ii);
-                TMhashtable_insert(uniqueSegmentsPtr,
+                TMhashtable_insert(TM_ARG uniqueSegmentsPtr,
                                    segment,
                                    segment);
             } /* ii */
@@ -397,7 +397,7 @@ sequencer_run (void* argPtr)
                             (startHash << 6) + (startHash << 16) - startHash;
                 ro = 0;
                 TM_BEGIN(ro);
-                status = TMtable_insert(startHashToConstructEntryTables[j],
+                status = TMtable_insert(TM_ARG startHashToConstructEntryTables[j],
                                         (ulong_t)startHash,
                                         (void*)constructEntryPtr );
                 TM_END();
@@ -411,7 +411,7 @@ sequencer_run (void* argPtr)
                         (startHash << 6) + (startHash << 16) - startHash;
             ro = 0;
             TM_BEGIN(ro);
-            status = TMtable_insert(hashToConstructEntryTable,
+            status = TMtable_insert(TM_ARG hashToConstructEntryTable,
                                     (ulong_t)startHash,
                                     (void*)constructEntryPtr);
             TM_END();
