@@ -293,15 +293,15 @@
 #define TM_SHARED_WRITE_D(var, val)   FAST_PATH_SHARED_WRITE_D(var, val)
 #define TM_SHARED_WRITE_F(var, val)   FAST_PATH_SHARED_WRITE_F(var, val)
 
-#define SLOW_PATH_SHARED_READ(var)             var;
-#define SLOW_PATH_SHARED_READ_P(var)           var;
-#define SLOW_PATH_SHARED_READ_D(var)           var;
-#define SLOW_PATH_SHARED_READ_F(var)           var;
+#define SLOW_PATH_SHARED_READ(var)    (var)
+#define SLOW_PATH_SHARED_READ_P(var)  (var)
+#define SLOW_PATH_SHARED_READ_D(var)  (var)
+#define SLOW_PATH_SHARED_READ_F(var)  (var)
 
-#define FAST_PATH_SHARED_READ(var)                 var
-#define FAST_PATH_SHARED_READ_P(var)               var
-#define FAST_PATH_SHARED_READ_D(var)               var
-#define FAST_PATH_SHARED_READ_F(var)               var
+#define FAST_PATH_SHARED_READ(var)    (var)
+#define FAST_PATH_SHARED_READ_P(var)  (var)
+#define FAST_PATH_SHARED_READ_D(var)  (var)
+#define FAST_PATH_SHARED_READ_F(var)  (var)
 
 #define SHARED_WRITE(var, val) ({var = val; loc_var.numLoggedWrites++; write_in_log(loc_var.mylogpointer,&(var),val,loc_var.mylogstart,loc_var.mylogend); var;})
 # define FAST_PATH_SHARED_WRITE(var, val)   SHARED_WRITE(var, val)
