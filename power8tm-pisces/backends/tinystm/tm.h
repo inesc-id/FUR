@@ -55,26 +55,26 @@
 #      define FAST_PATH_FREE(ptr)        
 #      define SLOW_PATH_FREE(ptr)       
 
-#    define TM_BEGIN_EXT(b,ro)
-#    define TM_BEGIN(ro)
-#    define TM_BEGIN_RO()
-#    define TM_END()
-#    define FAST_PATH_RESTART()
-#    define SLOW_PATH_RESTART()
+// #    define TM_BEGIN_EXT(b,ro)
+// #    define TM_BEGIN(ro)
+// #    define TM_BEGIN_RO()
+// #    define TM_END()
+// #    define FAST_PATH_RESTART()
+// #    define SLOW_PATH_RESTART()
 
 # define AL_LOCK(idx)					          /* nothing */
-// #    define TM_BEGIN_EXT(b,ro)		    local_exec_mode = 3; \
-// 										do { /* sigsetjmp(local_tx_longjmp, 0); */ \
-// 											stm_tx_attr_t _a = {{.id = thread_getId(), .read_only = ro}}; \
-// 											sigjmp_buf *buf = stm_start(_a); \
-// 											sigsetjmp(*buf, 0); \
-// 										} while(0); \
-// 										//
-// #    define TM_BEGIN(ro)                local_exec_mode = 3; TM_BEGIN_EXT(0, ro)
-// #    define TM_BEGIN_RO()               local_exec_mode = 3; TM_BEGIN_EXT(0, 1)
-// #    define TM_END()                    stm_commit()
-// #    define FAST_PATH_RESTART()         stm_abort(1)
-// #    define SLOW_PATH_RESTART()         stm_abort(1)
+#    define TM_BEGIN_EXT(b,ro)		    local_exec_mode = 3; \
+										do { /* sigsetjmp(local_tx_longjmp, 0); */ \
+											stm_tx_attr_t _a = {{.id = thread_getId(), .read_only = ro}}; \
+											sigjmp_buf *buf = stm_start(_a); \
+											sigsetjmp(*buf, 0); \
+										} while(0); \
+										//
+#    define TM_BEGIN(ro)                local_exec_mode = 3; TM_BEGIN_EXT(0, ro)
+#    define TM_BEGIN_RO()               local_exec_mode = 3; TM_BEGIN_EXT(0, 1)
+#    define TM_END()                    stm_commit()
+#    define FAST_PATH_RESTART()         stm_abort(1)
+#    define SLOW_PATH_RESTART()         stm_abort(1)
 
 
 #    define TM_EARLY_RELEASE(var)       /* nothing */
